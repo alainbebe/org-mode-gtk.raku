@@ -10,9 +10,9 @@ use Data::Dump;
 grammar ORG_MODE {
     rule  TOP     { ^ <tasks> $ }
     rule  tasks  { <task>+ %% "\n" }
-    token task   { <level><todo><content> }
+    token task   { <level><todo>\x20?<content> }
     token level  { \*" " }
-    token todo  { ["TODO " | "DONE "]? }
+    token todo  { ["TODO" | "DONE"]? }
     token content { <-[\n]>+ }
 }
 
@@ -21,17 +21,17 @@ class OM-actions {
         make $<tasks>.made;
     }
     method tasks($/) {
-        make  $<task>».made ;
+        make $<task>».made ;
     }
     method task($/) {
-        make  $<content>.made ~ "," ~  $<todo>.made ; 
+        my %task=($<content>.made,$<todo>.made);
+        make  %task;
     }
     method todo($/) {
-        make  "ORG_todo" ~ "," ~  ~$/.Str.substr(0,4)  if $/.Str;
-        make  "ORG_todo" ~ "," ~ ""  if !$/.Str;
+        make  "ORG_todo" => ~$/.Str;
     }
     method content($/) {
-        make "ORG_task" ~ "," ~  ~$/.Str ;
+        make "ORG_task" =>  ~$/.Str ;
     }
 }
 
@@ -77,7 +77,7 @@ sub save($file) {
 	spurt $file  , (
         map { 
             join(" ",
-                grep {$_}, ("* ",$_{"ORG_todo"},$_{"ORG_task"})
+                grep {$_}, ("*",$_{"ORG_todo"},$_{"ORG_task"})
             ) 
         }, @org
     ).join("\n");
@@ -90,10 +90,9 @@ spurt "todo.bak",$file;
 my $om-actions = OM-actions.new();
 #say ORG_MODE.parse($file);exit;                              # just for test the tree
 my $match = ORG_MODE.parse($file, :actions($om-actions));
-#say $match.made;say Dump $match.made.Array;exit;             # just for test AST
 #my @test=$match.made; say @test; say Dump @test; exit;       # just for test AST
-@org=map {my %t3=split(/","/,$_);%t3}, $match.made.Array;     # TODO, rewrite AST for move this line in AST
-say @org;
+@org= $match.made.Array;  
+say "after AST : \n",@org;
 
 my $app = GTK::Simple::App.new( title => "Org-mode with GTK and Raku" );
 $app.set-content(
