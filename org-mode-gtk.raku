@@ -87,8 +87,40 @@ sub create_window {
         $app.exit;
     });
 }
+
+sub create_task(%task) {
+	my $l_task_label = GTK::Simple::Label.new(text => %task{"ORG_task"});
+	my $l_task_todo = GTK::Simple::Label.new(text => %task{"ORG_todo"});
+	my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
+    my $e_task_modify = GTK::Simple::Entry.new;
+	# entry my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
+	my $b_task_modify = GTK::Simple::Button.new(label => "Modify");
+	my $b_task_delete = GTK::Simple::Button.new(label => "Delete");
+	my $b_task = GTK::Simple::VBox.new($l_task_label,$l_task_todo,$b_task_todo,$e_task_modify,$b_task_modify,$b_task_delete);
+    %task{'GTK_main'}=$b_task;
+    modify_task($l_task_label,$e_task_modify,$b_task_modify,%task);
+	delete_task($b_task_delete,$b_task);
+	modify_todo($b_task_todo,$l_task_todo,%task);
+	$vb_task.pack-start($b_task);
+    return %task;
+}
+
+sub modify_task($l_label,$e_modify,$b_modify,%task) {
+	$b_modify.clicked.tap({ 
+        $l_label.text=$e_modify.text;
+        %task{"ORG_task"}=$l_label.text;
+	})
+}
+
+sub delete_task ($b_label,$b_master) {
+	$b_label.clicked.tap({ 
+		@org=grep { $_{'GTK_main'} !~~ /$b_master/ },@org;
+		$b_master.destroy;
+	})
+}
+
 # change state of a task TODO -> DONE -> ''
-sub click_todo ($b_todo,$l_todo,%task) {
+sub modify_todo ($b_todo,$l_todo,%task) {
 	$b_todo.clicked.tap({ 
         given $l_todo.text {
             when "TODO" {$l_todo.text="DONE"}
@@ -96,25 +128,6 @@ sub click_todo ($b_todo,$l_todo,%task) {
             default     {$l_todo.text="TODO"}
         }
         %task{"ORG_todo"}=$l_todo.text;
-	})
-}
-
-sub create_task(%task) {
-	my $b_task_label = GTK::Simple::Button.new(label => %task{"ORG_task"});
-	my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
-	my $l_task_todo = GTK::Simple::Label.new(text => %task{"ORG_todo"});
-	my $b_task = GTK::Simple::VBox.new($b_task_label,$l_task_todo,$b_task_todo);
-    %task{'GTK_main'}=$b_task;
-	delete_task($b_task_label,$b_task);
-	click_todo($b_task_todo,$l_task_todo,%task);
-	$vb_task.pack-start($b_task);
-    return %task;
-}
-
-sub delete_task ($b_label,$b_master) {
-	$b_label.clicked.tap({ 
-		@org=grep { $_{'GTK_main'} !~~ /$b_master/ },@org;
-		$b_master.destroy;
 	})
 }
 
