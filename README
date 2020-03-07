@@ -1,6 +1,6 @@
 "org-mode-gtk.raku" is yet another todo-list based on Org-mode.
-I try to do that with raku et grammar for parsing the todo.txt.
+I try to do that with raku et grammar for parsing the todo.org.
 And I use GTK::Simple for the interaction.
 And it's my first github projet.
 
-V0.1 is a very simple program, juste add and remove tasks "* test" in Org-mode.
+V0.1 is a very simple program, juste add and remove tasks "* test" or sub-task "** try" in Org-mode.
