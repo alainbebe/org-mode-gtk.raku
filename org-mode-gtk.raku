@@ -13,24 +13,35 @@ my $vb_task;    # container GTK for a task
 #-----------------------------------Grammar---------------------------
 
 grammar ORG_MODE {
-    rule  TOP     { ^ <tasks> $ }
-    rule  tasks  { <task>+ %% "\n" }
-    token task   { <level><todo>\x20?<content> }
-    token level  { \*" " }
-    token todo  { ["TODO" | "DONE"]? }
-    token content { <-[\n]>+ }
+    rule  TOP     { ^ <tasks1> $ }
+    rule  tasks1  { <task1>+ %% "\n" }
+    token task1   { <level1><todo>\x20?<content>(\n<tasks2>)? }
+    token tasks2  { <task2>+ }
+    token task2   { <level2><todo>\x20?<content> }
+    token level1  { "* " }
+    token level2  { "** " }
+    token todo  { ["TODO"|"DONE"]? }
+    token content { .*? $$ }
 }
 
 class OM-actions {
     method TOP($/) {
-        make $<tasks>.made;
+        make $<tasks1>.made;
     }
-    method tasks($/) {
-        make $<task>».made ;
+    method tasks1($/) {
+        make $<task1>».made ;
     }
-    method task($/) {
-        my %task=($<content>.made,$<todo>.made);
-        make  %task;
+    method task1($/) {
+#        my %task1=($<content>.made,$<todo>.made,'SUB_TASK',$<tasks2>.made);
+        my %task1=($<content>.made,$<todo>.made);
+        make  %task1;
+    }
+    method tasks2($/) {
+        make $<task2>».made ;
+    }
+    method task2($/) {
+        my %task2=($<content>.made,$<todo>.made);
+        make  %task2;
     }
     method todo($/) {
         make  "ORG_todo" => ~$/.Str;
@@ -42,9 +53,9 @@ class OM-actions {
 
 sub parse_file {
     my $om-actions = OM-actions.new();
-    #say ORG_MODE.parse($file);exit;                              # just for test the tree
+    say ORG_MODE.parse($file);exit;                              # just for test the tree
     my $match = ORG_MODE.parse($file, :actions($om-actions));
-    #my @test=$match.made; say @test; say Dump @test; exit;       # just for test AST
+    my @test=$match.made; say @test; say Dump @test; exit;       # just for test AST
     @org= $match.made.Array;  
     say "after AST : \n",@org;
 }
