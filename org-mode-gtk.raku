@@ -53,11 +53,11 @@ class OM-actions {
 
 sub parse_file {
     my $om-actions = OM-actions.new();
-    say ORG_MODE.parse($file);exit;                              # just for test the tree
+#    say ORG_MODE.parse($file);exit;                              # just for test the tree
     my $match = ORG_MODE.parse($file, :actions($om-actions));
-    my @test=$match.made; say @test; say Dump @test; exit;       # just for test AST
+#    my @test=$match.made; say @test; say Dump @test; exit;       # just for test AST
     @org= $match.made.Array;  
-    say "after AST : \n",@org;
+#    say "after AST : \n",@org;
 }
 
 #---------------------------sub--------------------------------
@@ -149,7 +149,7 @@ sub read_file {
 
 sub populate_task {
     @org = map {create_task($_)}, @org;
-    say "after create task : \n",@org;
+#    say "after create task : \n",@org;
 }
 
 sub save($file) {
