@@ -5,6 +5,8 @@ use Gnome::GObject::Type;
 use Gnome::GObject::Value;
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
+use Gnome::Gtk3::Grid;
+use Gnome::Gtk3::Button;
 use Gnome::Gtk3::TreePath;
 use Gnome::Gtk3::TreeStore;
 use Gnome::Gtk3::CellRendererText;
@@ -75,6 +77,16 @@ sub parse_file {
 
 my Gnome::Gtk3::Main $m .= new;
 
+# Class to handle signals
+class AppSignalHandlers {
+
+  method quit-button-click ( ) {
+    $m.gtk-main-quit;
+  }
+
+}
+
+
 class X {
   method exit-gui ( --> Int ) {
     $m.gtk-main-quit;
@@ -87,9 +99,18 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::Gtk3::Window $w .= new(:title('List store example'));
 $w.set-default-size( 270, 250);
 
+my Gnome::Gtk3::Grid $g .= new();
+$w.gtk-container-add($g);
+
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
-$w.gtk-container-add($tv);
+$tv.set-hexpand(1);
+$tv.set-vexpand(1);
+$tv.set-headers-visible(1);
+$g.gtk-grid-attach( $tv, 0, 0, 1, 1);
+
+my Gnome::Gtk3::Button $quit .= new(:label('Goodbye'));
+$g.gtk-grid-attach( $quit, 0, 1, 1, 1);
 
 my Gnome::Gtk3::TreeViewColumn $tvc .= new();
 my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -108,6 +129,14 @@ my Gnome::Gtk3::TreeIter $parent-iter;
 
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
+
+# Instantiate the event handler class and register signals
+my AppSignalHandlers $ash .= new;
+#$button.register-signal(
+#  $ash, 'first-button-click', 'clicked',  :other-button($second)
+#);
+$quit.register-signal( $ash, 'quit-button-click', 'clicked');
+
 $w.show-all;
 
 #--------------------------------interface---------------------------------
