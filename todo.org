@@ -1,7 +1,8 @@
-* task
+* TODO task
 ** TODO sub task
 * another task
-* try
+** sub at
+* DONE try
 ** DONE sub try 1
 * final
 ** sous final
