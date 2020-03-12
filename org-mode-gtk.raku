@@ -25,36 +25,29 @@ my $vb_task;    # container GTK for a task
 #-----------------------------------Grammar---------------------------
 
 grammar ORG_MODE {
-    rule  TOP     { ^ <tasks1> $ }
-    rule  tasks1  { <task1>+ %% "\n" }
-    token task1   { <level1><todo>\x20?<content>\n<tasks2> }
-    token tasks2  { <task2> }               # usr "rule" do'n works, why ?
-    token task2   { <level2><todo>\x20?<content> }
+    rule  TOP     { ^ <tasks> $ }
+    rule  tasks  { <task>+ %% "\n" }
+    token task   { <level1><todo>\x20?<content>(\n<sub_tasks>)* }
+    token sub_tasks  { \*<task> }               # usr "rule" do'n works, why ?
     token level1  { "* " }
-    token level2  { "** " }
     token todo  { ["TODO"|"DONE"]? }
     token content { .*? $$ }
 }
 
 class OM-actions {
     method TOP($/) {
-        make $<tasks1>.made;
+        make $<tasks>.made;
     }
-    method tasks1($/) {
-        make $<task1>».made ;
+    method tasks($/) {
+        make $<task>».made ;
     }
-    method task1($/) {
-        my %task1=($<content>.made,$<todo>.made,'SUB_task',$<tasks2>);
-        make  %task1;
-#        say  $<tasks2>;
+    method sub_tasks($/) {
+        my %sts=$<task>.made ;
+        make %sts;
     }
-    method tasks2($/) {
-        make $<task2>».made ;
-#        say  $<task2> ;
-    }
-    method task2($/) {
-        my %task2=($<content>.made,$<todo>.made);
-        make  %task2;
+    method task($/) {
+        my %task=($<content>.made,$<todo>.made,'SUB_task',$<sub_tasks>.made);
+        make  %task;
     }
     method todo($/) {
         make  "ORG_todo" => ~$/.Str;
@@ -66,18 +59,18 @@ class OM-actions {
 
 use Test;
 plan 3;
-ok ORG_MODE.parse('** DONE essai', :rule<task2>),
-    '<task2> parses ** DONE essai';
-ok ORG_MODE.parse('** DOES essai', :rule<task2>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
-    '<task2> does n t parses ** DOES essai';
-nok ORG_MODE.parse('* DONE essai', :rule<task2>),
-    '<task2> does n t parses * DONE essai';
+ok ORG_MODE.parse('* DONE essai', :rule<task>),
+    '<task> parses * DONE essai';
+ok ORG_MODE.parse('* DOES essai', :rule<task>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
+    '<task> parses * DOES essai';
+nok ORG_MODE.parse('** DONE essai', :rule<task>),
+    '<task> does n t parses ** DONE essai';
 
 sub parse_file {
     my $om-actions = OM-actions.new();
-#    say ORG_MODE.parse($file);exit;                              # just for test the tree
+#    say ORG_MODE.parse($file);#exit;                              # just for test the grammar
     my $match = ORG_MODE.parse($file, :actions($om-actions));
-#    my @test=$match.made; say @test;  exit;       # just for test AST
+#    my @test=$match.made; say @test; say Dump @test;  exit;       # just for test the AST
     @org= $match.made.Array;  
 #    say "after AST : \n",@org;
 }
