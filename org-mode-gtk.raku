@@ -64,6 +64,15 @@ class OM-actions {
     }
 }
 
+use Test;
+plan 3;
+ok ORG_MODE.parse('** DONE essai', :rule<task2>),
+    '<task2> parses ** DONE essai';
+ok ORG_MODE.parse('** DOES essai', :rule<task2>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
+    '<task2> does n t parses ** DOES essai';
+nok ORG_MODE.parse('* DONE essai', :rule<task2>),
+    '<task2> does n t parses * DONE essai';
+
 sub parse_file {
     my $om-actions = OM-actions.new();
 #    say ORG_MODE.parse($file);exit;                              # just for test the tree
@@ -79,13 +88,27 @@ my Gnome::Gtk3::Main $m .= new;
 
 # Class to handle signals
 class AppSignalHandlers {
-
-  method quit-button-click ( ) {
-    $m.gtk-main-quit;
-  }
-
+    method save-button-click ( ) {
+        say "doesn't work, wait grammar/ast works";
+    }
+    method add-button-click ( ) {
+        my %task=("ORG_task","task5", "ORG_todo","TODO");
+        %task=create_task(%task);
+        @org.push(%task);
+        return; # not necessary but else I have an error
+    }
+    method quit-button-click ( ) {
+        $m.gtk-main-quit;
+    }
+    method file-test-button-click ( ) {
+        save("test.org");
+        run 'cat','test.org';
+        say "\n"; # yes, 2 lines.
+    }
+    method tv-button-click ( ) {
+        say "test";
+    }
 }
-
 
 class X {
   method exit-gui ( --> Int ) {
@@ -107,10 +130,17 @@ my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
 $tv.set-headers-visible(1);
-$g.gtk-grid-attach( $tv, 0, 0, 1, 1);
+$tv.set-activate-on-single-click(1);
+$g.gtk-grid-attach( $tv, 0, 0, 4, 1);
 
-my Gnome::Gtk3::Button $quit .= new(:label('Goodbye'));
-$g.gtk-grid-attach( $quit, 0, 1, 1, 1);
+my Gnome::Gtk3::Button $b_add  .= new(:label('Add'));
+my Gnome::Gtk3::Button $b_save .= new(:label('Save & Quit'));
+my Gnome::Gtk3::Button $b_file_test .= new(:label('Save to test'));
+my Gnome::Gtk3::Button $b_quit .= new(:label('Quit (no save)'));
+$g.gtk-grid-attach( $b_add, 0, 1, 1, 1);
+$g.gtk-grid-attach( $b_save, 1, 1, 1, 1);
+$g.gtk-grid-attach( $b_file_test, 2, 1, 1, 1);
+$g.gtk-grid-attach( $b_quit, 3, 1, 1, 1);
 
 my Gnome::Gtk3::TreeViewColumn $tvc .= new();
 my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -130,12 +160,12 @@ my Gnome::Gtk3::TreeIter $parent-iter;
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
-# Instantiate the event handler class and register signals
 my AppSignalHandlers $ash .= new;
-#$button.register-signal(
-#  $ash, 'first-button-click', 'clicked',  :other-button($second)
-#);
-$quit.register-signal( $ash, 'quit-button-click', 'clicked');
+$b_add.register-signal( $ash, 'add-button-click', 'clicked');
+$b_save.register-signal( $ash, 'save-button-click', 'clicked');
+$b_quit.register-signal( $ash, 'quit-button-click', 'clicked');
+$b_file_test.register-signal( $ash, 'file-test-button-click', 'clicked');
+#$tv.signals-added.row-activated( $ash, 'tv-button-click', 'clicked');
 
 $w.show-all;
 
