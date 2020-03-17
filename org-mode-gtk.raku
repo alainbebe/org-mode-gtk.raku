@@ -1,12 +1,16 @@
 #!/usr/bin/env perl6
 
 use v6;
+
+use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
 use Gnome::GObject::Value;
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Button;
+use Gnome::Gtk3::Label;
+use Gnome::Gtk3::Entry;
 use Gnome::Gtk3::TreePath;
 use Gnome::Gtk3::TreeStore;
 use Gnome::Gtk3::CellRendererText;
@@ -17,21 +21,19 @@ use Gnome::N::X;
 
 use Data::Dump;
 
-my @org;        # liste of task (and a task is a hash) 
-my $file;       # harcoded todo.org # TODO to improve
-my $app;        # for GTK window
-my $vb_task;    # container GTK for a task
+my @org;        # list of tasks (and a task is a hash) 
+my $file;       # for reading demo.org # TODO to improve
 
 #-----------------------------------Grammar---------------------------
 
 grammar ORG_MODE {
-    rule  TOP     { ^ <tasks> $ }
-    rule  tasks  { <task>+ %% "\n" }
-    token task   { <level1><todo>\x20?<content>(\n<sub_tasks>)* }
-    token sub_tasks  { \*<task> }               # usr "rule" do'n works, why ?
-    token level1  { "* " }
-    token todo  { ["TODO"|"DONE"]? }
-    token content { .*? $$ }
+    rule  TOP       { ^ <tasks> $ }
+    rule  tasks     { <task>+ %% "\n" }
+    token task      { <level1><todo>\x20?<content>(\n<sub_tasks>)? }
+    token sub_tasks { "*"<task> }               # use "rule" doesn't work, why ?
+    token level1    { "* " }
+    token todo      { ["TODO"|"DONE"]? }
+    token content   { .*? $$ }
 }
 
 class OM-actions {
@@ -41,13 +43,15 @@ class OM-actions {
     method tasks($/) {
         make $<task>».made ;
     }
+    method task($/) {
+        my %task=($<content>.made,$<todo>.made);
+        %task=('SUB_task',$<sub_tasks>.made) if $<sub_tasks>.made;
+        make  %task;
+    }
     method sub_tasks($/) {
+        say $<task>.made ;
         my %sts=$<task>.made ;
         make %sts;
-    }
-    method task($/) {
-        my %task=($<content>.made,$<todo>.made,'SUB_task',$<sub_tasks>.made);
-        make  %task;
     }
     method todo($/) {
         make  "ORG_todo" => ~$/.Str;
@@ -68,40 +72,24 @@ nok ORG_MODE.parse('** DONE essai', :rule<task>),
 
 sub parse_file {
     my $om-actions = OM-actions.new();
-#    say ORG_MODE.parse($file);#exit;                              # just for test the grammar
+#    say ORG_MODE.parse($file);exit;                              # just for test the grammar
     my $match = ORG_MODE.parse($file, :actions($om-actions));
-#    my @test=$match.made; say @test; say Dump @test;  exit;       # just for test the AST
+    my @test=$match.made; say @test; say Dump @test;  exit;       # just for test the AST
     @org= $match.made.Array;  
 #    say "after AST : \n",@org;
+}
+
+sub demo_hardcoded {
+    @org= (
+        %("ORG_task" => "task","ORG_todo" =>  "DONE"),
+        %("ORG_task" => "try","ORG_todo" =>  "","SUB_task" => %("ORG_task" => "sub try","ORG_todo" =>  "DONE")),
+    );  
+#    say "after : \n",Dump @org;
 }
 
 #--------------------------- part GTK--------------------------------
 
 my Gnome::Gtk3::Main $m .= new;
-
-# Class to handle signals
-class AppSignalHandlers {
-    method save-button-click ( ) {
-        say "doesn't work, wait grammar/ast works";
-    }
-    method add-button-click ( ) {
-        my %task=("ORG_task","task5", "ORG_todo","TODO");
-        %task=create_task(%task);
-        @org.push(%task);
-        return; # not necessary but else I have an error
-    }
-    method quit-button-click ( ) {
-        $m.gtk-main-quit;
-    }
-    method file-test-button-click ( ) {
-        save("test.org");
-        run 'cat','test.org';
-        say "\n"; # yes, 2 lines.
-    }
-    method tv-button-click ( ) {
-        say "test";
-    }
-}
 
 class X {
   method exit-gui ( --> Int ) {
@@ -112,7 +100,7 @@ class X {
 
 my Gnome::Gtk3::TreeIter $iter;
 
-my Gnome::Gtk3::Window $w .= new(:title('List store example'));
+my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
 $w.set-default-size( 270, 250);
 
 my Gnome::Gtk3::Grid $g .= new();
@@ -126,14 +114,18 @@ $tv.set-headers-visible(1);
 $tv.set-activate-on-single-click(1);
 $g.gtk-grid-attach( $tv, 0, 0, 4, 1);
 
+my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add'));
+my Gnome::Gtk3::Label $l_del  .= new(:text('Click on tree to delete'));
 my Gnome::Gtk3::Button $b_save .= new(:label('Save & Quit'));
 my Gnome::Gtk3::Button $b_file_test .= new(:label('Save to test'));
 my Gnome::Gtk3::Button $b_quit .= new(:label('Quit (no save)'));
-$g.gtk-grid-attach( $b_add, 0, 1, 1, 1);
-$g.gtk-grid-attach( $b_save, 1, 1, 1, 1);
-$g.gtk-grid-attach( $b_file_test, 2, 1, 1, 1);
-$g.gtk-grid-attach( $b_quit, 3, 1, 1, 1);
+$g.gtk-grid-attach( $e_add, 0, 1, 1, 1);
+$g.gtk-grid-attach( $b_add, 1, 1, 1, 1);
+$g.gtk-grid-attach( $l_del, 2, 1, 1, 1);
+$g.gtk-grid-attach( $b_save, 0, 2, 1, 1);
+$g.gtk-grid-attach( $b_file_test, 1, 2, 1, 1);
+$g.gtk-grid-attach( $b_quit, 2, 2, 1, 1);
 
 my Gnome::Gtk3::TreeViewColumn $tvc .= new();
 my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -153,12 +145,56 @@ my Gnome::Gtk3::TreeIter $parent-iter;
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
+# Class to handle signals
+class AppSignalHandlers {
+    method save-button-click ( ) {
+        say "doesn't work, wait grammar/ast works";
+#        save("demo.org");
+    }
+    method add-button-click ( ) {
+        if $e_add.get-text {
+            my %task=("ORG_task",$e_add.get-text, "ORG_todo","TODO");
+            $e_add.set-text("");
+            %task=create_task(%task);
+            @org.push(%task);
+        }
+        return; # not necessary but else I have an error
+    }
+    method quit-button-click ( ) {
+        $m.gtk-main-quit;
+    }
+    method file-test-button-click ( ) {
+        save("test.org");
+        run 'cat','test.org';
+        say "\n"; # yes, 2 lines.
+    }
+    method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
+        my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
+        my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
+        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+        my Str $data-key = $v[0].get-string // '';
+#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # doesn't work
+        @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string 
+                ne $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
+
+        # for subtask, find a recusive method
+        for @org -> %org {
+            if %org{'SUB_task'} {
+                %org{'SUB_task'}:delete if $ts.tree-model-get-value( %org{'SUB_task'}{'GTK_iter'}, 1)[0].get-string 
+                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string 
+            }
+        }
+        $ts.gtk-tree-store-remove($iter);
+        say "Destroy : $data-key";    # TODO if remove, program failed
+    }
+}
+
 my AppSignalHandlers $ash .= new;
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $b_save.register-signal( $ash, 'save-button-click', 'clicked');
 $b_quit.register-signal( $ash, 'quit-button-click', 'clicked');
 $b_file_test.register-signal( $ash, 'file-test-button-click', 'clicked');
-#$tv.signals-added.row-activated( $ash, 'tv-button-click', 'clicked');
+$tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 
 $w.show-all;
 
@@ -166,60 +202,48 @@ $w.show-all;
 
 my $i=0;
 sub create_task(%task) {
-#-	my $b_task_label = GTK::Simple::Button.new(label => %task{"ORG_task"});
-#-	my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
-#+	my $l_task_label = GTK::Simple::Label.new(text => %task{"ORG_task"});
-# 	my $l_task_todo = GTK::Simple::Label.new(text => %task{"ORG_todo"});
-#-	my $b_task = GTK::Simple::VBox.new($b_task_label,$l_task_todo,$b_task_todo);
-#+	my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
-#+    my $e_task_modify = GTK::Simple::Entry.new;
-#+	# entry my $b_task_todo = GTK::Simple::Button.new(label => "Change todo");
-#+	my $b_task_modify = GTK::Simple::Button.new(label => "Modify");
-#+	my $b_task_delete = GTK::Simple::Button.new(label => "Delete");
-#+	my $b_task = GTK::Simple::VBox.new($l_task_label,$l_task_todo,$b_task_todo,$e_task_modify,$b_task_modify,$b_task_delete);
-
     my $row=[ %task{"ORG_todo"}, %task{"ORG_task"}];
     $tp .= new(:string($i++.Str));
     $parent-iter = $ts.get-iter($tp);
     $iter = $ts.insert-with-values( $parent-iter, -1, |$row.kv);
-    %task{'GTK_main'}=$iter;
+    %task{'GTK_iter'}=$iter;
 
-    # TODO finaliser les sous-tâches
-    $row=[ "DONE", "Sub task $i"];
-    $iter = $ts.insert-with-values( $iter, -1, |$row.kv);
-
-#-	delete_task($b_task_label,$b_task);
-#-	click_todo($b_task_todo,$l_task_todo,%task);
-#+    modify_task($l_task_label,$e_task_modify,$b_task_modify,%task);
-#+	delete_task($b_task_delete,$b_task);
-#+	modify_todo($b_task_todo,$l_task_todo,%task);
-# 	$vb_task.pack-start($b_task);
-     return %task;
+    # TODO create a recursive sub 
+    if (%task{"SUB_task"}) {
+        my %sub_task=%task{"SUB_task"};
+        $row=[ %sub_task{"ORG_todo"}, %sub_task{"ORG_task"}];
+        $iter = $ts.insert-with-values( $iter, -1, |$row.kv);
+        %task{"SUB_task"}{'GTK_iter'}=$iter;
+    }
+    return %task;
  }
 #-----------------------------------sub-------------------------------
 sub read_file {
-    $file = slurp "todo.org";
-    spurt "todo.bak",$file;
+    $file = slurp "demo.org";
+    spurt "demo.bak",$file;
 }
 
 sub populate_task {
     @org = map {create_task($_)}, @org;
-    say "after create task : \n",@org;
+#    say "after create task : \n",@org;
 }
 
 sub save($file) {
-	spurt $file  , (
-        map { 
-            join(" ",
-                grep {$_}, ("*",$_{"ORG_todo"},$_{"ORG_task"})
-            ) 
-        }, @org
-    ).join("\n");
+    my $orgmode="";
+    for @org -> %task {
+        $orgmode~=join(" ",grep {$_}, ("*",%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
+        # use a recusive sub
+        if %task{"SUB_task"} {
+           my %sub_task=%task{"SUB_task"};
+           $orgmode~=join(" ",grep {$_}, ("**",%sub_task{"ORG_todo"},%sub_task{"ORG_task"}))~"\n" if %sub_task;
+        }
+    }
+	spurt $file  , $orgmode;
 }
 
 #--------------------------main--------------------------------
 
 read_file();
-parse_file();
+1 ?? parse_file() !! demo_hardcoded();       # 0 if AST doesn't work
 populate_task();
 $m.gtk-main;

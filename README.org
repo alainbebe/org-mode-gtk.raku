@@ -1,0 +1,11 @@
+* YA todo-list based on Org-mode.
+"org-mode-gtk.raku" is yet another todo-list based on Org-mode.
+Goal is
+- use Org-mode https://orgmode.org/
+- use raku https://www.raku.org/
+- use grammar for parsing the file org-mode.
+- use module Gnome:GTK3 for interactive interface
+
+This version is unstable, read, add, write but very sample tasks 
+- "* test" 
+- "** TODO try" 
