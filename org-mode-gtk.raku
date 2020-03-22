@@ -29,7 +29,7 @@ my $file;       # for reading demo.org # TODO to improve
 grammar ORG_MODE {
     rule  TOP       { ^ <tasks> $ }
     rule  tasks     { <task>+ %% "\n" }
-    token task      { <level1><todo>\x20?<content>(\n<sub_tasks>)? }
+    token task      { <level1><todo>\x20?<content>(\n<sub_tasks>)* }
     token sub_tasks { "*"<task> }               # use "rule" doesn't work, why ?
     token level1    { "* " }
     token todo      { ["TODO"|"DONE"]? }
@@ -45,11 +45,11 @@ class OM-actions {
     }
     method task($/) {
         my %task=($<content>.made,$<todo>.made);
+        say $<sub_tasks>>>.made;
         %task=('SUB_task',$<sub_tasks>.made) if $<sub_tasks>.made;
         make  %task;
     }
     method sub_tasks($/) {
-        say $<task>.made ;
         my %sts=$<task>.made ;
         make %sts;
     }
@@ -72,19 +72,32 @@ nok ORG_MODE.parse('** DONE essai', :rule<task>),
 
 sub parse_file {
     my $om-actions = OM-actions.new();
-#    say ORG_MODE.parse($file);exit;                              # just for test the grammar
+    say ORG_MODE.parse($file);#exit;                              # just for test the grammar
     my $match = ORG_MODE.parse($file, :actions($om-actions));
     my @test=$match.made; say @test; say Dump @test;  exit;       # just for test the AST
     @org= $match.made.Array;  
 #    say "after AST : \n",@org;
 }
 
-sub demo_hardcoded {
-    @org= (
-        %("ORG_task" => "task","ORG_todo" =>  "DONE"),
-        %("ORG_task" => "try","ORG_todo" =>  "","SUB_task" => %("ORG_task" => "sub try","ORG_todo" =>  "DONE")),
-    );  
-#    say "after : \n",Dump @org;
+sub demo_procedural_read {
+    # TODO to remove, improve grammar/AST
+    my token content2 { .*? $$ };
+
+    for "demo.org".IO.lines {
+        if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) {
+            my %task=("ORG_task",$<content2>.Str);
+            %task{"ORG_todo"}=$0[0].Str if $0[0];
+            push(@org,%task);
+        }
+        if ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) {
+            my %task=pop(@org);
+            my %sub_task=("ORG_task",$<content2>.Str);
+            %sub_task{"ORG_todo"}=$0[0].Str if $0[0];
+            push(%task{"SUB_task"},%sub_task);
+            push(@org,%task);
+        }
+    }
+#    say "after : \n", Dump @org;
 }
 
 #--------------------------- part GTK--------------------------------
@@ -117,9 +130,9 @@ $g.gtk-grid-attach( $tv, 0, 0, 4, 1);
 my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add'));
 my Gnome::Gtk3::Label $l_del  .= new(:text('Click on tree to delete'));
-my Gnome::Gtk3::Button $b_save .= new(:label('Save & Quit'));
+my Gnome::Gtk3::Button $b_save .= new(:label('Save'));
 my Gnome::Gtk3::Button $b_file_test .= new(:label('Save to test'));
-my Gnome::Gtk3::Button $b_quit .= new(:label('Quit (no save)'));
+my Gnome::Gtk3::Button $b_quit .= new(:label('Quit (! Save before )'));
 $g.gtk-grid-attach( $e_add, 0, 1, 1, 1);
 $g.gtk-grid-attach( $b_add, 1, 1, 1, 1);
 $g.gtk-grid-attach( $l_del, 2, 1, 1, 1);
@@ -148,8 +161,7 @@ $w.register-signal( $x, 'exit-gui', 'destroy');
 # Class to handle signals
 class AppSignalHandlers {
     method save-button-click ( ) {
-        say "doesn't work, wait grammar/ast works";
-#        save("demo.org");
+        save("demo.org");
     }
     method add-button-click ( ) {
         if $e_add.get-text {
@@ -173,19 +185,27 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
         my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
         my Str $data-key = $v[0].get-string // '';
-#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # doesn't work
-        @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string 
+#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
+        @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
                 ne $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
 
         # for subtask, find a recusive method
-        for @org -> %org {
-            if %org{'SUB_task'} {
-                %org{'SUB_task'}:delete if $ts.tree-model-get-value( %org{'SUB_task'}{'GTK_iter'}, 1)[0].get-string 
-                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string 
+        for @org -> %task {
+            my @org_sub;
+            if %task{'SUB_task'} {
+                for %task{"SUB_task"}.Array {
+                    push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string # TODO, see before
+                        ne $ts.tree-model-get-value( $iter, 1)[0].get-string 
+                }
+            }
+            if @org_sub {
+                %task{'SUB_task'}=@org_sub;
+            } else {
+                %task{'SUB_task'}:delete;
             }
         }
         $ts.gtk-tree-store-remove($iter);
-        say "Destroy : $data-key";    # TODO if remove, program failed
+        say "Destroy : $data-key";    # TODO if remove, program failed. Why ?
     }
 }
 
@@ -200,6 +220,13 @@ $w.show-all;
 
 #--------------------------------interface---------------------------------
 
+sub create_sub_task(%task,$iter) {
+    my $row=[ %task{"ORG_todo"}, "- "~%task{"ORG_task"}];
+    my $iter_st = $ts.insert-with-values( $iter, -1, |$row.kv);
+    %task{'GTK_iter'}=$iter_st;
+    return %task;
+}
+
 my $i=0;
 sub create_task(%task) {
     my $row=[ %task{"ORG_todo"}, %task{"ORG_task"}];
@@ -210,13 +237,12 @@ sub create_task(%task) {
 
     # TODO create a recursive sub 
     if (%task{"SUB_task"}) {
-        my %sub_task=%task{"SUB_task"};
-        $row=[ %sub_task{"ORG_todo"}, %sub_task{"ORG_task"}];
-        $iter = $ts.insert-with-values( $iter, -1, |$row.kv);
-        %task{"SUB_task"}{'GTK_iter'}=$iter;
+        for %task{"SUB_task"}.Array {
+            create_sub_task($_,$iter);
+        }
     }
     return %task;
- }
+}
 #-----------------------------------sub-------------------------------
 sub read_file {
     $file = slurp "demo.org";
@@ -234,16 +260,17 @@ sub save($file) {
         $orgmode~=join(" ",grep {$_}, ("*",%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
         # use a recusive sub
         if %task{"SUB_task"} {
-           my %sub_task=%task{"SUB_task"};
-           $orgmode~=join(" ",grep {$_}, ("**",%sub_task{"ORG_todo"},%sub_task{"ORG_task"}))~"\n" if %sub_task;
+            for %task{"SUB_task"}.Array {
+                $orgmode~=join(" ",grep {$_}, ("**",$_{"ORG_todo"},$_{"ORG_task"}))~"\n";
+            }
         }
     }
-	spurt $file  , $orgmode;
+	spurt $file, $orgmode;
 }
 
 #--------------------------main--------------------------------
 
 read_file();
-1 ?? parse_file() !! demo_hardcoded();       # 0 if AST doesn't work
+0 ?? parse_file() !! demo_procedural_read();       # 0 if AST doesn't work
 populate_task();
 $m.gtk-main;
