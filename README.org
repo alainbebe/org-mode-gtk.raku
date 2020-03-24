@@ -5,7 +5,8 @@ Goal is
 - use raku https://www.raku.org/
 - use grammar for parsing the file org-mode.
 (Grammar works but AST doesn't work, so I use demo_procedural_read)
-- use module Gnome:GTK3 for interactive interface
+- use module Gnome::GTK3 for interactive interface https://github.com/MARTIMM/gnome-gtk3
+- create undo/redo
 
 This version is unstable, read, add, write but very simple tasks 
 - "* test" 

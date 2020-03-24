@@ -17,6 +17,9 @@ use Gnome::Gtk3::CellRendererText;
 use Gnome::Gtk3::TreeView;
 use Gnome::Gtk3::TreeViewColumn;
 use Gnome::Gtk3::TreeIter;
+use Gnome::Gtk3::MenuBar;
+use Gnome::Gtk3::Menu;
+use Gnome::Gtk3::MenuItem;
 use Gnome::N::X;
 
 use Data::Dump;
@@ -113,11 +116,23 @@ class X {
 
 my Gnome::Gtk3::TreeIter $iter;
 
+my Gnome::GObject::Type $type .= new;
+my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
+
 my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
 $w.set-default-size( 270, 250);
 
 my Gnome::Gtk3::Grid $g .= new();
 $w.gtk-container-add($g);
+
+my Gnome::Gtk3::Menu $menu = make-menubar-menu();
+
+my Gnome::Gtk3::MenuItem $root-menu .= new(:label('File'));
+$root-menu.set-submenu($menu);
+
+my Gnome::Gtk3::MenuBar $menu-bar .= new;
+$g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
+$menu-bar.gtk-menu-shell-append($root-menu);
 
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
@@ -125,20 +140,14 @@ $tv.set-hexpand(1);
 $tv.set-vexpand(1);
 $tv.set-headers-visible(1);
 $tv.set-activate-on-single-click(1);
-$g.gtk-grid-attach( $tv, 0, 0, 4, 1);
+$g.gtk-grid-attach( $tv, 0, 1, 4, 1);
 
 my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add'));
 my Gnome::Gtk3::Label $l_del  .= new(:text('Click on tree to delete'));
-my Gnome::Gtk3::Button $b_save .= new(:label('Save'));
-my Gnome::Gtk3::Button $b_file_test .= new(:label('Save to test'));
-my Gnome::Gtk3::Button $b_quit .= new(:label('Quit (! Save before )'));
-$g.gtk-grid-attach( $e_add, 0, 1, 1, 1);
-$g.gtk-grid-attach( $b_add, 1, 1, 1, 1);
-$g.gtk-grid-attach( $l_del, 2, 1, 1, 1);
-$g.gtk-grid-attach( $b_save, 0, 2, 1, 1);
-$g.gtk-grid-attach( $b_file_test, 1, 2, 1, 1);
-$g.gtk-grid-attach( $b_quit, 2, 2, 1, 1);
+$g.gtk-grid-attach( $e_add, 0, 2, 1, 1);
+$g.gtk-grid-attach( $b_add, 1, 2, 1, 1);
+$g.gtk-grid-attach( $l_del, 2, 2, 1, 1);
 
 my Gnome::Gtk3::TreeViewColumn $tvc .= new();
 my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -160,8 +169,16 @@ $w.register-signal( $x, 'exit-gui', 'destroy');
 
 # Class to handle signals
 class AppSignalHandlers {
-    method save-button-click ( ) {
+    method file-save( ) {
         save("demo.org");
+    }
+    method file-save-test( ) {
+        save("test.org");
+        run 'cat','test.org';
+        say "\n"; # yes, 2 lines.
+    }
+    method file-quit( ) {
+        $m.gtk-main-quit;
     }
     method add-button-click ( ) {
         if $e_add.get-text {
@@ -171,14 +188,6 @@ class AppSignalHandlers {
             @org.push(%task);
         }
         return; # not necessary but else I have an error
-    }
-    method quit-button-click ( ) {
-        $m.gtk-main-quit;
-    }
-    method file-test-button-click ( ) {
-        save("test.org");
-        run 'cat','test.org';
-        say "\n"; # yes, 2 lines.
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
@@ -211,10 +220,24 @@ class AppSignalHandlers {
 
 my AppSignalHandlers $ash .= new;
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
-$b_save.register-signal( $ash, 'save-button-click', 'clicked');
-$b_quit.register-signal( $ash, 'quit-button-click', 'clicked');
-$b_file_test.register-signal( $ash, 'file-test-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+
+# Create menu for the menu bar
+sub make-menubar-menu ( ) {
+    my Gnome::Gtk3::Menu $menu .= new;
+
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("Save"));
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'file-save', 'activate');
+    $menu-item .= new(:label("Save to test"));
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'file-save-test', 'activate');
+    $menu-item .= new(:label("Quit (save before)"));
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'file-quit', 'activate');
+
+    $menu
+}
 
 $w.show-all;
 
