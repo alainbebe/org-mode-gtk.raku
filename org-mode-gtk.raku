@@ -20,12 +20,14 @@ use Gnome::Gtk3::TreeIter;
 use Gnome::Gtk3::MenuBar;
 use Gnome::Gtk3::Menu;
 use Gnome::Gtk3::MenuItem;
+use Gnome::Gtk3::MessageDialog;
 use Gnome::N::X;
 
 use Data::Dump;
 
 my @org;        # list of tasks (and a task is a hash) 
 my $file;       # for reading demo.org # TODO to improve
+my $change=0;   # for ask question to save when quit
 
 #-----------------------------------Grammar---------------------------
 
@@ -119,6 +121,8 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
+my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
+
 my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
 $w.set-default-size( 270, 250);
 
@@ -170,6 +174,7 @@ $w.register-signal( $x, 'exit-gui', 'destroy');
 # Class to handle signals
 class AppSignalHandlers {
     method file-save( ) {
+        $change=0;
         save("demo.org");
     }
     method file-save-test( ) {
@@ -178,10 +183,17 @@ class AppSignalHandlers {
         say "\n"; # yes, 2 lines.
     }
     method file-quit( ) {
+        if $change {
+            if $md.run==-8 {
+                save("demo.org");
+            }
+            $md.destroy;
+        }
         $m.gtk-main-quit;
     }
     method add-button-click ( ) {
         if $e_add.get-text {
+            $change=1;
             my %task=("ORG_task",$e_add.get-text, "ORG_todo","TODO");
             $e_add.set-text("");
             %task=create_task(%task);
@@ -190,6 +202,7 @@ class AppSignalHandlers {
         return; # not necessary but else I have an error
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
+        $change=1;
         my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
         my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
@@ -232,7 +245,7 @@ sub make-menubar-menu ( ) {
     $menu-item .= new(:label("Save to test"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-save-test', 'activate');
-    $menu-item .= new(:label("Quit (save before)"));
+    $menu-item .= new(:label("Quit"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-quit', 'activate');
 
