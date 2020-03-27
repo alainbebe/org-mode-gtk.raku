@@ -21,6 +21,8 @@ use Gnome::Gtk3::MenuBar;
 use Gnome::Gtk3::Menu;
 use Gnome::Gtk3::MenuItem;
 use Gnome::Gtk3::MessageDialog;
+use Gnome::Gtk3::AboutDialog;
+use NativeCall;
 use Gnome::N::X;
 
 use Data::Dump;
@@ -28,6 +30,7 @@ use Data::Dump;
 my @org;        # list of tasks (and a task is a hash) 
 my $file;       # for reading demo.org # TODO to improve
 my $change=0;   # for ask question to save when quit
+my $debug=0;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -129,14 +132,18 @@ $w.set-default-size( 270, 250);
 my Gnome::Gtk3::Grid $g .= new();
 $w.gtk-container-add($g);
 
-my Gnome::Gtk3::Menu $menu = make-menubar-menu();
+my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
+my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
 
-my Gnome::Gtk3::MenuItem $root-menu .= new(:label('File'));
-$root-menu.set-submenu($menu);
+my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('File'));
+$but-file-menu.set-submenu($list-file-menu);
+my Gnome::Gtk3::MenuItem $but-help-menu .= new(:label('Help'));
+$but-help-menu.set-submenu($list-help-menu);
 
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
-$menu-bar.gtk-menu-shell-append($root-menu);
+$menu-bar.gtk-menu-shell-append($but-file-menu);
+$menu-bar.gtk-menu-shell-append($but-help-menu);
 
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
@@ -168,6 +175,15 @@ $tv.append-column($tvc);
 my Gnome::Gtk3::TreePath $tp;
 my Gnome::Gtk3::TreeIter $parent-iter;
 
+my Gnome::Gtk3::AboutDialog $about .= new;
+$about.set-program-name('org-mode-gtk.raku');
+$about.set-version('0.1');
+$about.set-license-type(GTK_LICENSE_GPL_3_0);
+$about.set-website("http://www.barbason.be");
+$about.set-website-label("http://www.barbason.be");
+
+$about.set-authors(CArray[Str].new('Alain BarBason'));
+
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
@@ -190,6 +206,10 @@ class AppSignalHandlers {
             $md.destroy;
         }
         $m.gtk-main-quit;
+    }
+    method help-about( ) {
+        $about.gtk-dialog-run;
+        $about.gtk-widget-hide;
     }
     method add-button-click ( ) {
         if $e_add.get-text {
@@ -236,18 +256,27 @@ $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 
 # Create menu for the menu bar
-sub make-menubar-menu ( ) {
+sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
 
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label("Save"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-save', 'activate');
     $menu-item .= new(:label("Save to test"));
-    $menu.gtk-menu-shell-append($menu-item);
+    $menu.gtk-menu-shell-append($menu-item) if $debug;
     $menu-item.register-signal( $ash, 'file-save-test', 'activate');
     $menu-item .= new(:label("Quit"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-quit', 'activate');
+
+    $menu
+}
+sub make-menubar-list-help ( ) {
+    my Gnome::Gtk3::Menu $menu .= new;
+
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("About"));
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'help-about', 'activate');
 
     $menu
 }
