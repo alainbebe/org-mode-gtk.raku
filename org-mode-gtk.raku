@@ -121,7 +121,7 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
-my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO)); # TODO append Cancel
+my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 
 my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
 $w.set-default-size( 270, 250);
