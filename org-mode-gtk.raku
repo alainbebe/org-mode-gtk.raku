@@ -187,6 +187,32 @@ $about.set-authors(CArray[Str].new('Alain BarBason'));
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
+sub  delete-branch($iter) {
+    $change=1;
+    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+    my Str $data-key = $v[0].get-string // '';
+#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
+    @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+            ne $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
+
+    # for subtask, find a recusive method
+    for @org -> %task {
+        my @org_sub;
+        if %task{'SUB_task'} {
+            for %task{"SUB_task"}.Array {
+                push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string # TODO, see before
+                    ne $ts.tree-model-get-value( $iter, 1)[0].get-string 
+            }
+        }
+        if @org_sub {
+            %task{'SUB_task'}=@org_sub;
+        } else {
+            %task{'SUB_task'}:delete;
+        }
+    }
+    $ts.gtk-tree-store-remove($iter);
+}
+
 # Class to handle signals
 class AppSignalHandlers {
     method file-save( ) {
@@ -219,35 +245,13 @@ class AppSignalHandlers {
             %task=create_task(%task);
             @org.push(%task);
         }
-        return; # not necessary but else I have an error
+        1
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
-        $change=1;
         my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
-        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
-        my Str $data-key = $v[0].get-string // '';
-#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-        @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-                ne $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
-
-        # for subtask, find a recusive method
-        for @org -> %task {
-            my @org_sub;
-            if %task{'SUB_task'} {
-                for %task{"SUB_task"}.Array {
-                    push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string # TODO, see before
-                        ne $ts.tree-model-get-value( $iter, 1)[0].get-string 
-                }
-            }
-            if @org_sub {
-                %task{'SUB_task'}=@org_sub;
-            } else {
-                %task{'SUB_task'}:delete;
-            }
-        }
-        $ts.gtk-tree-store-remove($iter);
-        say "Destroy : $data-key";    # TODO if remove, program failed. Why ?
+        delete-branch($iter);
+        1
     }
 }
 
