@@ -113,9 +113,16 @@ sub demo_procedural_read {
 #--------------------------- part GTK--------------------------------
 
 my Gnome::Gtk3::Main $m .= new;
+my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 
 class X {
   method exit-gui ( --> Int ) {
+        if $change {
+            if $md.run==-8 {
+                save("demo.org");
+            }
+            $md.destroy;
+        }
     $m.gtk-main-quit;
     1
   }
@@ -126,7 +133,6 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
-my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 
 my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
 $w.set-default-size( 270, 250);
@@ -189,6 +195,20 @@ $about.set-authors(CArray[Str].new('Alain BarBason'));
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
+sub  add2-branch($iter) {
+    $change=1;
+    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+    @org = map {
+        if ($ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+                eq $ts.tree-model-get-value( $iter, 1)[0].get-string ) {
+            my %task=("ORG_task","rajout", "ORG_todo","TODO");
+            create_sub_task(%task,$iter);
+            push($_{'SUB_task'},%task);
+        } ; $_
+    }, @org;
+#{say $_} for @org;
+}
+
 sub  delete-branch($iter) {
     $change=1;
     my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
@@ -216,6 +236,7 @@ sub  delete-branch($iter) {
 }
 
 my Gnome::Gtk3::Button $b_del;
+my Gnome::Gtk3::Button $b_add2;
 
 # Class to handle signals
 class AppSignalHandlers {
@@ -251,6 +272,10 @@ class AppSignalHandlers {
         }
         1
     }
+    method add2-button-click ( :$iter --> Int ) {
+        add2-branch($iter);
+        1
+    }
     method del-button-click ( :$iter --> Int ) {
         delete-branch($iter);
         1
@@ -266,6 +291,9 @@ class AppSignalHandlers {
             :button-spec( "Ok", GTK_RESPONSE_NONE)
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        $b_add2  .= new(:label('Add task'));
+        $content-area.gtk_container_add($b_add2);
+        b_add2-register-signal($iter);
         $b_del  .= new(:label('Delete task'));
         $content-area.gtk_container_add($b_del);
         b_del-register-signal($iter);
@@ -283,6 +311,9 @@ class AppSignalHandlers {
 my AppSignalHandlers $ash .= new;
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+sub b_add2-register-signal ($iter) {
+    $b_add2.register-signal( $ash, 'add2-button-click', 'clicked',:iter($iter));
+}
 sub b_del-register-signal ($iter) {
     $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));
 }
@@ -318,7 +349,6 @@ sub create_sub_task(%task,$iter) {
     my $row=[ %task{"ORG_todo"}, "- "~%task{"ORG_task"}];
     my $iter_st = $ts.insert-with-values( $iter, -1, |$row.kv);
     %task{'GTK_iter'}=$iter_st;
-    return %task;
 }
 
 my $i=0;
