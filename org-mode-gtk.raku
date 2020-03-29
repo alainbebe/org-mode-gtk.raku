@@ -20,8 +20,10 @@ use Gnome::Gtk3::TreeIter;
 use Gnome::Gtk3::MenuBar;
 use Gnome::Gtk3::Menu;
 use Gnome::Gtk3::MenuItem;
+use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::MessageDialog;
 use Gnome::Gtk3::AboutDialog;
+use Gnome::Gtk3::Box;
 use NativeCall;
 use Gnome::N::X;
 
@@ -213,6 +215,8 @@ sub  delete-branch($iter) {
     $ts.gtk-tree-store-remove($iter);
 }
 
+my Gnome::Gtk3::Button $b_del;
+
 # Class to handle signals
 class AppSignalHandlers {
     method file-save( ) {
@@ -247,10 +251,31 @@ class AppSignalHandlers {
         }
         1
     }
+    method del-button-click ( :$iter --> Int ) {
+        delete-branch($iter);
+        1
+    }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
-        delete-branch($iter);
+        # Dialog to manage task
+        my Gnome::Gtk3::Dialog $dialog .= new(
+            :title('Manage task'), 
+        #    :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( "Ok", GTK_RESPONSE_NONE)
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        $b_del  .= new(:label('Delete task'));
+        $content-area.gtk_container_add($b_del);
+        b_del-register-signal($iter);
+
+        # Show the dialog. After return (Ok pressed) the dialog widget
+        # is destroyed. show-all() must be called, otherwise the message
+        # will not be seen.
+        $dialog.show-all;
+        $dialog.gtk-dialog-run;
+        $dialog.gtk_widget_destroy;
         1
     }
 }
@@ -258,11 +283,13 @@ class AppSignalHandlers {
 my AppSignalHandlers $ash .= new;
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+sub b_del-register-signal ($iter) {
+    $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));
+}
 
 # Create menu for the menu bar
 sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label("Save"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-save', 'activate');
@@ -272,16 +299,14 @@ sub make-menubar-list-file( ) {
     $menu-item .= new(:label("Quit"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-quit', 'activate');
-
     $menu
 }
+
 sub make-menubar-list-help ( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label("About"));
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'help-about', 'activate');
-
     $menu
 }
 
