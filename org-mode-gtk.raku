@@ -9,6 +9,7 @@ use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Button;
+use Gnome::Gtk3::RadioButton;
 use Gnome::Gtk3::Label;
 use Gnome::Gtk3::Entry;
 use Gnome::Gtk3::TreePath;
@@ -162,8 +163,8 @@ $tv.set-activate-on-single-click(1);
 $g.gtk-grid-attach( $tv, 0, 1, 4, 1);
 
 my Gnome::Gtk3::Entry $e_add  .= new();
-my Gnome::Gtk3::Button $b_add  .= new(:label('Add'));
-my Gnome::Gtk3::Label $l_del  .= new(:text('Click on tree to delete'));
+my Gnome::Gtk3::Button $b_add  .= new(:label('Add task'));
+my Gnome::Gtk3::Label $l_del  .= new(:text('Click on task to manage'));
 $g.gtk-grid-attach( $e_add, 0, 2, 1, 1);
 $g.gtk-grid-attach( $b_add, 1, 2, 1, 1);
 $g.gtk-grid-attach( $l_del, 2, 2, 1, 1);
@@ -190,23 +191,69 @@ $about.set-license-type(GTK_LICENSE_GPL_3_0);
 $about.set-website("http://www.barbason.be");
 $about.set-website-label("http://www.barbason.be");
 
+my Gnome::Gtk3::Entry $e_add2;
+my Gnome::Gtk3::Dialog $dialog;
+
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
 my X $x .= new;
 $w.register-signal( $x, 'exit-gui', 'destroy');
 
 sub  add2-branch($iter) {
-    $change=1;
+    if $e_add2.get-text {
+        $change=1;
+        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+        @org = map {
+            if ($ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string ) {
+                my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO");
+                create_sub_task(%task,$iter);
+                push($_{'SUB_task'},%task);
+            } ; $_
+        }, @org;
+    #{say $_} for @org;
+        $dialog.gtk_widget_destroy;
+    }
+}
+
+sub  search-task-in-org-from($iter) {
     my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
-    @org = map {
-        if ($ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-                eq $ts.tree-model-get-value( $iter, 1)[0].get-string ) {
-            my %task=("ORG_task","rajout", "ORG_todo","TODO");
-            create_sub_task(%task,$iter);
-            push($_{'SUB_task'},%task);
-        } ; $_
+    my Str $data-key = $v[0].get-string // '';
+#    say $data-key;
+#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
+    my @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+            eq $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
+    # for subtask, find a recusive method
+    if (!@org_tmp) { # not found, find in sub
+        for @org -> %task {
+            if %task{'SUB_task'} && !@org_tmp {
+                @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string  
+                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string }, %task{"SUB_task"}.Array;
+            }
+        }
+    }
+    return pop(@org_tmp);
+}
+
+sub  set-task-in-org-from($iter,$key,$value) {
+    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
+    my Str $data-key = $v[0].get-string // '';
+#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
+    @org = map { $_{$key}=$value if 
+                $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+                eq $ts.tree-model-get-value( $iter, 1)[0].get-string ;
+                $_ 
     }, @org;
-#{say $_} for @org;
+    # for subtask, find a recusive method
+    for @org -> %task {
+        if %task{'SUB_task'} {
+            %task{'SUB_task'} = map { $_{$key}=$value if 
+                        $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
+                        eq $ts.tree-model-get-value( $iter, 1)[0].get-string ;
+                        $_ 
+            }, %task{'SUB_task'}.Array;
+        }
+    }
 }
 
 sub  delete-branch($iter) {
@@ -233,10 +280,14 @@ sub  delete-branch($iter) {
         }
     }
     $ts.gtk-tree-store-remove($iter);
+    $dialog.gtk_widget_destroy;
 }
 
 my Gnome::Gtk3::Button $b_del;
 my Gnome::Gtk3::Button $b_add2;
+my Gnome::Gtk3::RadioButton $rb_td1;
+my Gnome::Gtk3::RadioButton $rb_td2;
+my Gnome::Gtk3::RadioButton $rb_td3;
 
 # Class to handle signals
 class AppSignalHandlers {
@@ -276,6 +327,12 @@ class AppSignalHandlers {
         add2-branch($iter);
         1
     }
+    method todo-button-click ( :$iter,:$todo --> Int ) {
+        $change=1;
+        $ts.set_value( $iter, 0,$todo);
+        set-task-in-org-from($iter,"ORG_todo",$todo);
+        1
+    }
     method del-button-click ( :$iter --> Int ) {
         delete-branch($iter);
         1
@@ -284,17 +341,36 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
         # Dialog to manage task
-        my Gnome::Gtk3::Dialog $dialog .= new(
-            :title('Manage task'), 
-        #    :parent($!top-window),
-            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
-            :button-spec( "Ok", GTK_RESPONSE_NONE)
+        $dialog .= new(
+#            :title("Manage task"), 
+#            :parent($!top-window),
+#            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+#            :button-spec( "Ok", GTK_RESPONSE_NONE)
         );
+        $dialog.set-title('Manage task');
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
-        $b_add2  .= new(:label('Add task'));
+
+        # To manage TODO/DONE
+        my %task=search-task-in-org-from($iter);
+        my Gnome::Gtk3::Grid $g_todo .= new;
+        $content-area.gtk_container_add($g_todo);
+        $rb_td1 .= new(:label('-'));
+        $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
+        $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
+        if    (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
+        elsif (%task{'ORG_todo'} eq 'DONE') { $rb_td3.set-active(1);} 
+        else                                { $rb_td1.set-active(1);}
+        $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
+        $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
+        $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
+        b_rb-register-signal($iter);
+
+        $e_add2  .= new();
+        $content-area.gtk_container_add($e_add2);
+        $b_add2  .= new(:label('Add sub-task'));
         $content-area.gtk_container_add($b_add2);
         b_add2-register-signal($iter);
-        $b_del  .= new(:label('Delete task'));
+        $b_del  .= new(:label('Delete task (and sub-tasks)'));
         $content-area.gtk_container_add($b_del);
         b_del-register-signal($iter);
 
@@ -316,6 +392,11 @@ sub b_add2-register-signal ($iter) {
 }
 sub b_del-register-signal ($iter) {
     $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));
+}
+sub b_rb-register-signal($iter) {
+    $rb_td1.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
+    $rb_td2.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
+    $rb_td3.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
 }
 
 # Create menu for the menu bar
