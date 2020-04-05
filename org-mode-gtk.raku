@@ -33,7 +33,7 @@ use Data::Dump;
 my @org;        # list of tasks (and a task is a hash) 
 my $file;       # for reading demo.org # TODO to improve
 my $change=0;   # for ask question to save when quit
-my $debug=0;    # to debug =1
+my $debug=1;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -176,6 +176,8 @@ $tvc.add-attribute( $crt1, 'text', 0);
 $tv.append-column($tvc);
 
 my Gnome::Gtk3::CellRendererText $crt2 .= new();
+my Gnome::GObject::Value $v .= new( :type(G_TYPE_BOOLEAN), :value<1>);
+$crt2.set-property( 'editable', $v);
 $tvc .= new();
 $tvc.pack-end( $crt2, 1);
 $tvc.add-attribute( $crt2, 'text', 1);
@@ -382,11 +384,29 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+
+    method task-edited (
+            Str $path,
+            Str $new_text,
+            #Gnome::GObject::Object :widget($renderer),
+            #*%user-options
+            ) {
+        $change=1;
+        my Gnome::Gtk3::TreePath $tree-path .= new(:string($path));
+        my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
+        $ts.set_value( $iter, 1,$new_text);
+        set-task-in-org-from($iter,"ORG_task",$new_text);
+        1
+    }
 }
 
+
+
 my AppSignalHandlers $ash .= new;
+$crt2.register-signal( $ash, 'task-edited', 'edited');
+
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
-$tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+#$tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 sub b_add2-register-signal ($iter) {
     $b_add2.register-signal( $ash, 'add2-button-click', 'clicked',:iter($iter));
 }
