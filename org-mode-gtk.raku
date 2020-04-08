@@ -33,7 +33,7 @@ use Data::Dump;
 my @org;        # list of tasks (and a task is a hash) 
 my $file;       # for reading demo.org # TODO to improve
 my $change=0;   # for ask question to save when quit
-my $debug=1;    # to debug =1
+my $debug=0;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -72,14 +72,14 @@ class OM-actions {
     }
 }
 
-use Test;
-plan 3;
-ok ORG_MODE.parse('* DONE essai', :rule<task>),
-    '<task> parses * DONE essai';
-ok ORG_MODE.parse('* DOES essai', :rule<task>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
-    '<task> parses * DOES essai';
-nok ORG_MODE.parse('** DONE essai', :rule<task>),
-    '<task> does n t parses ** DONE essai';
+#use Test;
+#plan 3;
+#ok ORG_MODE.parse('* DONE essai', :rule<task>),
+#    '<task> parses * DONE essai';
+#ok ORG_MODE.parse('* DOES essai', :rule<task>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
+#    '<task> parses * DOES essai';
+#nok ORG_MODE.parse('** DONE essai', :rule<task>),
+#    '<task> does n t parses ** DONE essai';
 
 sub parse_file {
     my $om-actions = OM-actions.new();
@@ -172,12 +172,10 @@ $g.gtk-grid-attach( $l_del, 2, 2, 1, 1);
 my Gnome::Gtk3::TreeViewColumn $tvc .= new();
 my Gnome::Gtk3::CellRendererText $crt1 .= new();
 $tvc.pack-end( $crt1, 1);
-$tvc.add-attribute( $crt1, 'text', 0);
+$tvc.add-attribute( $crt1, 'markup', 0);
 $tv.append-column($tvc);
 
 my Gnome::Gtk3::CellRendererText $crt2 .= new();
-my Gnome::GObject::Value $v .= new( :type(G_TYPE_BOOLEAN), :value<1>);
-$crt2.set-property( 'editable', $v);
 $tvc .= new();
 $tvc.pack-end( $crt2, 1);
 $tvc.add-attribute( $crt2, 'text', 1);
@@ -340,7 +338,7 @@ class AppSignalHandlers {
         1
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
-        my Gnome::Gtk3::TreePath $tree-path .= new(:tree-path($path));
+        my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
         # Dialog to manage task
         $dialog .= new(
@@ -359,9 +357,9 @@ class AppSignalHandlers {
         $rb_td1 .= new(:label('-'));
         $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
         $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
-        if    (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
+        if    (!%task{'ORG_todo'})          { $rb_td1.set-active(1);}
+        elsif (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
         elsif (%task{'ORG_todo'} eq 'DONE') { $rb_td3.set-active(1);} 
-        else                                { $rb_td1.set-active(1);}
         $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
         $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
         $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
@@ -384,29 +382,11 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
-
-    method task-edited (
-            Str $path,
-            Str $new_text,
-            #Gnome::GObject::Object :widget($renderer),
-            #*%user-options
-            ) {
-        $change=1;
-        my Gnome::Gtk3::TreePath $tree-path .= new(:string($path));
-        my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
-        $ts.set_value( $iter, 1,$new_text);
-        set-task-in-org-from($iter,"ORG_task",$new_text);
-        1
-    }
 }
 
-
-
 my AppSignalHandlers $ash .= new;
-$crt2.register-signal( $ash, 'task-edited', 'edited');
-
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
-#$tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+$tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 sub b_add2-register-signal ($iter) {
     $b_add2.register-signal( $ash, 'add2-button-click', 'clicked',:iter($iter));
 }
@@ -447,14 +427,22 @@ $w.show-all;
 #--------------------------------interface---------------------------------
 
 sub create_sub_task(%task,$iter) {
-    my $row=[ %task{"ORG_todo"}, "- "~%task{"ORG_task"}];
+    my $str_todo;
+    if (!%task{"ORG_todo"})             {$str_todo=' '}
+    elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
+    elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
+    my $row=[$str_todo, %task{"ORG_task"}];
     my $iter_st = $ts.insert-with-values( $iter, -1, |$row.kv);
     %task{'GTK_iter'}=$iter_st;
 }
 
 my $i=0;
 sub create_task(%task) {
-    my $row=[ %task{"ORG_todo"}, %task{"ORG_task"}];
+    my $str_todo;
+    if (!%task{"ORG_todo"})             {$str_todo=' '}
+    elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
+    elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
+    my $row=[$str_todo, %task{"ORG_task"}];
     $tp .= new(:string($i++.Str));
     $parent-iter = $ts.get-iter($tp);
     $iter = $ts.insert-with-values( $parent-iter, -1, |$row.kv);
