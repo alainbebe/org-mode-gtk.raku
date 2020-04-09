@@ -158,7 +158,7 @@ my Gnome::Gtk3::TreeStore $ts .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING)
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
-$tv.set-headers-visible(1);
+$tv.set-headers-visible(0);
 $tv.set-activate-on-single-click(1);
 $g.gtk-grid-attach( $tv, 0, 1, 4, 1);
 
@@ -176,13 +176,19 @@ $tvc.add-attribute( $crt1, 'markup', 0);
 $tv.append-column($tvc);
 
 my Gnome::Gtk3::CellRendererText $crt2 .= new();
+#my Gnome::GObject::Value $gv .= new(:init(G_TYPE_INT));
+#$gv.set-int(100);
+#$crt2.set-property( 'wrap-width', $gv);
+#$gv .= new(:init(G_TYPE_ENUM));
+#$gv.set-enum('word');
+#$crt2.set-property( 'wrap-mode', $gv);
+##$crt2.wrap-width=10;
 $tvc .= new();
 $tvc.pack-end( $crt2, 1);
-$tvc.add-attribute( $crt2, 'text', 1);
+$tvc.add-attribute( $crt2, 'markup', 1);
 $tv.append-column($tvc);
 
 my Gnome::Gtk3::TreePath $tp;
-my Gnome::Gtk3::TreeIter $parent-iter;
 
 my Gnome::Gtk3::AboutDialog $about .= new;
 $about.set-program-name('org-mode-gtk.raku');
@@ -215,7 +221,7 @@ sub  add2-branch($iter) {
             if ($ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
                     eq $ts.tree-model-get-value( $iter, 1)[0].get-string ) {
                 my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO");
-                create_sub_task(%task,$iter);
+                create_task(%task,$iter);
                 push($_{'SUB_task'},%task);
             } ; $_
         }, @org;
@@ -453,32 +459,28 @@ $top-window.show-all;
 
 #--------------------------------interface---------------------------------
 
-sub create_sub_task(%task,$iter) {
-    my $str_todo;
-    if (!%task{"ORG_todo"})             {$str_todo=' '}
-    elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
-    elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-    my $row=[$str_todo, %task{"ORG_task"}];
-    my $iter_st = $ts.insert-with-values( $iter, -1, |$row.kv);
-    %task{'GTK_iter'}=$iter_st;
-}
-
 my $i=0;
-sub create_task(%task) {
+sub create_task(%task,Gnome::Gtk3::TreeIter $iter?) {
+    my Gnome::Gtk3::TreeIter $iter_t;
+    my Gnome::Gtk3::TreeIter $parent-iter;
     my $str_todo;
+
     if (!%task{"ORG_todo"})             {$str_todo=' '}
     elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
     elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
     my $row=[$str_todo, %task{"ORG_task"}];
-    $tp .= new(:string($i++.Str));
-    $parent-iter = $ts.get-iter($tp);
-    $iter = $ts.insert-with-values( $parent-iter, -1, |$row.kv);
-    %task{'GTK_iter'}=$iter;
+    if (!$iter) {
+        $tp .= new(:string($i++.Str));
+        $parent-iter = $ts.get-iter($tp);
+    } else {
+        $parent-iter = $iter;
+    }
+    $iter_t = $ts.insert-with-values($parent-iter, -1, |$row.kv);
+    %task{'GTK_iter'}=$iter_t;
 
-    # TODO create a recursive sub 
     if (%task{"SUB_task"}) {
         for %task{"SUB_task"}.Array {
-            create_sub_task($_,$iter);
+            create_task($_,$iter_t);
         }
     }
     return %task;
