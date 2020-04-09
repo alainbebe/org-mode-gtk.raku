@@ -33,7 +33,7 @@ use Data::Dump;
 my @org;        # list of tasks (and a task is a hash) 
 my $file;       # for reading demo.org # TODO to improve
 my $change=0;   # for ask question to save when quit
-my $debug=0;    # to debug =1
+my $debug=1;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -192,7 +192,15 @@ $about.set-website("http://www.barbason.be");
 $about.set-website-label("http://www.barbason.be");
 
 my Gnome::Gtk3::Entry $e_add2;
+my Gnome::Gtk3::Entry $e_edit;
 my Gnome::Gtk3::Dialog $dialog;
+my Gnome::Gtk3::Button $b_del;
+my Gnome::Gtk3::Button $b_add2;
+my Gnome::Gtk3::Button $b_edit;
+my Gnome::Gtk3::RadioButton $rb_td1;
+my Gnome::Gtk3::RadioButton $rb_td2;
+my Gnome::Gtk3::RadioButton $rb_td3;
+
 
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
@@ -283,12 +291,6 @@ sub  delete-branch($iter) {
     $dialog.gtk_widget_destroy;
 }
 
-my Gnome::Gtk3::Button $b_del;
-my Gnome::Gtk3::Button $b_add2;
-my Gnome::Gtk3::RadioButton $rb_td1;
-my Gnome::Gtk3::RadioButton $rb_td2;
-my Gnome::Gtk3::RadioButton $rb_td3;
-
 # Class to handle signals
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -330,10 +332,18 @@ class AppSignalHandlers {
         add2-branch($iter);
         1
     }
+    method edit-button-click ( :$iter ) {
+        $change=1;
+        $ts.set_value( $iter, 1,$e_edit.get-text());
+        set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
+#        $dialog.gtk_widget_destroy;
+        1
+    }
     method todo-button-click ( :$iter,:$todo --> Int ) {
         $change=1;
         $ts.set_value( $iter, 0,$todo);
         set-task-in-org-from($iter,"ORG_todo",$todo);
+#        $dialog.gtk_widget_destroy;
         1
     }
     method del-button-click ( :$iter --> Int ) {
@@ -343,6 +353,7 @@ class AppSignalHandlers {
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
+
         # Dialog to manage task
         $dialog .= new(
             :title("Manage task"), 
@@ -352,8 +363,18 @@ class AppSignalHandlers {
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
-        # To manage TODO/DONE
+        # to edit task
         my %task=search-task-in-org-from($iter);
+        $e_edit  .= new();
+        $e_edit.set-text(%task{'ORG_task'});
+        $content-area.gtk_container_add($e_edit);
+        $b_edit  .= new(:label('Update task'));
+        $content-area.gtk_container_add($b_edit);
+        b_edit-register-signal($iter);
+        
+        
+        # To manage TODO/DONE
+        %task=search-task-in-org-from($iter);
         my Gnome::Gtk3::Grid $g_todo .= new;
         $content-area.gtk_container_add($g_todo);
         $rb_td1 .= new(:label('-'));
@@ -367,18 +388,19 @@ class AppSignalHandlers {
         $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
         b_rb-register-signal($iter);
 
+        # To add a sub-task
         $e_add2  .= new();
         $content-area.gtk_container_add($e_add2);
         $b_add2  .= new(:label('Add sub-task'));
         $content-area.gtk_container_add($b_add2);
         b_add2-register-signal($iter);
+        
+        # to delete the task
         $b_del  .= new(:label('Delete task (and sub-tasks)'));
         $content-area.gtk_container_add($b_del);
         b_del-register-signal($iter);
 
-        # Show the dialog. After return (Ok pressed) the dialog widget
-        # is destroyed. show-all() must be called, otherwise the message
-        # will not be seen.
+        # Show the dialog.
         $dialog.show-all;
         $dialog.gtk-dialog-run;
         $dialog.gtk_widget_destroy;
@@ -399,6 +421,9 @@ sub b_rb-register-signal($iter) {
     $rb_td1.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
     $rb_td2.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
     $rb_td3.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
+}
+sub b_edit-register-signal ($iter) {
+    $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
 }
 
 # Create menu for the menu bar
