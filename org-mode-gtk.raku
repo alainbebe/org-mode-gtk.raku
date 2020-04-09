@@ -135,11 +135,11 @@ my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
 
-my Gnome::Gtk3::Window $w .= new(:title('Org-Mode with GTK and raku'));
-$w.set-default-size( 270, 250);
+my Gnome::Gtk3::Window $top-window .= new(:title('Org-Mode with GTK and raku'));
+$top-window.set-default-size( 270, 250);
 
 my Gnome::Gtk3::Grid $g .= new();
-$w.gtk-container-add($g);
+$top-window.gtk-container-add($g);
 
 my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
 my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
@@ -197,7 +197,7 @@ my Gnome::Gtk3::Dialog $dialog;
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
 my X $x .= new;
-$w.register-signal( $x, 'exit-gui', 'destroy');
+$top-window.register-signal( $x, 'exit-gui', 'destroy');
 
 sub  add2-branch($iter) {
     if $e_add2.get-text {
@@ -291,6 +291,9 @@ my Gnome::Gtk3::RadioButton $rb_td3;
 
 # Class to handle signals
 class AppSignalHandlers {
+    has Gnome::Gtk3::Window $!top-window;
+    submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
+
     method file-save( ) {
         $change=0;
         save("demo.org");
@@ -342,12 +345,11 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
         # Dialog to manage task
         $dialog .= new(
-#            :title("Manage task"), 
-#            :parent($!top-window),
-#            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
-#            :button-spec( "Ok", GTK_RESPONSE_NONE)
+            :title("Manage task"), 
+            :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( "Ok", GTK_RESPONSE_NONE)
         );
-        $dialog.set-title('Manage task');
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
         # To manage TODO/DONE
@@ -384,7 +386,7 @@ class AppSignalHandlers {
     }
 }
 
-my AppSignalHandlers $ash .= new;
+my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 sub b_add2-register-signal ($iter) {
@@ -422,7 +424,7 @@ sub make-menubar-list-help ( ) {
     $menu
 }
 
-$w.show-all;
+$top-window.show-all;
 
 #--------------------------------interface---------------------------------
 
