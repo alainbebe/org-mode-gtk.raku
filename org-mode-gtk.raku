@@ -118,7 +118,7 @@ my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichi
 
 class X {
   method exit-gui ( --> Int ) {
-        if $change {
+        if $change && !$debug {
             if $md.run==-8 {
                 save("demo.org");
             }
@@ -154,7 +154,7 @@ $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append($but-file-menu);
 $menu-bar.gtk-menu-shell-append($but-help-menu);
 
-my Gnome::Gtk3::TreeStore $ts .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
+my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
@@ -175,7 +175,6 @@ $tvc.pack-end( $crt1, 1);
 $tvc.add-attribute( $crt1, 'markup', 0);
 $tv.append-column($tvc);
 
-my Gnome::Gtk3::CellRendererText $crt2 .= new();
 #my Gnome::GObject::Value $gv .= new(:init(G_TYPE_INT));
 #$gv.set-int(100);
 #$crt2.set-property( 'wrap-width', $gv);
@@ -183,10 +182,6 @@ my Gnome::Gtk3::CellRendererText $crt2 .= new();
 #$gv.set-enum('word');
 #$crt2.set-property( 'wrap-mode', $gv);
 ##$crt2.wrap-width=10;
-$tvc .= new();
-$tvc.pack-end( $crt2, 1);
-$tvc.add-attribute( $crt2, 'markup', 1);
-$tv.append-column($tvc);
 
 my Gnome::Gtk3::TreePath $tp;
 
@@ -216,10 +211,10 @@ $top-window.register-signal( $x, 'exit-gui', 'destroy');
 sub  add2-branch($iter) {
     if $e_add2.get-text {
         $change=1;
-        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
         @org = map {
-            if ($ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string ) {
+            if ($ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
                 my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO");
                 create_task(%task,$iter);
                 push($_{'SUB_task'},%task);
@@ -231,18 +226,18 @@ sub  add2-branch($iter) {
 }
 
 sub  search-task-in-org-from($iter) {
-    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
     my Str $data-key = $v[0].get-string // '';
 #    say $data-key;
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-    my @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-            eq $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
+    my @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+            eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, @org;
     # for subtask, find a recusive method
     if (!@org_tmp) { # not found, find in sub
         for @org -> %task {
             if %task{'SUB_task'} && !@org_tmp {
-                @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string  
-                    eq $ts.tree-model-get-value( $iter, 1)[0].get-string }, %task{"SUB_task"}.Array;
+                @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string  
+                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, %task{"SUB_task"}.Array;
             }
         }
     }
@@ -254,16 +249,16 @@ sub  set-task-in-org-from($iter,$key,$value) {
     my Str $data-key = $v[0].get-string // '';
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
     @org = map { $_{$key}=$value if 
-                $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-                eq $ts.tree-model-get-value( $iter, 1)[0].get-string ;
+                $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+                eq $ts.tree-model-get-value( $iter, 0)[0].get-string ;
                 $_ 
     }, @org;
     # for subtask, find a recusive method
     for @org -> %task {
         if %task{'SUB_task'} {
             %task{'SUB_task'} = map { $_{$key}=$value if 
-                        $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-                        eq $ts.tree-model-get-value( $iter, 1)[0].get-string ;
+                        $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+                        eq $ts.tree-model-get-value( $iter, 0)[0].get-string ;
                         $_ 
             }, %task{'SUB_task'}.Array;
         }
@@ -272,19 +267,19 @@ sub  set-task-in-org-from($iter,$key,$value) {
 
 sub  delete-branch($iter) {
     $change=1;
-    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 1);
+    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
     my Str $data-key = $v[0].get-string // '';
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-    @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string   # not good, but in waiting...
-            ne $ts.tree-model-get-value( $iter, 1)[0].get-string }, @org;
+    @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+            ne $ts.tree-model-get-value( $iter, 0)[0].get-string }, @org;
 
     # for subtask, find a recusive method
     for @org -> %task {
         my @org_sub;
         if %task{'SUB_task'} {
             for %task{"SUB_task"}.Array {
-                push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 1)[0].get-string # TODO, see before
-                    ne $ts.tree-model-get-value( $iter, 1)[0].get-string 
+                push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string # TODO, see before
+                    ne $ts.tree-model-get-value( $iter, 0)[0].get-string 
             }
         }
         if @org_sub {
@@ -312,7 +307,7 @@ class AppSignalHandlers {
         say "\n"; # yes, 2 lines.
     }
     method file-quit( ) {
-        if $change {
+        if $change && !$debug {
             if $md.run==-8 {
                 save("demo.org");
             }
@@ -340,15 +335,15 @@ class AppSignalHandlers {
     }
     method edit-button-click ( :$iter ) {
         $change=1;
-        $ts.set_value( $iter, 1,$e_edit.get-text());
         set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
+        $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
 #        $dialog.gtk_widget_destroy;
         1
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
         $change=1;
-        $ts.set_value( $iter, 0,$todo);
         set-task-in-org-from($iter,"ORG_todo",$todo);
+        $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
 #        $dialog.gtk_widget_destroy;
         1
     }
@@ -459,23 +454,24 @@ $top-window.show-all;
 
 #--------------------------------interface---------------------------------
 
-my $i=0;
-sub create_task(%task,Gnome::Gtk3::TreeIter $iter?) {
-    my Gnome::Gtk3::TreeIter $iter_t;
-    my Gnome::Gtk3::TreeIter $parent-iter;
+sub string_from(%task) {
     my $str_todo;
-
     if (!%task{"ORG_todo"})             {$str_todo=' '}
     elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
     elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-    my $row=[$str_todo, %task{"ORG_task"}];
+    return $str_todo ~ " " ~%task{"ORG_task"};
+}
+
+my $i=0;
+sub create_task(%task,Gnome::Gtk3::TreeIter $iter?) {
+    my Gnome::Gtk3::TreeIter $parent-iter;
     if (!$iter) {
         $tp .= new(:string($i++.Str));
         $parent-iter = $ts.get-iter($tp);
     } else {
         $parent-iter = $iter;
     }
-    $iter_t = $ts.insert-with-values($parent-iter, -1, |$row.kv);
+    my Gnome::Gtk3::TreeIter $iter_t = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
     %task{'GTK_iter'}=$iter_t;
 
     if (%task{"SUB_task"}) {
