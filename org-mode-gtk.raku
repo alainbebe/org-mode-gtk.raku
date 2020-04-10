@@ -96,19 +96,34 @@ sub demo_procedural_read {
 
     for "demo.org".IO.lines {
         if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) {
-            my %task=("ORG_task",$<content2>.Str);
+            my %task=("ORG_task",$<content2>.Str,"ORG_level","1");
             %task{"ORG_todo"}=$0[0].Str if $0[0];
             push(@org,%task);
-        }
-        if ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) {
+        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) {
             my %task=pop(@org);
-            my %sub_task=("ORG_task",$<content2>.Str);
+            my %sub_task=("ORG_task",$<content2>.Str,"ORG_level","2");
             %sub_task{"ORG_todo"}=$0[0].Str if $0[0];
             push(%task{"SUB_task"},%sub_task);
             push(@org,%task);
+        } else {
+            if (@org) {
+                my %task=pop(@org);
+                if !%task{"SUB_task"} {
+                    push(%task{"ORG_detail"},$_);
+                } else {
+                    my @so=%task{"SUB_task"}.Array;
+                    my %sub_task=pop(@so);    
+                    push(%sub_task{"ORG_detail"},$_);
+                    push(@so,%sub_task);
+                    %task{"SUB_task"}=@so;
+                }
+                push(@org,%task);
+            } else {
+                # skip preface
+            }
         }
     }
-#    say "after : \n", Dump @org;
+    say "after : \n", Dump @org;
 }
 
 #--------------------------- part GTK--------------------------------
@@ -459,11 +474,14 @@ sub string_from(%task) {
     if (!%task{"ORG_todo"})             {$str_todo=' '}
     elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
     elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-    return $str_todo ~ " " ~%task{"ORG_task"};
+    my $str_task;
+    if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" > '~%task{"ORG_task"}~'</span>'}
+    elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="brown"> '~%task{"ORG_task"}~'</span>'}
+    return $str_todo ~ " " ~$str_task;
 }
 
 my $i=0;
-sub create_task(%task,Gnome::Gtk3::TreeIter $iter?) {
+sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     my Gnome::Gtk3::TreeIter $parent-iter;
     if (!$iter) {
         $tp .= new(:string($i++.Str));
@@ -472,6 +490,11 @@ sub create_task(%task,Gnome::Gtk3::TreeIter $iter?) {
         $parent-iter = $iter;
     }
     my Gnome::Gtk3::TreeIter $iter_t = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
+        if %task{'ORG_detail'} {
+            for %task{'ORG_detail'}.Array {
+                 my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_t, -1, 0, $_) 
+            }
+        }
     %task{'GTK_iter'}=$iter_t;
 
     if (%task{"SUB_task"}) {
@@ -492,16 +515,26 @@ sub populate_task {
 #    say "after create task : \n",@org;
 }
 
+sub save_task(%task) {
+    my $orgmode="";
+    $orgmode~=join(" ",grep {$_}, ("*" x %task{"ORG_level"},%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
+    if (%task{"ORG_detail"}) {
+        for %task{"ORG_detail"}.Array {
+            $orgmode~=$_~"\n";
+        }
+    }
+    if %task{"SUB_task"} {
+        for %task{"SUB_task"}.Array {
+            $orgmode~=save_task($_);
+        }
+    }
+    return $orgmode;
+}
+
 sub save($file) {
     my $orgmode="";
     for @org -> %task {
-        $orgmode~=join(" ",grep {$_}, ("*",%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
-        # use a recusive sub
-        if %task{"SUB_task"} {
-            for %task{"SUB_task"}.Array {
-                $orgmode~=join(" ",grep {$_}, ("**",$_{"ORG_todo"},$_{"ORG_task"}))~"\n";
-            }
-        }
+        $orgmode~=save_task(%task);
     }
 	spurt $file, $orgmode;
 }

@@ -1,8 +1,12 @@
 * DOES task
+detail
+detail suite
 ** sub task1
 ** DONE sub task2
 * TODO another task
 * DONE try
 ** DONE sub try 1
+detail of sub task
 * final
+other detail
 ** sub final
