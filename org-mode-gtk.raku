@@ -159,9 +159,11 @@ $top-window.gtk-container-add($g);
 my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
 my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
 
-my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('File'));
+my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('_File'));
+$but-file-menu.set-use-underline(1);
 $but-file-menu.set-submenu($list-file-menu);
-my Gnome::Gtk3::MenuItem $but-help-menu .= new(:label('Help'));
+my Gnome::Gtk3::MenuItem $but-help-menu .= new(:label('_Help'));
+$but-help-menu.set-use-underline(1);
 $but-help-menu.set-submenu($list-help-menu);
 
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
@@ -445,13 +447,16 @@ sub b_edit-register-signal ($iter) {
 # Create menu for the menu bar
 sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("Save"));
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Save"));
+    $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-save', 'activate');
-    $menu-item .= new(:label("Save to test"));
+    $menu-item .= new(:label("Save to _test"));
+    $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item) if $debug;
     $menu-item.register-signal( $ash, 'file-save-test', 'activate');
-    $menu-item .= new(:label("Quit"));
+    $menu-item .= new(:label("_Quit"));
+    $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-quit', 'activate');
     $menu
@@ -459,7 +464,8 @@ sub make-menubar-list-file( ) {
 
 sub make-menubar-list-help ( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("About"));
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_About"));
+    $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'help-about', 'activate');
     $menu
