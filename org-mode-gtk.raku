@@ -109,11 +109,11 @@ sub demo_procedural_read {
             if (@org) {
                 my %task=pop(@org);
                 if !%task{"SUB_task"} {
-                    push(%task{"ORG_detail"},$_);
+                    push(%task{"ORG_text"},$_);
                 } else {
                     my @so=%task{"SUB_task"}.Array;
                     my %sub_task=pop(@so);    
-                    push(%sub_task{"ORG_detail"},$_);
+                    push(%sub_task{"ORG_text"},$_);
                     push(@so,%sub_task);
                     %task{"SUB_task"}=@so;
                 }
@@ -232,7 +232,7 @@ sub  add2-branch($iter) {
         @org = map {
             if ($ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
                     eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
-                my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO");
+                my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO","ORG_level","2");
                 create_task(%task,$iter);
                 push($_{'SUB_task'},%task);
             } ; $_
@@ -258,7 +258,11 @@ sub  search-task-in-org-from($iter) {
             }
         }
     }
-    return pop(@org_tmp);
+    if @org_tmp {
+        return pop(@org_tmp);   # if click on a task
+    } else {
+        return;                 # if click on text (not now editable)
+    }
 }
 
 sub  set-task-in-org-from($iter,$key,$value) {
@@ -339,7 +343,7 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $change=1;
-            my %task=("ORG_task",$e_add.get-text, "ORG_todo","TODO");
+            my %task=("ORG_task",$e_add.get-text, "ORG_todo","TODO","ORG_level","1");
             $e_add.set-text("");
             %task=create_task(%task);
             @org.push(%task);
@@ -382,46 +386,48 @@ class AppSignalHandlers {
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
         # to edit task
-        my %task=search-task-in-org-from($iter);
-        $e_edit  .= new();
-        $e_edit.set-text(%task{'ORG_task'});
-        $content-area.gtk_container_add($e_edit);
-        $b_edit  .= new(:label('Update task'));
-        $content-area.gtk_container_add($b_edit);
-        b_edit-register-signal($iter);
-        
-        
-        # To manage TODO/DONE
-        %task=search-task-in-org-from($iter);
-        my Gnome::Gtk3::Grid $g_todo .= new;
-        $content-area.gtk_container_add($g_todo);
-        $rb_td1 .= new(:label('-'));
-        $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
-        $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
-        if    (!%task{'ORG_todo'})          { $rb_td1.set-active(1);}
-        elsif (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
-        elsif (%task{'ORG_todo'} eq 'DONE') { $rb_td3.set-active(1);} 
-        $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
-        $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
-        $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
-        b_rb-register-signal($iter);
+        if search-task-in-org-from($iter) {      # if not, it's a text not now editable 
+            my %task=search-task-in-org-from($iter);
+            $e_edit  .= new();
+            $e_edit.set-text(%task{'ORG_task'});
+            $content-area.gtk_container_add($e_edit);
+            $b_edit  .= new(:label('Update task'));
+            $content-area.gtk_container_add($b_edit);
+            b_edit-register-signal($iter);
+            
+            
+            # To manage TODO/DONE
+            %task=search-task-in-org-from($iter);
+            my Gnome::Gtk3::Grid $g_todo .= new;
+            $content-area.gtk_container_add($g_todo);
+            $rb_td1 .= new(:label('-'));
+            $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
+            $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
+            if    (!%task{'ORG_todo'})          { $rb_td1.set-active(1);}
+            elsif (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
+            elsif (%task{'ORG_todo'} eq 'DONE') { $rb_td3.set-active(1);} 
+            $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
+            $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
+            $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
+            b_rb-register-signal($iter);
 
-        # To add a sub-task
-        $e_add2  .= new();
-        $content-area.gtk_container_add($e_add2);
-        $b_add2  .= new(:label('Add sub-task'));
-        $content-area.gtk_container_add($b_add2);
-        b_add2-register-signal($iter);
-        
-        # to delete the task
-        $b_del  .= new(:label('Delete task (and sub-tasks)'));
-        $content-area.gtk_container_add($b_del);
-        b_del-register-signal($iter);
+            # To add a sub-task
+            $e_add2  .= new();
+            $content-area.gtk_container_add($e_add2);
+            $b_add2  .= new(:label('Add sub-task'));
+            $content-area.gtk_container_add($b_add2);
+            b_add2-register-signal($iter);
+            
+            # to delete the task
+            $b_del  .= new(:label('Delete task (and sub-tasks)'));
+            $content-area.gtk_container_add($b_del);
+            b_del-register-signal($iter);
 
-        # Show the dialog.
-        $dialog.show-all;
-        $dialog.gtk-dialog-run;
-        $dialog.gtk_widget_destroy;
+            # Show the dialog.
+            $dialog.show-all;
+            $dialog.gtk-dialog-run;
+            $dialog.gtk_widget_destroy;
+        }
         1
     }
 }
@@ -496,8 +502,8 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
         $parent-iter = $iter;
     }
     my Gnome::Gtk3::TreeIter $iter_t = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
-        if %task{'ORG_detail'} {
-            for %task{'ORG_detail'}.Array {
+        if %task{'ORG_text'} {
+            for %task{'ORG_text'}.Array {
                  my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_t, -1, 0, $_) 
             }
         }
@@ -524,8 +530,8 @@ sub populate_task {
 sub save_task(%task) {
     my $orgmode="";
     $orgmode~=join(" ",grep {$_}, ("*" x %task{"ORG_level"},%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
-    if (%task{"ORG_detail"}) {
-        for %task{"ORG_detail"}.Array {
+    if (%task{"ORG_text"}) {
+        for %task{"ORG_text"}.Array {
             $orgmode~=$_~"\n";
         }
     }
