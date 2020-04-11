@@ -235,8 +235,6 @@ sub  add2-branch($iter) {
                     eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
                 my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO","ORG_level","2");
                 create_task(%task,$iter);
-say "debug ",$_{'SUB_task'} if $debug;
-say "debug ",%task if $debug;
                 push($_{'SUB_task'},%task);
             } ; $_
         }, @org;
@@ -285,6 +283,7 @@ sub  set-task-in-org-from($iter,$key,$value) {
                         eq $ts.tree-model-get-value( $iter, 0)[0].get-string ;
                         $_ 
             }, %task{'SUB_task'}.Array;
+            %task{'SUB_task'}=%task{'SUB_task'}.Array; 
         }
     }
 }
@@ -522,9 +521,7 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
 #-----------------------------------sub-------------------------------
 sub read_file($name) {
     $file = slurp $name;
-    my $bak=$name;
-    $bak ~~ s/org$/bak/;
-    spurt $bak,$file;
+    spurt $name~".bak",$file;
 }
 
 sub populate_task {
