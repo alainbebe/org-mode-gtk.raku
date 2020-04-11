@@ -31,7 +31,8 @@ use Gnome::N::X;
 use Data::Dump;
 
 my @org;        # list of tasks (and a task is a hash) 
-my $file;       # for reading demo.org # TODO to improve
+my $name;       # filename of current file
+my $file;       # content of filename for parse with grammar
 my $change=0;   # for ask question to save when quit
 my $debug=1;    # to debug =1
 
@@ -81,7 +82,7 @@ class OM-actions {
 #nok ORG_MODE.parse('** DONE essai', :rule<task>),
 #    '<task> does n t parses ** DONE essai';
 
-sub parse_file {
+sub parse_file() {
     my $om-actions = OM-actions.new();
     say ORG_MODE.parse($file);#exit;                              # just for test the grammar
     my $match = ORG_MODE.parse($file, :actions($om-actions));
@@ -90,16 +91,16 @@ sub parse_file {
 #    say "after AST : \n",@org;
 }
 
-sub demo_procedural_read {
+sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     my token content2 { .*? $$ };
 
-    for "demo.org".IO.lines {
+    for $name.IO.lines {
         if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) {
             my %task=("ORG_task",$<content2>.Str,"ORG_level","1");
             %task{"ORG_todo"}=$0[0].Str if $0[0];
             push(@org,%task);
-        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) {
+        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) { # TODO create recursive sub
             my %task=pop(@org);
             my %sub_task=("ORG_task",$<content2>.Str,"ORG_level","2");
             %sub_task{"ORG_todo"}=$0[0].Str if $0[0];
@@ -135,7 +136,7 @@ class X {
   method exit-gui ( --> Int ) {
         if $change && !$debug {
             if $md.run==-8 {
-                save("demo.org");
+                save($name);
             }
             $md.destroy;
         }
@@ -234,6 +235,8 @@ sub  add2-branch($iter) {
                     eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
                 my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO","ORG_level","2");
                 create_task(%task,$iter);
+say "debug ",$_{'SUB_task'} if $debug;
+say "debug ",%task if $debug;
                 push($_{'SUB_task'},%task);
             } ; $_
         }, @org;
@@ -320,7 +323,7 @@ class AppSignalHandlers {
 
     method file-save( ) {
         $change=0;
-        save("demo.org");
+        save($name);
     }
     method file-save-test( ) {
         save("test.org");
@@ -330,7 +333,7 @@ class AppSignalHandlers {
     method file-quit( ) {
         if $change && !$debug {
             if $md.run==-8 {
-                save("demo.org");
+                save($name);
             }
             $md.destroy;
         }
@@ -517,9 +520,11 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     return %task;
 }
 #-----------------------------------sub-------------------------------
-sub read_file {
-    $file = slurp "demo.org";
-    spurt "demo.bak",$file;
+sub read_file($name) {
+    $file = slurp $name;
+    my $bak=$name;
+    $bak ~~ s/org$/bak/;
+    spurt $bak,$file;
 }
 
 sub populate_task {
@@ -543,17 +548,21 @@ sub save_task(%task) {
     return $orgmode;
 }
 
-sub save($file) {
+sub save($name) {
     my $orgmode="";
     for @org -> %task {
         $orgmode~=save_task(%task);
     }
-	spurt $file, $orgmode;
+	spurt $name, $orgmode;
 }
 
 #--------------------------main--------------------------------
 
-read_file();
-0 ?? parse_file() !! demo_procedural_read();       # 0 if AST doesn't work
-populate_task();
-$m.gtk-main;
+sub MAIN($arg = 'demo.org') {
+    $name=$arg;
+    read_file($name);
+    0 ?? parse_file() !! demo_procedural_read($name);       # 0 if AST doesn't work
+    populate_task();
+    $m.gtk-main;
+}
+

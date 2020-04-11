@@ -1,4 +1,4 @@
 *.swp
-demo.bak
+*.bak
 test.org
 test/*

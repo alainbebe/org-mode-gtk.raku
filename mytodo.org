@@ -1,0 +1,14 @@
+* GTK bug
+** TODO bug if create a task after change the name of a sub-task
+* GTK improve
+** DONE implement menu accelerator "Alt-f" for File menu
+** TODO Short-Cut  "Ctrl-s" forsave
+** TODO -> DONE add line with date
+** TODO Mode d'emploi
+** TODO Move task on the tree
+** TODO Read filename on the command line
+** TODO Add open file dialog
+* git
+** DONE diff ne pas afficher les blancs
+   CLOSED: [2020-04-10 ven 12:19]
+   git diff -b --ignore-blank-lines
