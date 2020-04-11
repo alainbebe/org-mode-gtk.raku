@@ -13,5 +13,6 @@
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
    git diff -b --ignore-blank-lines
-* ed
-** TODO mettre debug à 0 avant le commit
+* sed
+** DONE mettre debug à 0 avant le push
+   sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
