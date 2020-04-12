@@ -1,7 +1,10 @@
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
+** TODO Resolve problem "é" in text
+it's a problem wit h count of utf8 char
 * GTK improve
+
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO -> DONE add line with date
@@ -9,6 +12,15 @@
 ** TODO Move task on the tree
 ** DONE Read filename on the command line
 ** TODO Add open file dialog
+** DONE Edit text of a task
+Accent "é" create problem
+Refresh of tree to improve
+** TODO Rewrite the refresh tree after edit "text"
+** TODO link F11 to maximize the window
+** TODO Display only TODO task
+** TODO Delete "text" of a task
+Presently, it's possible to remove all but a blank line exist enough
+** TODO Create a different display for README style or TODO style
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

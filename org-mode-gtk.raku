@@ -25,6 +25,8 @@ use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::MessageDialog;
 use Gnome::Gtk3::AboutDialog;
 use Gnome::Gtk3::Box;
+use Gnome::Gtk3::TextView;
+use Gnome::Gtk3::TextBuffer;
 use NativeCall;
 use Gnome::N::X;
 
@@ -34,7 +36,7 @@ my @org;        # list of tasks (and a task is a hash)
 my $name;       # filename of current file
 my $file;       # content of filename for parse with grammar
 my $change=0;   # for ask question to save when quit
-my $debug=0;    # to debug =1
+my $debug=1;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -212,14 +214,17 @@ $about.set-website-label("http://www.barbason.be");
 
 my Gnome::Gtk3::Entry $e_add2;
 my Gnome::Gtk3::Entry $e_edit;
+my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::Button $b_del;
 my Gnome::Gtk3::Button $b_add2;
 my Gnome::Gtk3::Button $b_edit;
+my Gnome::Gtk3::Button $b_edit_text;
 my Gnome::Gtk3::RadioButton $rb_td1;
 my Gnome::Gtk3::RadioButton $rb_td2;
 my Gnome::Gtk3::RadioButton $rb_td3;
-
+my Gnome::Gtk3::TextView $tev_edit_text;
+my Gnome::Gtk3::TextBuffer $text-buffer;
 
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
@@ -356,6 +361,16 @@ class AppSignalHandlers {
         add2-branch($iter);
         1
     }
+    method edit-text-button-click ( :$iter ) {
+        $change=1;
+        my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
+        my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
+        say $text-buffer.get-text( $start, $end, 0);
+        set-task-in-org-from($iter,"ORG_text",$text-buffer.get-text( $start, $end, 0).split(/\n/));
+        reconstruct_tree();
+        $dialog.gtk_widget_destroy;
+        1
+    }
     method edit-button-click ( :$iter ) {
         $change=1;
         set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
@@ -390,6 +405,8 @@ class AppSignalHandlers {
         # to edit task
         if search-task-in-org-from($iter) {      # if not, it's a text not now editable 
             my %task=search-task-in-org-from($iter);
+
+            # To edit task
             $e_edit  .= new();
             $e_edit.set-text(%task{'ORG_task'});
             $content-area.gtk_container_add($e_edit);
@@ -397,6 +414,16 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($b_edit);
             b_edit-register-signal($iter);
             
+            # To edit text
+            $tev_edit_text .= new;
+            $text-buffer .= new(
+              :native-object($tev_edit_text.get-buffer)
+            );
+            $text-buffer.set-text(%task{'ORG_text'}.join("\n")) if %task{'ORG_text'};
+            $content-area.gtk_container_add($tev_edit_text);
+            $b_edit_text  .= new(:label('Update text'));
+            $content-area.gtk_container_add($b_edit_text);
+            b_edit_text-register-signal($iter);
             
             # To manage TODO/DONE
             %task=search-task-in-org-from($iter);
@@ -429,6 +456,8 @@ class AppSignalHandlers {
             $dialog.show-all;
             $dialog.gtk-dialog-run;
             $dialog.gtk_widget_destroy;
+        } else {  # text
+            # manage via dialog task
         }
         1
     }
@@ -450,6 +479,10 @@ sub b_rb-register-signal($iter) {
 }
 sub b_edit-register-signal ($iter) {
     $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
+}
+
+sub b_edit_text-register-signal ($iter) {
+    $b_edit_text.register-signal( $ash, 'edit-text-button-click', 'clicked',:iter($iter));
 }
 
 # Create menu for the menu bar
@@ -503,17 +536,17 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     } else {
         $parent-iter = $iter;
     }
-    my Gnome::Gtk3::TreeIter $iter_t = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
-        if %task{'ORG_text'} {
-            for %task{'ORG_text'}.Array {
-                 my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_t, -1, 0, $_) 
-            }
+    my Gnome::Gtk3::TreeIter $iter_task = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
+    if %task{'ORG_text'} {
+        for %task{'ORG_text'}.Array {
+             my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
         }
-    %task{'GTK_iter'}=$iter_t;
+    }
+    %task{'GTK_iter'}=$iter_task;
 
     if (%task{"SUB_task"}) {
         for %task{"SUB_task"}.Array {
-            create_task($_,$iter_t);
+            create_task($_,$iter_task);
         }
     }
     return %task;
@@ -522,6 +555,13 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
 sub read_file($name) {
     $file = slurp $name;
     spurt $name~".bak",$file;
+}
+
+sub reconstruct_tree { # not good practice, not abuse
+    for @org {
+        $ts.gtk-tree-store-remove($_{'GTK_iter'});
+    }
+    populate_task();
 }
 
 sub populate_task {
