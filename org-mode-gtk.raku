@@ -36,7 +36,7 @@ my @org;        # list of tasks (and a task is a hash)
 my $name;       # filename of current file
 my $file;       # content of filename for parse with grammar
 my $change=0;   # for ask question to save when quit
-my $debug=1;    # to debug =1
+my $debug=0;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
