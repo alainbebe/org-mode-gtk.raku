@@ -3,6 +3,7 @@
    force Seq to Array
 ** TODO Resolve problem "é" in text
 it's a problem wit h count of utf8 char
+** TODO Save file failed if not exist a file name
 * GTK improve
 
 ** DONE implement menu accelerator "Alt-f" for File menu
@@ -11,7 +12,7 @@ it's a problem wit h count of utf8 char
 ** TODO Mode d'emploi
 ** TODO Move task on the tree
 ** DONE Read filename on the command line
-** TODO Add open file dialog
+** DONE Add open file dialog
 ** DONE Edit text of a task
 Accent "é" create problem
 Refresh of tree to improve
@@ -21,6 +22,8 @@ Refresh of tree to improve
 ** TODO Delete "text" of a task
 Presently, it's possible to remove all but a blank line exist enough
 ** TODO Create a different display for README style or TODO style
+** TODO Add new file menu
+** TODO Append ScrolBar for long Todo
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

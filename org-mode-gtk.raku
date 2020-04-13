@@ -27,6 +27,8 @@ use Gnome::Gtk3::AboutDialog;
 use Gnome::Gtk3::Box;
 use Gnome::Gtk3::TextView;
 use Gnome::Gtk3::TextBuffer;
+use Gnome::Gtk3::FileChooser;
+use Gnome::Gtk3::FileChooserDialog;
 use NativeCall;
 use Gnome::N::X;
 
@@ -36,7 +38,7 @@ my @org;        # list of tasks (and a task is a hash)
 my $name;       # filename of current file
 my $file;       # content of filename for parse with grammar
 my $change=0;   # for ask question to save when quit
-my $debug=1;    # to debug =1
+my $debug=0;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -334,6 +336,36 @@ class AppSignalHandlers {
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
     }
+
+  # Show dialog
+    method file-open ( --> Int ) {
+        if $change && !$debug {
+            if $md.run==-8 {
+                save($name);
+            }
+            $md.destroy;
+        }
+        my Gnome::Gtk3::FileChooserDialog $dialog .= new(
+            :title("Open File"), 
+            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+            :action(GTK_FILE_CHOOSER_ACTION_SAVE),
+            :button-spec( [
+                "_Ok", GTK_RESPONSE_OK,
+                "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Open", GTK_RESPONSE_ACCEPT
+            ] )
+        );
+        my $response = $dialog.gtk-dialog-run;
+        if $response ~~ GTK_RESPONSE_ACCEPT {
+            $ts.clear();
+            @org=[]; 
+            $name = $dialog.get-filename;
+            open-file($name) if $name;
+        }
+        $dialog.gtk-widget-hide;
+        1
+    }
+
     method file-quit( ) {
         if $change && !$debug {
             if $md.run==-8 {
@@ -491,6 +523,10 @@ sub make-menubar-list-file( ) {
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'file-save', 'activate');
+    $menu-item .= new(:label("_Open"));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'file-open', 'activate');
     $menu-item .= new(:label("Save to _test"));
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item) if $debug;
@@ -566,6 +602,12 @@ sub populate_task {
 #    say "after create task : \n",@org;
 }
 
+sub open-file($name) {
+    read_file($name);
+    0 ?? parse_file() !! demo_procedural_read($name);       # 0 if AST doesn't work
+    populate_task();
+}
+
 sub save_task(%task) {
     my $orgmode="";
     $orgmode~=join(" ",grep {$_}, ("*" x %task{"ORG_level"},%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
@@ -592,11 +634,9 @@ sub save($name) {
 
 #--------------------------main--------------------------------
 
-sub MAIN($arg = 'demo.org') {
+sub MAIN($arg = '') {
     $name=$arg;
-    read_file($name);
-    0 ?? parse_file() !! demo_procedural_read($name);       # 0 if AST doesn't work
-    populate_task();
+    open-file($name) if $name;
     $m.gtk-main;
 }
 
