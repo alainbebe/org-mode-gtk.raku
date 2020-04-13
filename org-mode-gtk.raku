@@ -205,8 +205,6 @@ $tv.append-column($tvc);
 #$crt2.set-property( 'wrap-mode', $gv);
 ##$crt2.wrap-width=10;
 
-my Gnome::Gtk3::TreePath $tp;
-
 my Gnome::Gtk3::AboutDialog $about .= new;
 $about.set-program-name('org-mode-gtk.raku');
 $about.set-version('0.1');
@@ -566,7 +564,7 @@ my $i=0;
 sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     my Gnome::Gtk3::TreeIter $parent-iter;
     if (!$iter) {
-        $tp .= new(:string($i++.Str));
+        my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
         $parent-iter = $ts.get-iter($tp);
     } else {
         $parent-iter = $iter;
