@@ -9,9 +9,9 @@ Goal is
 - create undo/redo
 
 This version is unstable, read, add, write but very simple tasks 
--* top level headline
--** second level
+- * top level headline
+- ** second level
 -    some text
--** other second level
+- ** other second level
 -    more text
--* another top level headline
+- * another top level headline
