@@ -38,7 +38,7 @@ my @org;        # list of tasks (and a task is a hash)
 my $name;       # filename of current file
 my $file;       # content of filename for parse with grammar
 my $change=0;   # for ask question to save when quit
-my $debug=0;    # to debug =1
+my $debug=1;    # to debug =1
 
 #-----------------------------------Grammar---------------------------
 
@@ -162,11 +162,15 @@ my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
 
 my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
+my Gnome::Gtk3::Menu $list-debug-menu = make-menubar-list-debug();
 my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
 
 my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('_File'));
 $but-file-menu.set-use-underline(1);
 $but-file-menu.set-submenu($list-file-menu);
+my Gnome::Gtk3::MenuItem $but-debug-menu .= new(:label('_Debug'));
+$but-debug-menu.set-use-underline(1);
+$but-debug-menu.set-submenu($list-debug-menu);
 my Gnome::Gtk3::MenuItem $but-help-menu .= new(:label('_Help'));
 $but-help-menu.set-use-underline(1);
 $but-help-menu.set-submenu($list-help-menu);
@@ -174,6 +178,7 @@ $but-help-menu.set-submenu($list-help-menu);
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append($but-file-menu);
+$menu-bar.gtk-menu-shell-append($but-debug-menu) if $debug;
 $menu-bar.gtk-menu-shell-append($but-help-menu);
 
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
@@ -373,6 +378,9 @@ class AppSignalHandlers {
         }
         $m.gtk-main-quit;
     }
+    method debug-inspect( ) {
+        inspect();
+    }
     method help-about( ) {
         $about.gtk-dialog-run;
         $about.gtk-widget-hide;
@@ -536,6 +544,15 @@ sub make-menubar-list-file( ) {
     $menu
 }
 
+sub make-menubar-list-debug() {
+    my Gnome::Gtk3::Menu $menu .= new;
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Inspect"));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'debug-inspect', 'activate');
+    $menu
+}
+
 sub make-menubar-list-help ( ) {
     my Gnome::Gtk3::Menu $menu .= new;
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_About"));
@@ -604,6 +621,21 @@ sub open-file($name) {
     read_file($name);
     0 ?? parse_file() !! demo_procedural_read($name);       # 0 if AST doesn't work
     populate_task();
+}
+
+sub inspect-task(%task) {
+    say $ts.get-path(%task{'GTK_iter'}).get-indices;
+    if %task{"SUB_task"} {
+        for %task{"SUB_task"}.Array {
+            inspect-task($_);
+        }
+    }
+}
+
+sub inspect() {
+    for @org -> %task {
+        inspect-task(%task);
+    }
 }
 
 sub save_task(%task) {
