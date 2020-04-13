@@ -365,7 +365,6 @@ class AppSignalHandlers {
         $change=1;
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-        say $text-buffer.get-text( $start, $end, 0);
         set-task-in-org-from($iter,"ORG_text",$text-buffer.get-text( $start, $end, 0).split(/\n/));
         reconstruct_tree();
         $dialog.gtk_widget_destroy;
@@ -558,9 +557,7 @@ sub read_file($name) {
 }
 
 sub reconstruct_tree { # not good practice, not abuse
-    for @org {
-        $ts.gtk-tree-store-remove($_{'GTK_iter'});
-    }
+    $ts.clear();
     populate_task();
 }
 
