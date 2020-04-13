@@ -34,11 +34,12 @@ use Gnome::N::X;
 
 use Data::Dump;
 
-my @org;        # list of tasks (and a task is a hash) 
-my $name;       # filename of current file
-my $file;       # content of filename for parse with grammar
-my $change=0;   # for ask question to save when quit
-my $debug=1;    # to debug =1
+my @org;             # list of tasks (and a task is a hash) 
+my $name;            # filename of current file
+my $file;            # content of filename for parse with grammar
+my $change=0;        # for ask question to save when quit
+my $debug=1;         # to debug =1
+my $toggle_rb=False; # when click on a radio-buttun we have 2 signals. Take only the second
 
 #-----------------------------------Grammar---------------------------
 
@@ -412,14 +413,17 @@ class AppSignalHandlers {
         $change=1;
         set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
         $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
-#        $dialog.gtk_widget_destroy;
+        $dialog.gtk_widget_destroy;
         1
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
-        $change=1;
-        set-task-in-org-from($iter,"ORG_todo",$todo);
-        $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
-#        $dialog.gtk_widget_destroy;
+        if ($toggle_rb) {  # see definition 
+            $change=1;
+            set-task-in-org-from($iter,"ORG_todo",$todo);
+            $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
+            $dialog.gtk_widget_destroy;
+        }
+        $toggle_rb=!$toggle_rb;
         1
     }
     method del-button-click ( :$iter --> Int ) {
@@ -435,7 +439,7 @@ class AppSignalHandlers {
             :title("Manage task"), 
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
-            :button-spec( "Ok", GTK_RESPONSE_NONE)
+            :button-spec( "Cancel", GTK_RESPONSE_NONE)
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
