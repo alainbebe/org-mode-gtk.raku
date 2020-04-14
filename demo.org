@@ -1,8 +1,6 @@
 * DOES task
 detail
 detail suite
-3 ieme ligne
-4 ieme ligne
 ** sub task1
 ** DONE sub task2
 * TODO another task
@@ -12,3 +10,7 @@ detail of sub task
 * final
 other detail
 ** sub final
+* essai
+** TODO 1
+** TODO 2
+** TODO 3

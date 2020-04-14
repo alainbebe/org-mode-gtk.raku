@@ -224,6 +224,8 @@ my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::Button $b_del;
 my Gnome::Gtk3::Button $b_add2;
+my Gnome::Gtk3::Button $b_move_up;
+my Gnome::Gtk3::Button $b_move_down;
 my Gnome::Gtk3::Button $b_edit;
 my Gnome::Gtk3::Button $b_edit_text;
 my Gnome::Gtk3::RadioButton $rb_td1;
@@ -326,6 +328,16 @@ sub  delete-branch($iter) {
     $dialog.gtk_widget_destroy;
 }
 
+sub search-indice-in-sub-task-from($iter,@org-sub) {
+    #TODO to improve
+    my $i=-1;
+    for @org-sub {
+        $i++;
+        return $i if $ts.get-path($iter).get-indices eq $ts.get-path($_{'GTK_iter'}).get-indices;
+        }
+    return -1;
+}
+
 # Class to handle signals
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -409,6 +421,66 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method move-down-button-click ( :$iter ) {
+        my @path= $ts.get-path($iter).get-indices.Array;
+        my @path2= $ts.get-path($iter).get-indices.Array;
+        @path2[*-1]=@path2[*-1].Int;
+        @path2[*-1]++;
+        my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
+        my $iter2 = $ts.get-iter($tp);
+        if $iter2.is-valid {  # if not, it's the last child
+#            if search-task-in-org-from($iter2) { # the down child is always a task but aday may be...
+                $change=1;
+                if $ts.get-path($iter).get-depth==1 {  # level 1 only
+                    $ts.swap($iter,$iter2);
+                    @org[@path[*-1],@path2[*-1]] = @org[@path2[*-1],@path[*-1]];
+                } else {                # more difficult that level 1, because "text" is not movable
+                    my %task2=search-task-in-org-from($iter2);
+                    if %task2 {              # if not, probably text et no swap 
+                        $ts.swap($iter,$iter2);
+                        my $tp=$ts.get-path($iter);
+                        $tp.up; # transform in parent
+                        my $iter-parent = $ts.get-iter($tp);
+                        my %t_parent=search-task-in-org-from($iter-parent);
+                        my $line=search-indice-in-sub-task-from($iter,%t_parent{'SUB_task'}.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,%t_parent{'SUB_task'}.Array);
+                        %t_parent{'SUB_task'}[$line,$line2] = %t_parent{'SUB_task'}[$line2,$line];
+                    }
+                }
+#            }
+        }
+        1
+    }
+    method move-up-button-click ( :$iter ) {
+        my @path= $ts.get-path($iter).get-indices.Array;
+        if @path[*-1] ne "0" {     # if is not the first child
+            my @path2= $ts.get-path($iter).get-indices.Array;
+            @path2[*-1]=@path2[*-1].Int;
+            @path2[*-1]--;
+            my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
+            my $iter2 = $ts.get-iter($tp);
+            if search-task-in-org-from($iter2) { # the up child is a task (not a text)
+                $change=1;
+                if $ts.get-path($iter).get-depth==1 {  # level 1 only
+                    $ts.swap($iter,$iter2);
+                    @org[@path[*-1],@path2[*-1]] = @org[@path2[*-1],@path[*-1]];
+                } else {                # more difficult that level 1, because "text" is not movable
+                    my %task2=search-task-in-org-from($iter2);
+                    if %task2 {              # if not, probably text et no swap 
+                        $ts.swap($iter,$iter2);
+                        my $tp=$ts.get-path($iter);
+                        $tp.up; # transform in parent
+                        my $iter-parent = $ts.get-iter($tp);
+                        my %t_parent=search-task-in-org-from($iter-parent);
+                        my $line=search-indice-in-sub-task-from($iter,%t_parent{'SUB_task'}.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,%t_parent{'SUB_task'}.Array);
+                        %t_parent{'SUB_task'}[$line,$line2] = %t_parent{'SUB_task'}[$line2,$line];
+                    }
+                }
+            }
+        }
+        1
+    }
     method edit-button-click ( :$iter ) {
         $change=1;
         set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
@@ -446,6 +518,14 @@ class AppSignalHandlers {
         # to edit task
         if search-task-in-org-from($iter) {      # if not, it's a text not now editable 
             my %task=search-task-in-org-from($iter);
+
+            # to move
+            $b_move_up  .= new(:label('^'));
+            $content-area.gtk_container_add($b_move_up);
+            b_move_up-register-signal($iter);
+            $b_move_down  .= new(:label('v'));
+            $content-area.gtk_container_add($b_move_down);
+            b_move_down-register-signal($iter);
 
             # To edit task
             $e_edit  .= new();
@@ -518,6 +598,13 @@ sub b_rb-register-signal($iter) {
     $rb_td2.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
     $rb_td3.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
 }
+sub b_move_up-register-signal ($iter) {
+    $b_move_up.register-signal( $ash, 'move-up-button-click', 'clicked',:iter($iter));
+}
+sub b_move_down-register-signal ($iter) {
+    $b_move_down.register-signal( $ash, 'move-down-button-click', 'clicked',:iter($iter));
+}
+
 sub b_edit-register-signal ($iter) {
     $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
 }

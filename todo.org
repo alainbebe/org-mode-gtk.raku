@@ -9,8 +9,8 @@ it's a problem wit h count of utf8 char
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO -> DONE add line with date
-** TODO Mode d'emploi
-** TODO Move task on the tree
+** TODO make a User Manuel
+** DONE Move task on the tree
 ** DONE Read filename on the command line
 ** DONE Add open file dialog
 ** DONE Edit text of a task
@@ -19,18 +19,18 @@ Refresh of tree to improve
 ** TODO Rewrite the refresh tree after edit "text"
 ** TODO link F11 to maximize the window
 ** TODO Display only TODO task
+Improve this swap if task is hide
+@org[$line,$line2] = @org[$line2,$line];
 ** TODO Delete "text" of a task
 Presently, it's possible to remove all but a blank line exist enough
 ** TODO Create a different display for README style or TODO style
 ** TODO Add new file menu
 ** TODO Append ScrolBar for long Todo
+** TODO read ex-scale to improve ash writing
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
    git diff -b --ignore-blank-lines
-* sed
-** DONE mettre debug à 0 avant le push
-   sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
 * git help
 ** Diff : Ne pas afficher les blancs
    git diff -b --ignore-blank-lines
@@ -65,3 +65,10 @@ Afterwards, you can use:
     git commit -v to view your commit while you edit the commit message.
 
 Note this is far different than the git format-patch command, whose purpose is to parse commit data into a .patch files.
+* sed
+** DONE mettre debug à 0 avant le push
+   sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
+* vim
+** TODO how colorize raku file
+** TODO how select a word "raku"
+yw select only "begin" for variable "begin-end"
