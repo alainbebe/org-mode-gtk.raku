@@ -34,13 +34,15 @@ use Gnome::N::X;
 
 use Data::Dump;
 
-my @org;             # list of tasks (and a task is a hash) 
-my $name;            # filename of current file
-my $file;            # content of filename for parse with grammar
-my $change=0;        # for ask question to save when quit
-my $debug=1;         # to debug =1
-my $toggle_rb=False; # when click on a radio-buttun we have 2 signals. Take only the second
-
+my @org;                # list of tasks (and a task is a hash) 
+my $name;               # filename of current file
+my $file;               # content of filename for parse with grammar
+my $change=0;           # for ask question to save when quit
+my $debug=1;            # to debug =1
+my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
+my $presentation=True;  # presentation in mode TODO or Textual
+my $i=0;                # for creation of level1 in tree
+                        
 #-----------------------------------Grammar---------------------------
 
 grammar ORG_MODE {
@@ -163,12 +165,16 @@ my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
 
 my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
+my Gnome::Gtk3::Menu $list-option-menu = make-menubar-list-option();
 my Gnome::Gtk3::Menu $list-debug-menu = make-menubar-list-debug();
 my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
 
 my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('_File'));
 $but-file-menu.set-use-underline(1);
 $but-file-menu.set-submenu($list-file-menu);
+my Gnome::Gtk3::MenuItem $but-option-menu .= new(:label('_Option'));
+$but-option-menu.set-use-underline(1);
+$but-option-menu.set-submenu($list-option-menu);
 my Gnome::Gtk3::MenuItem $but-debug-menu .= new(:label('_Debug'));
 $but-debug-menu.set-use-underline(1);
 $but-debug-menu.set-submenu($list-debug-menu);
@@ -179,6 +185,7 @@ $but-help-menu.set-submenu($list-help-menu);
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append($but-file-menu);
+$menu-bar.gtk-menu-shell-append($but-option-menu);
 $menu-bar.gtk-menu-shell-append($but-debug-menu) if $debug;
 $menu-bar.gtk-menu-shell-append($but-help-menu);
 
@@ -393,6 +400,11 @@ class AppSignalHandlers {
     }
     method debug-inspect( ) {
         inspect();
+    }
+    method option-presentation( ) {
+        $presentation=!$presentation;
+        reconstruct_tree();
+        1
     }
     method help-about( ) {
         $about.gtk-dialog-run;
@@ -635,6 +647,15 @@ sub make-menubar-list-file( ) {
     $menu
 }
 
+sub make-menubar-list-option() {
+    my Gnome::Gtk3::Menu $menu .= new;
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Presentation"));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'option-presentation', 'activate');
+    $menu
+}
+
 sub make-menubar-list-debug() {
     my Gnome::Gtk3::Menu $menu .= new;
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Inspect"));
@@ -658,17 +679,23 @@ $top-window.show-all;
 #--------------------------------interface---------------------------------
 
 sub string_from(%task) {
-    my $str_todo;
-    if (!%task{"ORG_todo"})             {$str_todo=' '}
-    elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
-    elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-    my $str_task;
-    if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" > '~%task{"ORG_task"}~'</span>'}
-    elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="brown"> '~%task{"ORG_task"}~'</span>'}
-    return $str_todo ~ " " ~$str_task;
+    if $presentation {
+        my $str_todo;
+        if (!%task{"ORG_todo"})             {$str_todo=' '}
+        elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
+        elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
+        my $str_task;
+        if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" > '~%task{"ORG_task"}~'</span>'}
+        elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="brown"> '~%task{"ORG_task"}~'</span>'}
+        return $str_todo ~ " " ~$str_task;
+    } else {
+        my $str_task;
+        if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" size="xx-large" >'~%task{"ORG_task"}~'</span>'}
+        elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="deepskyblue" size="x-large">'~%task{"ORG_task"}~'</span>'}
+        return $str_task;
+    }
 }
 
-my $i=0;
 sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     my Gnome::Gtk3::TreeIter $parent-iter;
     if (!$iter) {
@@ -699,6 +726,7 @@ sub read_file($name) {
 }
 
 sub reconstruct_tree { # not good practice, not abuse
+    $i=0;
     $ts.clear();
     populate_task();
 }

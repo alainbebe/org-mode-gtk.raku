@@ -6,10 +6,12 @@ it's a problem wit h count of utf8 char
 ** TODO Save file failed if not exist a file name
 * GTK improve
 
-** DONE implement menu accelerator "Alt-f" for File menu
+** TODO Append ScrolBar for long Todo
+** TODO read ex-scale to improve ash writing
 ** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO -> DONE add line with date
 ** TODO make a User Manuel
+** DONE implement menu accelerator "Alt-f" for File menu
 ** DONE Move task on the tree
 ** DONE Read filename on the command line
 ** DONE Add open file dialog
@@ -23,10 +25,8 @@ Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Delete "text" of a task
 Presently, it's possible to remove all but a blank line exist enough
-** TODO Create a different display for README style or TODO style
+** DONE Create a different display for README style or TODO style
 ** TODO Add new file menu
-** TODO Append ScrolBar for long Todo
-** TODO read ex-scale to improve ash writing
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
@@ -70,5 +70,6 @@ Note this is far different than the git format-patch command, whose purpose is t
    sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
 * vim
 ** TODO how colorize raku file
+https://www.perl.com/article/194/2015/9/22/Activating-Perl-6-syntax-highlighting-in-Vim/
 ** TODO how select a word "raku"
 yw select only "begin" for variable "begin-end"
