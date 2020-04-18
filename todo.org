@@ -6,9 +6,18 @@ it's a problem wit h count of utf8 char
 ** TODO Save file failed if not exist a file name
 * GTK improve
 
+** DONE Rewrite the refresh tree after edit "text"
+enlever de l'arbre les lignes textes
+(soit celle qui n'ont pas de TODO/DONE (moyen) )
+soit celle dont $iter n'est pas une task dans @org
+Rajouter les nouvelles 
+(soit l'une après l'autre si facile)
+soit en premier en commençant à l'envers
+** TODO -> DONE add line with date
+Utiliser update text, 
+en mettant la nouvelle chaine en premier
 ** TODO read ex-scale to improve ash writing
 ** TODO Short-Cut  "Ctrl-s" forsave
-** TODO -> DONE add line with date
 ** TODO make a User Manuel
 ** DONE Append ScrolBar for long Todo
 ** DONE implement menu accelerator "Alt-f" for File menu
@@ -18,7 +27,6 @@ it's a problem wit h count of utf8 char
 ** DONE Edit text of a task
 Accent "é" create problem
 Refresh of tree to improve
-** TODO Rewrite the refresh tree after edit "text"
 ** TODO link F11 to maximize the window
 ** TODO Display only TODO task
 Improve this swap if task is hide
@@ -27,6 +35,11 @@ Improve this swap if task is hide
 Presently, it's possible to remove all but a blank line exist enough
 ** DONE Create a different display for README style or TODO style
 ** TODO Add new file menu
+** TODO Priorities
+** TODO [#A] Write letter to Sam Fortune
+with A, B or C
+** TODO Sort Priorities
+** TODO Shift-left unfold only current selection, not child 
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

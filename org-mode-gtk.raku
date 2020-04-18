@@ -289,7 +289,7 @@ sub  search-task-in-org-from($iter) {
     }
 }
 
-sub  set-task-in-org-from($iter,$key,$value) {
+sub set-task-in-org-from($iter,$key,$value) {
     my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
     my Str $data-key = $v[0].get-string // '';
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
@@ -346,6 +346,21 @@ sub search-indice-in-sub-task-from($iter,@org-sub) {
         return $i if $ts.get-path($iter).get-indices eq $ts.get-path($_{'GTK_iter'}).get-indices;
         }
     return -1;
+}
+
+sub update-text($iter,$new-text) {
+    set-task-in-org-from($iter,"ORG_text",$new-text.split(/\n/));
+    my %task=search-task-in-org-from($iter);
+    my $iter_child=$ts.iter-children($iter);
+    while $iter_child.is-valid && !search-task-in-org-from($iter_child) { # if no task associate to a task, it's a "text"
+        delete-branch($iter_child);
+        $iter_child=$ts.iter-children($iter);
+    }
+    if %task{'ORG_text'} {
+        for %task{'ORG_text'}.Array.reverse {
+             my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
+        }
+    }
 }
 
 # Class to handle signals
@@ -431,8 +446,8 @@ class AppSignalHandlers {
         $change=1;
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-        set-task-in-org-from($iter,"ORG_text",$text-buffer.get-text( $start, $end, 0).split(/\n/));
-        reconstruct_tree();
+        my $new-text=$text-buffer.get-text( $start, $end, 0);
+        update-text($iter,$new-text);
         $dialog.gtk_widget_destroy;
         1
     }
