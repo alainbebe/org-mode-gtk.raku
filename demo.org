@@ -12,5 +12,7 @@ other detail
 ** sub final
 * essai
 ** TODO 1
-** TODO 2
+** DONE 2
+   CLOSED: [2020-04-18 sam 16:29]
+text
 ** TODO 3

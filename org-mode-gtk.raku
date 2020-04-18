@@ -1,7 +1,6 @@
 #!/usr/bin/env perl6
 
 use v6;
-
 use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
 use Gnome::GObject::Value;
@@ -43,7 +42,23 @@ my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
 my $i=0;                # for creation of level1 in tree
-                        
+my $now = DateTime.now(
+    formatter => {
+        my $dow;
+        given .day-of-week {
+            when 1 { $dow='lun'}
+            when 2 { $dow='mar'}
+            when 3 { $dow='mer'}
+            when 4 { $dow='jeu'}
+            when 5 { $dow='ven'}
+            when 6 { $dow='sam'}
+            when 7 { $dow='dim'}
+        }
+        sprintf '%04d-%02d-%02d %s  %02d:%02d', 
+        .year, .month, .day, $dow, .hour, .minute
+    }
+);
+
 #-----------------------------------Grammar---------------------------
 
 grammar ORG_MODE {
@@ -523,6 +538,19 @@ class AppSignalHandlers {
             $change=1;
             set-task-in-org-from($iter,"ORG_todo",$todo);
             $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
+            my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
+            my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
+            my $text=$text-buffer.get-text( $start, $end, 0);
+            if $todo eq 'DONE' {
+                if $text.encode.elems>0 {
+                    update-text($iter,"CLOSED: [$now]\n"~$text);
+                } else {
+                    update-text($iter,"CLOSED: [$now]");
+                }
+            } elsif $todo eq 'TODO' && $text~~/^\s*CLOSED/ {
+                $text~~s/^\s*CLOSED.*?\]\n?//;
+                update-text($iter,$text);
+            }
             $dialog.gtk_widget_destroy;
         }
         $toggle_rb=!$toggle_rb;

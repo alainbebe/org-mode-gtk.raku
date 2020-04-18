@@ -13,7 +13,8 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** TODO -> DONE add line with date
+** DONE TODO -> DONE add line with date
+CLOSED: [2020-04-18 sam  17:41]
 Utiliser update text, 
 en mettant la nouvelle chaine en premier
 ** TODO read ex-scale to improve ash writing
@@ -40,6 +41,7 @@ Presently, it's possible to remove all but a blank line exist enough
 with A, B or C
 ** TODO Sort Priorities
 ** TODO Shift-left unfold only current selection, not child 
+** TODO DONE to TODO, remove date but exist a blank line if no text
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
