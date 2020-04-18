@@ -29,6 +29,7 @@ use Gnome::Gtk3::TextView;
 use Gnome::Gtk3::TextBuffer;
 use Gnome::Gtk3::FileChooser;
 use Gnome::Gtk3::FileChooserDialog;
+use Gnome::Gtk3::ScrolledWindow;
 use NativeCall;
 use Gnome::N::X;
 
@@ -159,7 +160,7 @@ my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
 
 my Gnome::Gtk3::Window $top-window .= new(:title('Org-Mode with GTK and raku'));
-$top-window.set-default-size( 270, 250);
+$top-window.set-default-size( 640, 480);
 
 my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
@@ -189,13 +190,15 @@ $menu-bar.gtk-menu-shell-append($but-option-menu);
 $menu-bar.gtk-menu-shell-append($but-debug-menu) if $debug;
 $menu-bar.gtk-menu-shell-append($but-help-menu);
 
+my Gnome::Gtk3::ScrolledWindow $sw .= new();
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
 $tv.set-headers-visible(0);
 $tv.set-activate-on-single-click(1);
-$g.gtk-grid-attach( $tv, 0, 1, 4, 1);
+$sw.gtk-container-add($tv);
+$g.gtk-grid-attach( $sw, 0, 1, 4, 1);
 
 my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add task'));

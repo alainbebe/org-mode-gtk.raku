@@ -6,11 +6,11 @@ it's a problem wit h count of utf8 char
 ** TODO Save file failed if not exist a file name
 * GTK improve
 
-** TODO Append ScrolBar for long Todo
 ** TODO read ex-scale to improve ash writing
 ** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO -> DONE add line with date
 ** TODO make a User Manuel
+** DONE Append ScrolBar for long Todo
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** DONE Move task on the tree
 ** DONE Read filename on the command line
@@ -34,6 +34,8 @@ Presently, it's possible to remove all but a blank line exist enough
 * git help
 ** Diff : Ne pas afficher les blancs
    git diff -b --ignore-blank-lines
+** Log : Display one line
+git log --pretty=oneline
 ** Commit : Do a partial commit
 You can use git add --patch 'filename' (or -p for short), and git will begin to break down your file into what it thinks are sensible "hunks" (portions of the file). It will then prompt you with this question:
 
