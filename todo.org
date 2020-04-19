@@ -4,8 +4,8 @@
 ** TODO Resolve problem "é" in text
 it's a problem wit h count of utf8 char
 ** TODO Save file failed if not exist a file name
+** TODO add "Save as"
 * GTK improve
-
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
 (soit celle qui n'ont pas de TODO/DONE (moyen) )
@@ -13,17 +13,11 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** DONE TODO -> DONE add line with date
-CLOSED: [2020-04-18 sam  17:41]
-Utiliser update text, 
-en mettant la nouvelle chaine en premier
-** TODO read ex-scale to improve ash writing
 ** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO make a User Manuel
 ** DONE Append ScrolBar for long Todo
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** DONE Move task on the tree
-** DONE Read filename on the command line
 ** DONE Add open file dialog
 ** DONE Edit text of a task
 Accent "é" create problem
@@ -36,12 +30,22 @@ Improve this swap if task is hide
 Presently, it's possible to remove all but a blank line exist enough
 ** DONE Create a different display for README style or TODO style
 ** TODO Add new file menu
-** TODO Priorities
-** TODO [#A] Write letter to Sam Fortune
+** TODO [#A] Create tag priorities
 with A, B or C
 ** TODO Sort Priorities
 ** TODO Shift-left unfold only current selection, not child 
+or capture keyboard and redifine de Shift-right
+** TODO Use GdkEventKey for keyboard
+* raku improve
+** TODO create a task.pm
+** TODO Create a org.pm
+** DONE TODO -> DONE add line with date
+** DONE Read filename on the command line
 ** TODO DONE to TODO, remove date but exist a blank line if no text
+CLOSED: [2020-04-18 sam  17:41]
+Utiliser update text, 
+en mettant la nouvelle chaine en premier
+** TODO read ex-scale to improve ash writing
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
@@ -82,6 +86,8 @@ Afterwards, you can use:
     git commit -v to view your commit while you edit the commit message.
 
 Note this is far different than the git format-patch command, whose purpose is to parse commit data into a .patch files.
+** supprimer les modification
+git reset --hard HEAD
 * sed
 ** DONE mettre debug à 0 avant le push
    sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
@@ -90,3 +96,4 @@ Note this is far different than the git format-patch command, whose purpose is t
 https://www.perl.com/article/194/2015/9/22/Activating-Perl-6-syntax-highlighting-in-Vim/
 ** TODO how select a word "raku"
 yw select only "begin" for variable "begin-end"
+** TODO Fold/unfold code
