@@ -40,6 +40,7 @@ or capture keyboard and redifine de Shift-right
 CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
+** TODO display/edit Preface
 * raku improve
 ** TODO create a task.pm
 ** TODO Create a org.pm
@@ -50,6 +51,8 @@ CLOSED: [2020-04-18 sam  17:41]
 Utiliser update text, 
 en mettant la nouvelle chaine en premier
 ** TODO read ex-scale to improve ash writing
+** DONE read/write preface
+CLOSED: [2020-04-19 dim  16:45]
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

@@ -35,6 +35,7 @@ use Gnome::N::X;
 use Data::Dump;
 
 my @org;                # list of tasks (and a task is a hash) 
+my @preface;            # line before * first task. To include in @org 
 my $name;               # filename of current file
 my $file;               # content of filename for parse with grammar
 my $change=0;           # for ask question to save when quit
@@ -143,7 +144,7 @@ sub demo_procedural_read($name) {
                 }
                 push(@org,%task);
             } else {
-                # skip preface
+                push(@preface,$_);
             }
         }
     }
@@ -415,6 +416,7 @@ class AppSignalHandlers {
         if $response ~~ GTK_RESPONSE_ACCEPT {
             $ts.clear();
             @org=[]; 
+            @preface=[]; 
             $name = $dialog.get-filename;
             open-file($name) if $name;
         }
@@ -822,6 +824,9 @@ sub save_task(%task) {
 
 sub save($name) {
     my $orgmode="";
+    for @preface {
+        $orgmode~=$_~"\n";
+    }
     for @org -> %task {
         $orgmode~=save_task(%task);
     }
