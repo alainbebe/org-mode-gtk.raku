@@ -36,6 +36,10 @@ with A, B or C
 ** TODO Shift-left unfold only current selection, not child 
 or capture keyboard and redifine de Shift-right
 ** TODO Use GdkEventKey for keyboard
+** DONE Accent é create problem in edit "text"
+CLOSED: [2020-04-19 dim  11:00]
+remove final char, see UTF8
+Solution : $text.encode('UTF-8').bytes
 * raku improve
 ** TODO create a task.pm
 ** TODO Create a org.pm

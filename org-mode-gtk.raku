@@ -595,10 +595,11 @@ class AppSignalHandlers {
             
             # To edit text
             $tev_edit_text .= new;
-            $text-buffer .= new(
-              :native-object($tev_edit_text.get-buffer)
-            );
-            $text-buffer.set-text(%task{'ORG_text'}.join("\n")) if %task{'ORG_text'};
+            $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
+            if %task{'ORG_text'} {
+                my $text=%task{'ORG_text'}.join("\n");
+                $text-buffer.set-text($text,$text.encode('UTF-8').bytes);
+            }
             $content-area.gtk_container_add($tev_edit_text);
             $b_edit_text  .= new(:label('Update text'));
             $content-area.gtk_container_add($b_edit_text);
