@@ -36,7 +36,6 @@ use Gnome::N::X;
 use Data::Dump;
 
 my $name;               # filename of current file
-my $file;               # content of filename for parse with grammar
 my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
@@ -95,61 +94,6 @@ class OrgMode {
     has Task @.tasks   is rw;
 }
 my OrgMode $om .=new;
-
-#-----------------------------------Grammar---------------------------
-
-grammar ORG_MODE {
-    rule  TOP       { ^ <tasks> $ }
-    rule  tasks     { <task>+ %% "\n" }
-    token task      { <level1><todo>\x20?<content>(\n<sub_tasks>)* }
-    token sub_tasks { "*"<task> }               # use "rule" doesn't work, why ?
-    token level1    { "* " }
-    token todo      { ["TODO"|"DONE"]? }
-    token content   { .*? $$ }
-}
-
-class OM-actions {
-    method TOP($/) {
-        make $<tasks>.made;
-    }
-    method tasks($/) {
-        make $<task>».made ;
-    }
-    method task($/) {
-        my %task=($<content>.made,$<todo>.made);
-        say $<sub_tasks>>>.made;
-        %task=('SUB_task',$<sub_tasks>.made) if $<sub_tasks>.made;
-        make  %task;
-    }
-    method sub_tasks($/) {
-        my %sts=$<task>.made ;
-        make %sts;
-    }
-    method todo($/) {
-        make  "ORG_todo" => ~$/.Str;
-    }
-    method content($/) {
-        make "ORG_task" =>  ~$/.Str ;
-    }
-}
-
-#use Test;
-#plan 3;
-#ok ORG_MODE.parse('* DONE essai', :rule<task>),
-#    '<task> parses * DONE essai';
-#ok ORG_MODE.parse('* DOES essai', :rule<task>),  # curiosly it's right. No TODO/DONE et content is "DOES essai"
-#    '<task> parses * DOES essai';
-#nok ORG_MODE.parse('** DONE essai', :rule<task>),
-#    '<task> does n t parses ** DONE essai';
-
-sub parse_file() {
-    my $om-actions = OM-actions.new();
-    say ORG_MODE.parse($file);#exit;                              # just for test the grammar
-    my $match = ORG_MODE.parse($file, :actions($om-actions));
-    my @test=$match.made; say @test; say Dump @test;  exit;       # just for test the AST
-    $om.tasks= $match.made.Array;  
-#    say "after AST : \n",$om.tasks;
-}
 
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
@@ -769,11 +713,6 @@ sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
     return $task;
 }
 #-----------------------------------sub-------------------------------
-sub read_file($name) {
-    $file = slurp $name;
-    spurt $name~".bak",$file;
-}
-
 sub reconstruct_tree { # not good practice, not abuse
     $i=0;
     $ts.clear();
@@ -786,8 +725,8 @@ sub populate_task {
 }
 
 sub open-file($name) {
-    read_file($name);
-    0 ?? parse_file() !! demo_procedural_read($name);       # 0 if AST doesn't work
+    spurt $name~".bak",slurp $name; # fastbackup
+    demo_procedural_read($name);
     populate_task();
 }
 
