@@ -44,7 +44,8 @@ Solution : $text.encode('UTF-8').bytes
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
-** TODO Create Class Orgmode
+** DONE Create Class Orgmode
+CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
 
 ** TODO Create a org.pm
