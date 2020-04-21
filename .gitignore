@@ -2,3 +2,4 @@
 *.bak
 test.org
 test/*
+.precomp/*

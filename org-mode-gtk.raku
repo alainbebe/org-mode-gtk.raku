@@ -1,6 +1,7 @@
 #!/usr/bin/env perl6
 
 use v6;
+
 use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
 use Gnome::GObject::Value;
@@ -59,6 +60,37 @@ my $now = DateTime.now(
         .year, .month, .day, $dow, .hour, .minute
     }
 );
+
+#----------------------- class Task
+#use lib ".";
+#use Task;
+class Task {
+    has Int  $.level     is rw;
+    has Str  $.todo      is rw;
+    has Str  $.header    is rw; #  is required
+    has Str  @.text      is rw;
+    has Task @.sub-tasks is rw;
+    has Gnome::Gtk3::TreeIter $.iter is rw;
+
+    method display-header {
+        if $presentation {
+            my $str_todo;
+            if (!$.todo)             {$str_todo=' '}
+            elsif ($.todo eq "TODO") {$str_todo='<span foreground="red"  > TODO</span>'}
+            elsif ($.todo eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
+            my $str_task;
+            if    ($.level==1) {$str_task='<span foreground="blue" > '~$.header~'</span>'}
+            elsif ($.level==2) {$str_task='<span foreground="brown"> '~$.header~'</span>'}
+            return $str_todo ~ " " ~$str_task;
+        } else {
+            my $str_task;
+            if    ($.level==1) {$str_task='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
+            elsif ($.level==2) {$str_task='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
+            return $str_task;
+        }
+        return $.todo~" "~$.header;
+    }
+}
 
 #-----------------------------------Grammar---------------------------
 
@@ -120,35 +152,36 @@ sub demo_procedural_read($name) {
     my token content2 { .*? $$ };
 
     for $name.IO.lines {
-        if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) {
-            my %task=("ORG_task",$<content2>.Str,"ORG_level","1");
-            %task{"ORG_todo"}=$0[0].Str if $0[0];
-            push(@org,%task);
-        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) { # TODO create recursive sub
-            my %task=pop(@org);
-            my %sub_task=("ORG_task",$<content2>.Str,"ORG_level","2");
-            %sub_task{"ORG_todo"}=$0[0].Str if $0[0];
-            push(%task{"SUB_task"},%sub_task);
-            push(@org,%task);
+        if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) { # header level 1
+            my Task $task.=new(:header($<content2>.Str),:level(1));
+            $task.todo=$0[0].Str if $0[0];
+            push(@org,$task);
+        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) { # headerlvl 2 TODO create recursive sub
+            my $task=pop(@org);
+            my Task $sub-task.=new(:header($<content2>.Str),:level(2));
+            $sub-task.todo=$0[0].Str if $0[0];
+            push($task.sub-tasks,$sub-task);
+            push(@org,$task);
         } else {
-            if (@org) {
-                my %task=pop(@org);
-                if !%task{"SUB_task"} {
-                    push(%task{"ORG_text"},$_);
+            if (@org) {                                 # text in task
+                my $task=pop(@org);
+                if !$task.sub-tasks {                # first task 
+                    push($task.text,$_);
                 } else {
-                    my @so=%task{"SUB_task"}.Array;
-                    my %sub_task=pop(@so);    
-                    push(%sub_task{"ORG_text"},$_);
-                    push(@so,%sub_task);
-                    %task{"SUB_task"}=@so;
+                    my @so=$task.sub-tasks.Array;
+                    my $sub-task=pop(@so);    
+                    push($sub-task.text,$_);
+                    push(@so,$sub-task);
+                    $task.sub-tasks=@so;
                 }
-                push(@org,%task);
-            } else {
+                push(@org,$task);
+            } else {                                     # preface
                 push(@preface,$_);
             }
         }
     }
-    say "after : \n", Dump @org;
+    say @org;
+#    say "after : \n", Dump @org;
 }
 
 #--------------------------- part GTK--------------------------------
@@ -270,11 +303,11 @@ sub  add2-branch($iter) {
         $change=1;
         my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
         @org = map {
-            if ($ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+            if ($ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
                     eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
-                my %task=("ORG_task",$e_add2.get-text, "ORG_todo","TODO","ORG_level","2");
-                create_task(%task,$iter);
-                push($_{'SUB_task'},%task);
+                my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
+                create_task($task,$iter);
+                push($_.sub-tasks,$task);
             } ; $_
         }, @org;
     #{say $_} for @org;
@@ -287,14 +320,14 @@ sub  search-task-in-org-from($iter) {
     my Str $data-key = $v[0].get-string // '';
 #    say $data-key;
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-    my @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+    my @org_tmp = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
             eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, @org;
     # for subtask, find a recusive method
     if (!@org_tmp) { # not found, find in sub
-        for @org -> %task {
-            if %task{'SUB_task'} && !@org_tmp {
-                @org_tmp = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string  
-                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, %task{"SUB_task"}.Array;
+        for @org -> $task {
+            if $task.sub-tasks && !@org_tmp {
+                @org_tmp = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string  
+                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, $task.sub-tasks.Array;
             }
         }
     }
@@ -305,49 +338,27 @@ sub  search-task-in-org-from($iter) {
     }
 }
 
-sub set-task-in-org-from($iter,$key,$value) {
-    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
-    my Str $data-key = $v[0].get-string // '';
-#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-    @org = map { $_{$key}=$value if 
-                $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
-                eq $ts.tree-model-get-value( $iter, 0)[0].get-string ;
-                $_ 
-    }, @org;
-    # for subtask, find a recusive method
-    for @org -> %task {
-        if %task{'SUB_task'} {
-            %task{'SUB_task'} = map { $_{$key}=$value if 
-                        $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
-                        eq $ts.tree-model-get-value( $iter, 0)[0].get-string ;
-                        $_ 
-            }, %task{'SUB_task'}.Array;
-            %task{'SUB_task'}=%task{'SUB_task'}.Array; 
-        }
-    }
-}
-
-sub  delete-branch($iter) {
+sub delete-branch($iter) {
     $change=1;
     my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
     my Str $data-key = $v[0].get-string // '';
 #        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
-    @org = grep { $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string   # not good, but in waiting...
+    @org = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
             ne $ts.tree-model-get-value( $iter, 0)[0].get-string }, @org;
 
     # for subtask, find a recusive method
-    for @org -> %task {
+    for @org -> $task {
         my @org_sub;
-        if %task{'SUB_task'} {
-            for %task{"SUB_task"}.Array {
-                push(@org_sub,$_) if $ts.tree-model-get-value( $_{'GTK_iter'}, 0)[0].get-string # TODO, see before
+        if $task.sub-tasks {
+            for $task.sub-tasks.Array {
+                push(@org_sub,$_) if $ts.tree-model-get-value( $_.iter, 0)[0].get-string # TODO, see before
                     ne $ts.tree-model-get-value( $iter, 0)[0].get-string 
             }
         }
         if @org_sub {
-            %task{'SUB_task'}=@org_sub;
+            $task.sub-tasks=@org_sub;
         } else {
-            %task{'SUB_task'}:delete;
+            $task.sub-tasks:delete;
         }
     }
     $ts.gtk-tree-store-remove($iter);
@@ -359,21 +370,22 @@ sub search-indice-in-sub-task-from($iter,@org-sub) {
     my $i=-1;
     for @org-sub {
         $i++;
-        return $i if $ts.get-path($iter).get-indices eq $ts.get-path($_{'GTK_iter'}).get-indices;
+        return $i if $ts.get-path($iter).get-indices eq $ts.get-path($_.iter).get-indices;
         }
     return -1;
 }
 
 sub update-text($iter,$new-text) {
-    set-task-in-org-from($iter,"ORG_text",$new-text.split(/\n/));
-    my %task=search-task-in-org-from($iter);
+    my $task=search-task-in-org-from($iter);
+    $task.text=$new-text.split(/\n/);
     my $iter_child=$ts.iter-children($iter);
+    # remove all lines "text"
     while $iter_child.is-valid && !search-task-in-org-from($iter_child) { # if no task associate to a task, it's a "text"
         delete-branch($iter_child);
         $iter_child=$ts.iter-children($iter);
     }
-    if %task{'ORG_text'} {
-        for %task{'ORG_text'}.Array.reverse {
+    if $task.text {
+        for $task.text.Array.reverse {
              my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
         }
     }
@@ -448,10 +460,10 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $change=1;
-            my %task=("ORG_task",$e_add.get-text, "ORG_todo","TODO","ORG_level","1");
+            my Task $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1));
             $e_add.set-text("");
-            %task=create_task(%task);
-            @org.push(%task);
+            $task=create_task($task);
+            @org.push($task);
         }
         1
     }
@@ -482,16 +494,16 @@ class AppSignalHandlers {
                     $ts.swap($iter,$iter2);
                     @org[@path[*-1],@path2[*-1]] = @org[@path2[*-1],@path[*-1]];
                 } else {                # more difficult that level 1, because "text" is not movable
-                    my %task2=search-task-in-org-from($iter2);
-                    if %task2 {              # if not, probably text et no swap 
+                    my $task2=search-task-in-org-from($iter2);
+                    if $task2 {              # if not, probably text et no swap 
                         $ts.swap($iter,$iter2);
                         my $tp=$ts.get-path($iter);
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
-                        my %t_parent=search-task-in-org-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,%t_parent{'SUB_task'}.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,%t_parent{'SUB_task'}.Array);
-                        %t_parent{'SUB_task'}[$line,$line2] = %t_parent{'SUB_task'}[$line2,$line];
+                        my $t_parent=search-task-in-org-from($iter-parent);
+                        my $line=search-indice-in-sub-task-from($iter,$t_parent.sub-tasks.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.sub-tasks.Array);
+                        $t_parent.sub-tasks[$line,$line2] = $t_parent.sub-tasks[$line2,$line];
                     }
                 }
 #            }
@@ -512,16 +524,16 @@ class AppSignalHandlers {
                     $ts.swap($iter,$iter2);
                     @org[@path[*-1],@path2[*-1]] = @org[@path2[*-1],@path[*-1]];
                 } else {                # more difficult that level 1, because "text" is not movable
-                    my %task2=search-task-in-org-from($iter2);
-                    if %task2 {              # if not, probably text et no swap 
+                    my $task2=search-task-in-org-from($iter2);
+                    if $task2 {              # if not, probably text et no swap 
                         $ts.swap($iter,$iter2);
                         my $tp=$ts.get-path($iter);
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
-                        my %t_parent=search-task-in-org-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,%t_parent{'SUB_task'}.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,%t_parent{'SUB_task'}.Array);
-                        %t_parent{'SUB_task'}[$line,$line2] = %t_parent{'SUB_task'}[$line2,$line];
+                        my $t_parent=search-task-in-org-from($iter-parent);
+                        my $line=search-indice-in-sub-task-from($iter,$t_parent.sub-tasks.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.sub-tasks.Array);
+                        $t_parent.sub-tasks[$line,$line2] = $t_parent.sub-tasks[$line2,$line];
                     }
                 }
             }
@@ -530,16 +542,19 @@ class AppSignalHandlers {
     }
     method edit-button-click ( :$iter ) {
         $change=1;
-        set-task-in-org-from($iter,"ORG_task",$e_edit.get-text());
-        $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
+        my $task=search-task-in-org-from($iter);
+        $task.header=$e_edit.get-text;
+        $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
         $dialog.gtk_widget_destroy;
         1
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
+        my Task $task;
         if ($toggle_rb) {  # see definition 
             $change=1;
-            set-task-in-org-from($iter,"ORG_todo",$todo);
-            $ts.set_value( $iter, 0,string_from(search-task-in-org-from($iter)));
+        my $task=search-task-in-org-from($iter);
+        $task.todo=$todo;
+            $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
             my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
             my $text=$text-buffer.get-text( $start, $end, 0);
@@ -577,7 +592,7 @@ class AppSignalHandlers {
 
         # to edit task
         if search-task-in-org-from($iter) {      # if not, it's a text not now editable 
-            my %task=search-task-in-org-from($iter);
+            my $task=search-task-in-org-from($iter);
 
             # to move
             $b_move_up  .= new(:label('^'));
@@ -589,7 +604,7 @@ class AppSignalHandlers {
 
             # To edit task
             $e_edit  .= new();
-            $e_edit.set-text(%task{'ORG_task'});
+            $e_edit.set-text($task.header);
             $content-area.gtk_container_add($e_edit);
             $b_edit  .= new(:label('Update task'));
             $content-area.gtk_container_add($b_edit);
@@ -598,8 +613,8 @@ class AppSignalHandlers {
             # To edit text
             $tev_edit_text .= new;
             $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
-            if %task{'ORG_text'} {
-                my $text=%task{'ORG_text'}.join("\n");
+            if $task.text {
+                my $text=$task.text.join("\n");
                 $text-buffer.set-text($text,$text.encode('UTF-8').bytes);
             }
             $content-area.gtk_container_add($tev_edit_text);
@@ -608,15 +623,15 @@ class AppSignalHandlers {
             b_edit_text-register-signal($iter);
             
             # To manage TODO/DONE
-            %task=search-task-in-org-from($iter);
+            $task=search-task-in-org-from($iter);
             my Gnome::Gtk3::Grid $g_todo .= new;
             $content-area.gtk_container_add($g_todo);
             $rb_td1 .= new(:label('-'));
             $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
             $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
-            if    (!%task{'ORG_todo'})          { $rb_td1.set-active(1);}
-            elsif (%task{'ORG_todo'} eq 'TODO') { $rb_td2.set-active(1);}
-            elsif (%task{'ORG_todo'} eq 'DONE') { $rb_td3.set-active(1);} 
+            if    !$task.todo          { $rb_td1.set-active(1);}
+            elsif $task.todo eq 'TODO' { $rb_td2.set-active(1);}
+            elsif $task.todo eq 'DONE' { $rb_td3.set-active(1);} 
             $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
             $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
             $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
@@ -727,25 +742,7 @@ $top-window.show-all;
 
 #--------------------------------interface---------------------------------
 
-sub string_from(%task) {
-    if $presentation {
-        my $str_todo;
-        if (!%task{"ORG_todo"})             {$str_todo=' '}
-        elsif (%task{"ORG_todo"} eq "TODO") {$str_todo='<span foreground="red"> TODO</span>'}
-        elsif (%task{"ORG_todo"} eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-        my $str_task;
-        if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" > '~%task{"ORG_task"}~'</span>'}
-        elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="brown"> '~%task{"ORG_task"}~'</span>'}
-        return $str_todo ~ " " ~$str_task;
-    } else {
-        my $str_task;
-        if    (%task{"ORG_level"} eq "1") {$str_task='<span foreground="blue" size="xx-large" >'~%task{"ORG_task"}~'</span>'}
-        elsif (%task{"ORG_level"} eq "2") {$str_task='<span foreground="deepskyblue" size="x-large">'~%task{"ORG_task"}~'</span>'}
-        return $str_task;
-    }
-}
-
-sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
+sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
     my Gnome::Gtk3::TreeIter $parent-iter;
     if (!$iter) {
         my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
@@ -753,20 +750,21 @@ sub create_task(%task, Gnome::Gtk3::TreeIter $iter?) {
     } else {
         $parent-iter = $iter;
     }
-    my Gnome::Gtk3::TreeIter $iter_task = $ts.insert-with-values($parent-iter, -1, 0, string_from(%task));
-    if %task{'ORG_text'} {
-        for %task{'ORG_text'}.Array {
+    my Gnome::Gtk3::TreeIter $iter_task;
+    $iter_task = $ts.insert-with-values($parent-iter, -1, 0, $task.display-header);
+    if $task.text {
+        for $task.text.Array {
              my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
         }
     }
-    %task{'GTK_iter'}=$iter_task;
+    $task.iter=$iter_task;
 
-    if (%task{"SUB_task"}) {
-        for %task{"SUB_task"}.Array {
+    if $task.sub-tasks {
+        for $task.sub-tasks.Array {
             create_task($_,$iter_task);
         }
     }
-    return %task;
+    return $task;
 }
 #-----------------------------------sub-------------------------------
 sub read_file($name) {
@@ -791,31 +789,33 @@ sub open-file($name) {
     populate_task();
 }
 
-sub inspect-task(%task) {
-    say $ts.get-path(%task{'GTK_iter'}).get-indices;
-    if %task{"SUB_task"} {
-        for %task{"SUB_task"}.Array {
+sub inspect-task($task) {
+    say $ts.get-path($task.iter).get-indices;
+    if $task.sub-tasks {
+        for $task.sub-tasks.Array {
             inspect-task($_);
         }
     }
 }
 
 sub inspect() {
-    for @org -> %task {
-        inspect-task(%task);
+    for @org -> $task {
+        inspect-task($task);
     }
 }
 
-sub save_task(%task) {
+sub save_task($task) {
     my $orgmode="";
-    $orgmode~=join(" ",grep {$_}, ("*" x %task{"ORG_level"},%task{"ORG_todo"},%task{"ORG_task"}))~"\n";
-    if (%task{"ORG_text"}) {
-        for %task{"ORG_text"}.Array {
+#say $task;
+#say $task.level;
+    $orgmode~=join(" ",grep {$_}, ("*" x $task.level,$task.todo,$task.header))~"\n";
+    if ($task.text) {
+        for $task.text.Array {
             $orgmode~=$_~"\n";
         }
     }
-    if %task{"SUB_task"} {
-        for %task{"SUB_task"}.Array {
+    if $task.sub-tasks {
+        for $task.sub-tasks.Array {
             $orgmode~=save_task($_);
         }
     }
@@ -823,12 +823,14 @@ sub save_task(%task) {
 }
 
 sub save($name) {
+say @org;
     my $orgmode="";
     for @preface {
         $orgmode~=$_~"\n";
     }
-    for @org -> %task {
-        $orgmode~=save_task(%task);
+    for @org -> $task {
+#say $task;
+        $orgmode~=save_task($task);
     }
 	spurt $name, $orgmode;
 }

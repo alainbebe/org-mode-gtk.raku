@@ -42,8 +42,14 @@ remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** TODO display/edit Preface
 * raku improve
+** DONE create Class Task
+CLOSED: [2020-04-21 mar  18:35]
+** TODO Create Class Orgmode
 ** TODO create a task.pm
+
 ** TODO Create a org.pm
+** improve set-task-in-org-from
+with sub in parameter, and not EVAL in code
 ** DONE TODO -> DONE add line with date
 ** DONE Read filename on the command line
 ** TODO DONE to TODO, remove date but exist a blank line if no text
