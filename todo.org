@@ -41,6 +41,7 @@ CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** TODO display/edit Preface
+** TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

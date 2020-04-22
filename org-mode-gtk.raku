@@ -35,7 +35,6 @@ use Gnome::N::X;
 
 use Data::Dump;
 
-my $name;               # filename of current file
 my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
@@ -67,7 +66,7 @@ class Task {
     has Str  $.header    is rw; #  is required
     has Str  @.text      is rw;
     has Task @.sub-tasks is rw;
-    has Gnome::Gtk3::TreeIter $.iter is rw;
+    has Gnome::Gtk3::TreeIter $.iter is rw; # TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 
     method display-header {
         if $presentation {
@@ -89,10 +88,29 @@ class Task {
     }
 }
 
+my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
+my Str $filename;
+
 class OrgMode {
     has Str  @.preface is rw;
     has Task @.tasks   is rw;
+
+    method inspect-task(Task $task) {
+        say $ts.get-path($task.iter).get-indices;
+        if $task.sub-tasks {
+            for $task.sub-tasks.Array {
+                $.inspect-task($_);
+            }
+        }
+    }
+
+    method inspect() {
+        for $.tasks.Array {
+            $.inspect-task($_);
+        }
+    }
 }
+
 my OrgMode $om .=new;
 
 sub demo_procedural_read($name) {
@@ -141,7 +159,7 @@ class X {
   method exit-gui ( --> Int ) {
         if $change && !$debug {
             if $md.run==-8 {
-                save($name);
+                save($filename);
             }
             $md.destroy;
         }
@@ -188,7 +206,6 @@ $menu-bar.gtk-menu-shell-append($but-debug-menu) if $debug;
 $menu-bar.gtk-menu-shell-append($but-help-menu);
 
 my Gnome::Gtk3::ScrolledWindow $sw .= new();
-my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
@@ -266,7 +283,7 @@ sub  search-task-in-org-from($iter) {
     my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
     my Str $data-key = $v[0].get-string // '';
 #    say $data-key;
-#        @org = grep {  $_{'GTK_iter'} ne $iter }, @org; # TODO doesn't work, why ?
+#        @org = grep {  $_.iter ne $iter }, @org; # TODO doesn't work, why ?
     my @org_tmp = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
             eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, $om.tasks;
     # for subtask, find a recusive method
@@ -281,7 +298,7 @@ sub  search-task-in-org-from($iter) {
     if @org_tmp {
         return pop(@org_tmp);   # if click on a task
     } else {
-        return;                 # if click on text (not now editable)
+        return;                 # if click on text 
     }
 }
 
@@ -344,7 +361,7 @@ class AppSignalHandlers {
 
     method file-save( ) {
         $change=0;
-        save($name);
+        save($filename);
     }
     method file-save-test( ) {
         save("test.org");
@@ -356,7 +373,7 @@ class AppSignalHandlers {
     method file-open ( --> Int ) {
         if $change && !$debug {
             if $md.run==-8 {
-                save($name);
+                save($filename);
             }
             $md.destroy;
         }
@@ -375,8 +392,8 @@ class AppSignalHandlers {
             $ts.clear();
             $om.tasks=[]; 
             $om.preface=[]; 
-            $name = $dialog.get-filename;
-            open-file($name) if $name;
+            $filename = $dialog.get-filename;
+            open-file($filename) if $filename;
         }
         $dialog.gtk-widget-hide;
         1
@@ -385,14 +402,14 @@ class AppSignalHandlers {
     method file-quit( ) {
         if $change && !$debug {
             if $md.run==-8 {
-                save($name);
+                save($filename);
             }
             $md.destroy;
         }
         $m.gtk-main-quit;
     }
     method debug-inspect( ) {
-        inspect();
+        $om.inspect();
     }
     method option-presentation( ) {
         $presentation=!$presentation;
@@ -725,24 +742,9 @@ sub populate_task {
 }
 
 sub open-file($name) {
-    spurt $name~".bak",slurp $name; # fastbackup
+    spurt $name~".bak",slurp $name; # fast backup
     demo_procedural_read($name);
     populate_task();
-}
-
-sub inspect-task($task) {
-    say $ts.get-path($task.iter).get-indices;
-    if $task.sub-tasks {
-        for $task.sub-tasks.Array {
-            inspect-task($_);
-        }
-    }
-}
-
-sub inspect() {
-    for $om.tasks -> $task {
-        inspect-task($task);
-    }
 }
 
 sub save_task($task) {
@@ -777,8 +779,7 @@ sub save($name) {
 #--------------------------main--------------------------------
 
 sub MAIN($arg = '') {
-    $name=$arg;
-    open-file($name) if $name;
+    $filename=$arg;
+    open-file($filename) if $filename;
     $m.gtk-main;
 }
-
