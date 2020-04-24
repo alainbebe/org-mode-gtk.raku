@@ -39,6 +39,7 @@ my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
+my $no-done=False;      # display with no DONE
 my $i=0;                # for creation of level1 in tree
 my $now = DateTime.now(
     formatter => {
@@ -56,6 +57,8 @@ my $now = DateTime.now(
         .year, .month, .day, $dow, .hour, .minute
     }
 );
+
+my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 
 #----------------------- class Task & OrgMode
 #use lib ".";
@@ -86,17 +89,41 @@ class Task {
         }
         return $.todo~" "~$.header;
     }
+    method iter-get-indices { # find indices IN treestore, not tasks
+        if $.iter.defined && $.iter.is-valid {
+            return  $ts.get-path($.iter).get-indices
+        }
+        return;
+    }
+    method is-my-iter($iter) {
+        # $_.iter ne $iter # TODO doesn't work, why ?
+        return $.iter.is-valid && $.iter-get-indices eq $ts.get-path($iter).get-indices;
+    }
 }
 
-my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Str $filename;
 
 class OrgMode {
     has Str  @.preface is rw;
     has Task @.tasks   is rw;
 
+    method delete-iter-task(Task $task) {
+        $task.iter .=new;
+        if $task.sub-tasks {
+            for $task.sub-tasks.Array {
+                $.delete-iter-task($_);
+            }
+        }
+    }
+
+    method delete-iter() {
+        for $.tasks.Array {
+            $.delete-iter-task($_);
+        }
+    }
+
     method inspect-task(Task $task) {
-        say $ts.get-path($task.iter).get-indices;
+        say $task.iter-get-indices;
         if $task.sub-tasks {
             for $task.sub-tasks.Array {
                 $.inspect-task($_);
@@ -105,9 +132,11 @@ class OrgMode {
     }
 
     method inspect() {
+    say "begin inspect";
         for $.tasks.Array {
             $.inspect-task($_);
         }
+    say "end inspect";
     }
 }
 
@@ -266,10 +295,9 @@ $top-window.register-signal( $x, 'exit-gui', 'destroy');
 sub  add2-branch($iter) {
     if $e_add2.get-text {
         $change=1;
-        my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
+        # now, only on the header 1
         $om.tasks = map {
-            if ($ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
-                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string ) {
+            if $_.is-my-iter($iter) {
                 my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
                 create_task($task,$iter);
                 push($_.sub-tasks,$task);
@@ -280,18 +308,11 @@ sub  add2-branch($iter) {
 }
 
 sub  search-task-in-org-from($iter) {
-    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
-    my Str $data-key = $v[0].get-string // '';
-#    say $data-key;
-#        @org = grep {  $_.iter ne $iter }, @org; # TODO doesn't work, why ?
-    my @org_tmp = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
-            eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, $om.tasks;
-    # for subtask, find a recusive method
+    my @org_tmp = grep { $_.is-my-iter($iter)}, $om.tasks;
     if (!@org_tmp) { # not found, find in sub
-        for $om.tasks -> $task {
+        for $om.tasks -> $task {    # for subtask, find a recusive method
             if $task.sub-tasks && !@org_tmp {
-                @org_tmp = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string  
-                    eq $ts.tree-model-get-value( $iter, 0)[0].get-string }, $task.sub-tasks.Array;
+                @org_tmp = grep { $_.is-my-iter($iter) }, $task.sub-tasks.Array;
             }
         }
     }
@@ -304,18 +325,14 @@ sub  search-task-in-org-from($iter) {
 
 sub delete-branch($iter) {
     $change=1;
-    my Array[Gnome::GObject::Value] $v = $ts.tree-model-get-value( $iter, 0);
-    my Str $data-key = $v[0].get-string // '';
-    $om.tasks = grep { $ts.tree-model-get-value( $_.iter, 0)[0].get-string   # not good, but in waiting...
-            ne $ts.tree-model-get-value( $iter, 0)[0].get-string }, $om.tasks;
+    $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter
 
     # for subtask, find a recusive method
     for $om.tasks -> $task {
         my @org_sub;
         if $task.sub-tasks {
             for $task.sub-tasks.Array {
-                push(@org_sub,$_) if $ts.tree-model-get-value( $_.iter, 0)[0].get-string # TODO, see before
-                    ne $ts.tree-model-get-value( $iter, 0)[0].get-string 
+                push(@org_sub,$_) if !$_.is-my-iter($iter); 
             }
         }
         if @org_sub {
@@ -333,7 +350,7 @@ sub search-indice-in-sub-task-from($iter,@org-sub) {
     my $i=-1;
     for @org-sub {
         $i++;
-        return $i if $ts.get-path($iter).get-indices eq $ts.get-path($_.iter).get-indices;
+        return $i if $_.is-my-iter($iter);
         }
     return -1;
 }
@@ -413,6 +430,11 @@ class AppSignalHandlers {
     }
     method option-presentation( ) {
         $presentation=!$presentation;
+        reconstruct_tree();
+        1
+    }
+    method option-no-done( ) {
+        $no-done=!$no-done;
         reconstruct_tree();
         1
     }
@@ -578,7 +600,7 @@ class AppSignalHandlers {
             $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
             if $task.text {
                 my $text=$task.text.join("\n");
-                $text-buffer.set-text($text,$text.encode('UTF-8').bytes);
+                $text-buffer.set-text($text);
             }
             $content-area.gtk_container_add($tev_edit_text);
             $b_edit_text  .= new(:label('Update text'));
@@ -680,6 +702,10 @@ sub make-menubar-list-option() {
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'option-presentation', 'activate');
+    $menu-item .= new(:label("_No Done"));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'option-no-done', 'activate');
     $menu
 }
 
@@ -706,25 +732,27 @@ $top-window.show-all;
 #--------------------------------interface---------------------------------
 
 sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
-    my Gnome::Gtk3::TreeIter $parent-iter;
-    if (!$iter) {
-        my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
-        $parent-iter = $ts.get-iter($tp);
-    } else {
-        $parent-iter = $iter;
-    }
-    my Gnome::Gtk3::TreeIter $iter_task;
-    $iter_task = $ts.insert-with-values($parent-iter, -1, 0, $task.display-header);
-    if $task.text {
-        for $task.text.Array {
-             my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
+    if !($task.todo && $task.todo eq 'DONE') || !$no-done {
+        my Gnome::Gtk3::TreeIter $parent-iter;
+        if (!$iter) {
+            my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
+            $parent-iter = $ts.get-iter($tp);
+        } else {
+            $parent-iter = $iter;
         }
-    }
-    $task.iter=$iter_task;
+        my Gnome::Gtk3::TreeIter $iter_task;
+        $iter_task = $ts.insert-with-values($parent-iter, -1, 0, $task.display-header);
+        if $task.text {
+            for $task.text.Array {
+                 my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
+            }
+        }
+        $task.iter=$iter_task;
 
-    if $task.sub-tasks {
-        for $task.sub-tasks.Array {
-            create_task($_,$iter_task);
+        if $task.sub-tasks {
+            for $task.sub-tasks.Array {
+                create_task($_,$iter_task);
+            }
         }
     }
     return $task;
@@ -733,6 +761,7 @@ sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
 sub reconstruct_tree { # not good practice, not abuse
     $i=0;
     $ts.clear();
+    $om.delete-iter();
     populate_task();
 }
 

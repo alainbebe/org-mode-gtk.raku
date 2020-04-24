@@ -70,6 +70,13 @@ CLOSED: [2020-04-19 dim  16:45]
    git diff -b --ignore-blank-lines
 ** Log : Display one line
 git log --pretty=oneline
+** git branch
+git branch experimental     # create
+git branch                  # display
+git checkout experimental   # move
+...work...commit... move...
+git checkout master         # return master before
+git merge experimental      # merge, message if merge in conflict
 ** Commit : Do a partial commit
 You can use git add --patch 'filename' (or -p for short), and git will begin to break down your file into what it thinks are sensible "hunks" (portions of the file). It will then prompt you with this question:
 
@@ -112,3 +119,10 @@ https://www.perl.com/article/194/2015/9/22/Activating-Perl-6-syntax-highlighting
 ** TODO how select a word "raku"
 yw select only "begin" for variable "begin-end"
 ** TODO Fold/unfold code
+* search highlighting
+:set hlsearch
+command and because you apparently searched for ^.. To turn the highlighting off until the next search, execute
+:nohl
+or just search for something nonsensical, e.g. /alsdfkjslk. 
+To turn the highlighting off permanently, create your own ~/.vimrc and put this in it:
+:set nohlsearch
