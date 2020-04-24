@@ -209,30 +209,19 @@ $top-window.set-default-size( 640, 480);
 my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
 
-my Gnome::Gtk3::Menu $list-file-menu = make-menubar-list-file();
-my Gnome::Gtk3::Menu $list-option-menu = make-menubar-list-option();
-my Gnome::Gtk3::Menu $list-debug-menu = make-menubar-list-debug();
-my Gnome::Gtk3::Menu $list-help-menu = make-menubar-list-help();
-
-my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label('_File'));
-$but-file-menu.set-use-underline(1);
-$but-file-menu.set-submenu($list-file-menu);
-my Gnome::Gtk3::MenuItem $but-option-menu .= new(:label('_Option'));
-$but-option-menu.set-use-underline(1);
-$but-option-menu.set-submenu($list-option-menu);
-my Gnome::Gtk3::MenuItem $but-debug-menu .= new(:label('_Debug'));
-$but-debug-menu.set-use-underline(1);
-$but-debug-menu.set-submenu($list-debug-menu);
-my Gnome::Gtk3::MenuItem $but-help-menu .= new(:label('_Help'));
-$but-help-menu.set-use-underline(1);
-$but-help-menu.set-submenu($list-help-menu);
+sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
+    my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
+    $but-file-menu.set-use-underline(1);
+    $but-file-menu.set-submenu($sub-menu);
+    return $but-file-menu;
+}
 
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
-$menu-bar.gtk-menu-shell-append($but-file-menu);
-$menu-bar.gtk-menu-shell-append($but-option-menu);
-$menu-bar.gtk-menu-shell-append($but-debug-menu) if $debug;
-$menu-bar.gtk-menu-shell-append($but-help-menu);
+$menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file()));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option()));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help()));
 
 my Gnome::Gtk3::ScrolledWindow $sw .= new();
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
@@ -674,56 +663,38 @@ sub b_edit_text-register-signal ($iter) {
     $b_edit_text.register-signal( $ash, 'edit-text-button-click', 'clicked',:iter($iter));
 }
 
-# Create menu for the menu bar
+sub create-sub-menu($menu,$name,$ash,$method) {
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, $method, 'activate');
+} 
+
 sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Save"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'file-save', 'activate');
-    $menu-item .= new(:label("_Open"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'file-open', 'activate');
-    $menu-item .= new(:label("Save to _test"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item) if $debug;
-    $menu-item.register-signal( $ash, 'file-save-test', 'activate');
-    $menu-item .= new(:label("_Quit"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'file-quit', 'activate');
+    create-sub-menu($menu,"_Save",$ash,'file-save');
+    create-sub-menu($menu,"_Open",$ash,'file-open');
+    create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
+    create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
 
 sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Presentation"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'option-presentation', 'activate');
-    $menu-item .= new(:label("_No Done"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'option-no-done', 'activate');
+    create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
+    create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     $menu
 }
 
 sub make-menubar-list-debug() {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Inspect"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'debug-inspect', 'activate');
+    create-sub-menu($menu,"_Inspect",$ash,'debug-inspect');
     $menu
 }
 
 sub make-menubar-list-help ( ) {
     my Gnome::Gtk3::Menu $menu .= new;
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_About"));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'help-about', 'activate');
+    create-sub-menu($menu,"_About",$ash,'help-about');
     $menu
 }
 
