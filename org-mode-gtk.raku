@@ -39,8 +39,9 @@ my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
-my $no-done=False;      # display with no DONE
+my $no-done=True;       # display with no DONE
 my $i=0;                # for creation of level1 in tree
+my Str $filename;
 my $now = DateTime.now(
     formatter => {
         my $dow;
@@ -57,7 +58,6 @@ my $now = DateTime.now(
         .year, .month, .day, $dow, .hour, .minute
     }
 );
-
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 
 #----------------------- class Task & OrgMode
@@ -97,12 +97,9 @@ class Task {
     }
     method is-my-iter($iter) {
         # $_.iter ne $iter # TODO doesn't work, why ?
-        return $.iter.is-valid && $.iter-get-indices eq $ts.get-path($iter).get-indices;
+        return $.iter && $.iter.is-valid && $.iter-get-indices eq $ts.get-path($iter).get-indices;
     }
 }
-
-my Str $filename;
-
 class OrgMode {
     has Str  @.preface is rw;
     has Task @.tasks   is rw;
@@ -139,9 +136,7 @@ class OrgMode {
     say "end inspect";
     }
 }
-
 my OrgMode $om .=new;
-
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     my token content2 { .*? $$ };
@@ -178,12 +173,9 @@ sub demo_procedural_read($name) {
     say $om.tasks;
 #    say "after : \n", Dump $om.tasks;
 }
-
 #--------------------------- part GTK--------------------------------
-
 my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
-
 class X {
   method exit-gui ( --> Int ) {
         if $change && !$debug {
@@ -196,26 +188,22 @@ class X {
     1
   }
 }
-
 my Gnome::Gtk3::TreeIter $iter;
 
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
-
 
 my Gnome::Gtk3::Window $top-window .= new(:title('Org-Mode with GTK and raku'));
 $top-window.set-default-size( 640, 480);
 
 my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
-
 sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
     my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
     $but-file-menu.set-use-underline(1);
     $but-file-menu.set-submenu($sub-menu);
     return $but-file-menu;
 }
-
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file()));
@@ -295,7 +283,6 @@ sub  add2-branch($iter) {
         $dialog.gtk_widget_destroy;
     }
 }
-
 sub  search-task-in-org-from($iter) {
     my @org_tmp = grep { $_.is-my-iter($iter)}, $om.tasks;
     if (!@org_tmp) { # not found, find in sub
@@ -311,7 +298,6 @@ sub  search-task-in-org-from($iter) {
         return;                 # if click on text 
     }
 }
-
 sub delete-branch($iter) {
     $change=1;
     $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter
@@ -333,7 +319,6 @@ sub delete-branch($iter) {
     $ts.gtk-tree-store-remove($iter);
     $dialog.gtk_widget_destroy;
 }
-
 sub search-indice-in-sub-task-from($iter,@org-sub) {
     #TODO to improve
     my $i=-1;
@@ -343,7 +328,6 @@ sub search-indice-in-sub-task-from($iter,@org-sub) {
         }
     return -1;
 }
-
 sub update-text($iter,$new-text) {
     my $task=search-task-in-org-from($iter);
     $task.text=$new-text.split(/\n/);
@@ -359,8 +343,6 @@ sub update-text($iter,$new-text) {
         }
     }
 }
-
-# Class to handle signals
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
@@ -633,7 +615,6 @@ class AppSignalHandlers {
         1
     }
 }
-
 my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
@@ -654,22 +635,18 @@ sub b_move_up-register-signal ($iter) {
 sub b_move_down-register-signal ($iter) {
     $b_move_down.register-signal( $ash, 'move-down-button-click', 'clicked',:iter($iter));
 }
-
 sub b_edit-register-signal ($iter) {
     $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
 }
-
 sub b_edit_text-register-signal ($iter) {
     $b_edit_text.register-signal( $ash, 'edit-text-button-click', 'clicked',:iter($iter));
 }
-
 sub create-sub-menu($menu,$name,$ash,$method) {
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, $method, 'activate');
 } 
-
 sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Save",$ash,'file-save');
@@ -678,30 +655,23 @@ sub make-menubar-list-file( ) {
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
-
 sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     $menu
 }
-
 sub make-menubar-list-debug() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Inspect",$ash,'debug-inspect');
     $menu
 }
-
 sub make-menubar-list-help ( ) {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_About",$ash,'help-about');
     $menu
 }
-
-$top-window.show-all;
-
 #--------------------------------interface---------------------------------
-
 sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
     if !($task.todo && $task.todo eq 'DONE') || !$no-done {
         my Gnome::Gtk3::TreeIter $parent-iter;
@@ -735,18 +705,15 @@ sub reconstruct_tree { # not good practice, not abuse
     $om.delete-iter();
     populate_task();
 }
-
 sub populate_task {
     $om.tasks = map {create_task($_)}, $om.tasks;
 #    say "after create task : \n",$om.tasks;
 }
-
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     demo_procedural_read($name);
     populate_task();
 }
-
 sub save_task($task) {
     my $orgmode="";
 #say $task;
@@ -764,7 +731,6 @@ sub save_task($task) {
     }
     return $orgmode;
 }
-
 sub save($name) {
     my $orgmode="";
     for $om.preface {
@@ -775,10 +741,9 @@ sub save($name) {
     }
 	spurt $name, $orgmode;
 }
-
-#--------------------------main--------------------------------
-
+#-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
+    $top-window.show-all;
     $filename=$arg;
     open-file($filename) if $filename;
     $m.gtk-main;

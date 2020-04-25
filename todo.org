@@ -2,7 +2,7 @@
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
 ** TODO Resolve problem "é" in text
-it's a problem wit h count of utf8 char
+it's a problem with count of utf8 char
 ** TODO Save file failed if not exist a file name
 ** TODO add "Save as"
 * GTK improve
@@ -23,7 +23,8 @@ soit en premier en commençant à l'envers
 Accent "é" create problem
 Refresh of tree to improve
 ** TODO link F11 to maximize the window
-** TODO Display only TODO task
+** DONE Display only TODO task
+CLOSED: [2020-04-25 sam  08:02]
 Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Delete "text" of a task
@@ -42,6 +43,7 @@ remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** TODO display/edit Preface
 ** TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
+** TODO Activate Link http in "text"
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -50,7 +52,7 @@ CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
 
 ** TODO Create a org.pm
-** improve set-task-in-org-from
+** TODO improve set-task-in-org-from
 with sub in parameter, and not EVAL in code
 ** DONE TODO -> DONE add line with date
 ** DONE Read filename on the command line
@@ -118,11 +120,23 @@ git reset --hard HEAD
 https://www.perl.com/article/194/2015/9/22/Activating-Perl-6-syntax-highlighting-in-Vim/
 ** TODO how select a word "raku"
 yw select only "begin" for variable "begin-end"
-** TODO Fold/unfold code
-* search highlighting
+** DONE Fold/unfold code
+CLOSED: [2020-04-25 sam  10:42]
+** TODO Use Perl6::Tidy
+Install fail
+See issue https://github.com/drforr/perl6-Perl6-Parser/issues/24
+* Vim help
+** Fold
+set foldmethod=indent
+zc close, zo open, za alterne zC,zO,zA all fold
+set sw=4 ts=4 sts=4 et tw=78 foldmarker={,} foldlevel=0 foldmethod=marker spell:
+** search highlighting
 :set hlsearch
 command and because you apparently searched for ^.. To turn the highlighting off until the next search, execute
 :nohl
 or just search for something nonsensical, e.g. /alsdfkjslk. 
 To turn the highlighting off permanently, create your own ~/.vimrc and put this in it:
 :set nohlsearch
+** View 2 file
+:new
+ctrl-w up/down to change
