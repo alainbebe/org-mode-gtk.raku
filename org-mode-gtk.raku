@@ -166,11 +166,12 @@ sub demo_procedural_read($name) {
                 }
                 push($om.tasks,$task);
             } else {                                     # preface
+                $presentation = $_ ~~ /presentation\=True/ ?? True !! False;
                 push($om.preface,$_);
             }
         }
     }
-    say $om.tasks;
+#    say $om.tasks;
 #    say "after : \n", Dump $om.tasks;
 }
 #--------------------------- part GTK--------------------------------

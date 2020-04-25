@@ -44,6 +44,9 @@ Solution : $text.encode('UTF-8').bytes
 ** TODO display/edit Preface
 ** TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 ** TODO Activate Link http in "text"
+** DONE Use PROPERTIES to choice presentation mode
+CLOSED: [2020-04-25 sam  12:33]
+#+PROPERTY: var  foo=1
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -67,51 +70,6 @@ CLOSED: [2020-04-19 dim  16:45]
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
    git diff -b --ignore-blank-lines
-* git help
-** Diff : Ne pas afficher les blancs
-   git diff -b --ignore-blank-lines
-** Log : Display one line
-git log --pretty=oneline
-** git branch
-git branch experimental     # create
-git branch                  # display
-git checkout experimental   # move
-...work...commit... move...
-git checkout master         # return master before
-git merge experimental      # merge, message if merge in conflict
-** Commit : Do a partial commit
-You can use git add --patch 'filename' (or -p for short), and git will begin to break down your file into what it thinks are sensible "hunks" (portions of the file). It will then prompt you with this question:
-
-Stage this hunk [y,n,q,a,d,/,j,J,g,s,e,?]?
-
-Here is a description of each option:
-
-    y stage this hunk for the next commit
-    n do not stage this hunk for the next commit
-    q quit; do not stage this hunk or any of the remaining hunks
-    a stage this hunk and all later hunks in the file
-    d do not stage this hunk or any of the later hunks in the file
-    g select a hunk to go to
-    / search for a hunk matching the given regex
-    j leave this hunk undecided, see next undecided hunk
-    J leave this hunk undecided, see next hunk
-    k leave this hunk undecided, see previous undecided hunk
-    K leave this hunk undecided, see previous hunk
-    s split the current hunk into smaller hunks
-    e manually edit the current hunk
-    ? print hunk help
-
-If the file is not in the repository yet, you can first do git add -N 'filename'. Afterwards you can go on with git add -p 'filename'.
-
-Afterwards, you can use:
-
-    git diff --staged to check that you staged the correct changes
-    git reset -p to unstage mistakenly added hunks
-    git commit -v to view your commit while you edit the commit message.
-
-Note this is far different than the git format-patch command, whose purpose is to parse commit data into a .patch files.
-** supprimer les modification
-git reset --hard HEAD
 * sed
 ** DONE mettre debug à 0 avant le push
    sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
@@ -125,18 +83,3 @@ CLOSED: [2020-04-25 sam  10:42]
 ** TODO Use Perl6::Tidy
 Install fail
 See issue https://github.com/drforr/perl6-Perl6-Parser/issues/24
-* Vim help
-** Fold
-set foldmethod=indent
-zc close, zo open, za alterne zC,zO,zA all fold
-set sw=4 ts=4 sts=4 et tw=78 foldmarker={,} foldlevel=0 foldmethod=marker spell:
-** search highlighting
-:set hlsearch
-command and because you apparently searched for ^.. To turn the highlighting off until the next search, execute
-:nohl
-or just search for something nonsensical, e.g. /alsdfkjslk. 
-To turn the highlighting off permanently, create your own ~/.vimrc and put this in it:
-:set nohlsearch
-** View 2 file
-:new
-ctrl-w up/down to change
