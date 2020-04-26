@@ -1,7 +1,15 @@
+* Org features
+** DONE Priorities
+CLOSED: [2020-04-26 dim  09:02]
+[#A] Create tag priorities
+** TODO Tag
+** TODO Scheduled date
+** TODO Deadline date
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
-** TODO Resolve problem "é" in text
+** DONE Resolve problem "é" in text
+CLOSED: [2020-04-25 sam  19:00]
 it's a problem with count of utf8 char
 ** TODO Save file failed if not exist a file name
 ** TODO add "Save as"
@@ -31,8 +39,6 @@ Improve this swap if task is hide
 Presently, it's possible to remove all but a blank line exist enough
 ** DONE Create a different display for README style or TODO style
 ** TODO Add new file menu
-** TODO [#A] Create tag priorities
-with A, B or C
 ** TODO Sort Priorities
 ** TODO Shift-left unfold only current selection, not child 
 or capture keyboard and redifine de Shift-right

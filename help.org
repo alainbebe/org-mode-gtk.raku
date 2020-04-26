@@ -49,7 +49,7 @@ git reset --hard HEAD
 set foldmethod=indent
 zc close, zo open, za alterne zC,zO,zA all fold
 set sw=4 ts=4 sts=4 et tw=78 foldmarker={,} foldlevel=0 foldmethod=marker spell:
-** search highlighting
+** Search Highlighting
 :set hlsearch
 command and because you apparently searched for ^.. To turn the highlighting off until the next search, execute
 :nohl

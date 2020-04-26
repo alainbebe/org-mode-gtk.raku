@@ -38,6 +38,7 @@ use Data::Dump;
 my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
+my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
 my $i=0;                # for creation of level1 in tree
@@ -66,28 +67,32 @@ my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 class Task {
     has Int  $.level     is rw;
     has Str  $.todo      is rw;
+    has Str  $.priority  is rw;
     has Str  $.header    is rw; #  is required
     has Str  @.text      is rw;
     has Task @.sub-tasks is rw;
     has Gnome::Gtk3::TreeIter $.iter is rw; # TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 
     method display-header {
+        my $display;
         if $presentation {
-            my $str_todo;
-            if (!$.todo)             {$str_todo=' '}
-            elsif ($.todo eq "TODO") {$str_todo='<span foreground="red"  > TODO</span>'}
-            elsif ($.todo eq "DONE") {$str_todo='<span foreground="green"> DONE</span>'}
-            my $str_task;
-            if    ($.level==1) {$str_task='<span foreground="blue" > '~$.header~'</span>'}
-            elsif ($.level==2) {$str_task='<span foreground="brown"> '~$.header~'</span>'}
-            return $str_todo ~ " " ~$str_task;
+            if (!$.todo)             {$display~=' '}
+            elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
+            elsif ($.todo eq "DONE") {$display~='<span foreground="green"> DONE</span>'}
+
+            if $.priority {
+                if    $.priority ~~ /A/ {$display~=' <span foreground="fuchsia">'~$.priority~'</span>'}
+                elsif $.priority ~~ /B/ {$display~=' <span foreground="grey">'~$.priority~'</span>'}
+                elsif $.priority ~~ /C/ {$display~=' <span foreground="lime">'~$.priority~'</span>'}
+            }
+
+            if    ($.level==1) {$display~='<span foreground="blue" > '~$.header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="brown"> '~$.header~'</span>'}
         } else {
-            my $str_task;
-            if    ($.level==1) {$str_task='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
-            elsif ($.level==2) {$str_task='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
-            return $str_task;
+            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
         }
-        return $.todo~" "~$.header;
+        return $display;
     }
     method iter-get-indices { # find indices IN treestore, not tasks
         if $.iter.defined && $.iter.is-valid {
@@ -142,14 +147,16 @@ sub demo_procedural_read($name) {
     my token content2 { .*? $$ };
 
     for $name.IO.lines {
-        if ($_~~/^"* "((["TODO"|"DONE"])" ")?<content2>/) { # header level 1
+        if ( $_ ~~ /^"* " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? <content2> /) { # header level 1
             my Task $task.=new(:header($<content2>.Str),:level(1));
-            $task.todo=$0[0].Str if $0[0];
+            $task.todo    =$0[0].Str if $0[0];
+            $task.priority=$1[0].Str if $1[0];
             push($om.tasks,$task);
-        } elsif ($_~~/^"** "((["TODO"|"DONE"])" ")?<content2>/) { # headerlvl 2 TODO create recursive sub
+        } elsif ( $_ ~~ /^"** " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? <content2>/ ) { # header lvl 2 TODO create recursive sub
             my $task=pop($om.tasks);
             my Task $sub-task.=new(:header($<content2>.Str),:level(2));
-            $sub-task.todo=$0[0].Str if $0[0];
+            $sub-task.todo    =$0[0].Str if $0[0];
+            $sub-task.priority=$1[0].Str if $1[0];
             push($task.sub-tasks,$sub-task);
             push($om.tasks,$task);
         } else {
@@ -259,6 +266,10 @@ my Gnome::Gtk3::Button $b_move_up;
 my Gnome::Gtk3::Button $b_move_down;
 my Gnome::Gtk3::Button $b_edit;
 my Gnome::Gtk3::Button $b_edit_text;
+my Gnome::Gtk3::RadioButton $rb_pr1;
+my Gnome::Gtk3::RadioButton $rb_pr2;
+my Gnome::Gtk3::RadioButton $rb_pr3;
+my Gnome::Gtk3::RadioButton $rb_pr4;
 my Gnome::Gtk3::RadioButton $rb_td1;
 my Gnome::Gtk3::RadioButton $rb_td2;
 my Gnome::Gtk3::RadioButton $rb_td3;
@@ -347,7 +358,6 @@ sub update-text($iter,$new-text) {
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
-
     method file-save( ) {
         $change=0;
         save($filename);
@@ -357,8 +367,6 @@ class AppSignalHandlers {
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
     }
-
-  # Show dialog
     method file-open ( --> Int ) {
         if $change && !$debug {
             if $md.run==-8 {
@@ -387,7 +395,6 @@ class AppSignalHandlers {
         $dialog.gtk-widget-hide;
         1
     }
-
     method file-quit( ) {
         if $change && !$debug {
             if $md.run==-8 {
@@ -505,12 +512,24 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method prior-button-click ( :$iter,:$prior --> Int ) {
+        my Task $task;
+        if ($toggle_rb_pr) {  # see definition 
+            $change=1;
+            my $task=search-task-in-org-from($iter);
+            $task.priority=$prior??"#"~$prior!!"";
+            $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+            $dialog.gtk_widget_destroy;
+        }
+        $toggle_rb_pr=!$toggle_rb_pr;
+        1
+    }
     method todo-button-click ( :$iter,:$todo --> Int ) {
         my Task $task;
         if ($toggle_rb) {  # see definition 
             $change=1;
-        my $task=search-task-in-org-from($iter);
-        $task.todo=$todo;
+            my $task=search-task-in-org-from($iter);
+            $task.todo=$todo;
             $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
             my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
@@ -579,6 +598,24 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($b_edit_text);
             b_edit_text-register-signal($iter);
             
+            # To manage priority A,B,C.
+            $task=search-task-in-org-from($iter);
+            my Gnome::Gtk3::Grid $g_prio .= new;
+            $content-area.gtk_container_add($g_prio);
+            $rb_pr1 .= new(:label('-'));
+            $rb_pr2 .= new( :group-from($rb_pr1), :label('A'));
+            $rb_pr3 .= new( :group-from($rb_pr1), :label('B'));
+            $rb_pr4 .= new( :group-from($rb_pr1), :label('C'));
+            if    !$task.priority          { $rb_pr1.set-active(1);}
+            elsif $task.priority eq '#A' { $rb_pr2.set-active(1);}
+            elsif $task.priority eq '#B' { $rb_pr3.set-active(1);} 
+            elsif $task.priority eq '#C' { $rb_pr4.set-active(1);} 
+            $g_prio.gtk-grid-attach( $rb_pr1, 0, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr2, 1, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr3, 2, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr4, 3, 0, 1, 1);
+            b_rb_prior-register-signal($iter);
+
             # To manage TODO/DONE
             $task=search-task-in-org-from($iter);
             my Gnome::Gtk3::Grid $g_todo .= new;
@@ -624,6 +661,12 @@ sub b_add2-register-signal ($iter) {
 }
 sub b_del-register-signal ($iter) {
     $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));
+}
+sub b_rb_prior-register-signal($iter) {
+    $rb_pr1.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior(""));
+    $rb_pr2.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("A"));
+    $rb_pr3.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("B"));
+    $rb_pr4.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("C"));
 }
 sub b_rb-register-signal($iter) {
     $rb_td1.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
@@ -718,8 +761,10 @@ sub open-file($name) {
 sub save_task($task) {
     my $orgmode="";
 #say $task;
-#say $task.level;
-    $orgmode~=join(" ",grep {$_}, ("*" x $task.level,$task.todo,$task.header))~"\n";
+    $orgmode~="*" x $task.level~" ";
+    $orgmode~=$task.todo~" " if $task.todo;
+    $orgmode~="\["~$task.priority~"\] " if $task.priority;
+    $orgmode~=$task.header~"\n";
     if ($task.text) {
         for $task.text.Array {
             $orgmode~=$_~"\n";

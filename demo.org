@@ -3,16 +3,16 @@ preface
 * DOES task
 detail
 detail suite
-** sub task1
+** [#B] sub task1                                                     :es:sai:
 ** DONE sub task2
-* TODO another task
+* TODO [#D] another task
 * DONE try
 ** DONE sub try 1
 detail of sub task
-* final
+* [#A] final
 other detail
 ** sub final
-* essai
+* [#C] essai
 ** TODO 1
 ** DONE 2
    CLOSED: [2020-04-18 sam 16:29]
