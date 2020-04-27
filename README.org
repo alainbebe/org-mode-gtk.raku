@@ -15,3 +15,8 @@ This version is unstable, read, add, write but very simple tasks
 - ** other second level
 -    more text
 - * another top level headline
+
+** Installation
+- zef install Gnome::Gtk3
+- zef install Data::Dump
+- git clone https://github.com/alainbebe/org-mode-gtk.raku.git

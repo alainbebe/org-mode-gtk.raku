@@ -69,6 +69,7 @@ class Task {
     has Str  $.todo      is rw;
     has Str  $.priority  is rw;
     has Str  $.header    is rw; #  is required
+    has Str  @.tags      is rw;
     has Str  @.text      is rw;
     has Task @.sub-tasks is rw;
     has Gnome::Gtk3::TreeIter $.iter is rw; # TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
@@ -88,6 +89,11 @@ class Task {
 
             if    ($.level==1) {$display~='<span foreground="blue" > '~$.header~'</span>'}
             elsif ($.level==2) {$display~='<span foreground="brown"> '~$.header~'</span>'}
+
+            if $.tags {
+                $display~=' <span foreground="grey">'~$.tags~'</span>';
+            }
+
         } else {
             if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
             elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
@@ -144,19 +150,19 @@ class OrgMode {
 my OrgMode $om .=new;
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
-    my token content2 { .*? $$ };
-
     for $name.IO.lines {
-        if ( $_ ~~ /^"* " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? <content2> /) { # header level 1
-            my Task $task.=new(:header($<content2>.Str),:level(1));
+        if $_~~ /^"* " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
+            my Task $task.=new(:header($2.Str),:level(1));
             $task.todo    =$0[0].Str if $0[0];
             $task.priority=$1[0].Str if $1[0];
+            $task.tags=split(/\:/,$3[0])[1..^*-1] if $3[0];
             push($om.tasks,$task);
-        } elsif ( $_ ~~ /^"** " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? <content2>/ ) { # header lvl 2 TODO create recursive sub
+        } elsif $_~~ /^"** " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header lvl 2 TODO create recursive sub
             my $task=pop($om.tasks);
-            my Task $sub-task.=new(:header($<content2>.Str),:level(2));
+            my Task $sub-task.=new(:header($2.Str),:level(2));
             $sub-task.todo    =$0[0].Str if $0[0];
             $sub-task.priority=$1[0].Str if $1[0];
+            $sub-task.tags=split(/\:/,$3[0])[1..^*-1] if $3[0];
             push($task.sub-tasks,$sub-task);
             push($om.tasks,$task);
         } else {
@@ -258,6 +264,7 @@ $about.set-website-label("http://www.barbason.be");
 
 my Gnome::Gtk3::Entry $e_add2;
 my Gnome::Gtk3::Entry $e_edit;
+my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::Button $b_del;
@@ -265,6 +272,7 @@ my Gnome::Gtk3::Button $b_add2;
 my Gnome::Gtk3::Button $b_move_up;
 my Gnome::Gtk3::Button $b_move_down;
 my Gnome::Gtk3::Button $b_edit;
+my Gnome::Gtk3::Button $b_edit_tags;
 my Gnome::Gtk3::Button $b_edit_text;
 my Gnome::Gtk3::RadioButton $rb_pr1;
 my Gnome::Gtk3::RadioButton $rb_pr2;
@@ -512,6 +520,14 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method edit-tags-button-click ( :$iter ) {
+        $change=1;
+        my $task=search-task-in-org-from($iter);
+        $task.tags=split(/" "/,$e_edit_tags.get-text);
+        $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+        $dialog.gtk_widget_destroy;
+        1
+    }
     method prior-button-click ( :$iter,:$prior --> Int ) {
         my Task $task;
         if ($toggle_rb_pr) {  # see definition 
@@ -585,6 +601,14 @@ class AppSignalHandlers {
             $b_edit  .= new(:label('Update task'));
             $content-area.gtk_container_add($b_edit);
             b_edit-register-signal($iter);
+            
+            # To edit tags
+            $e_edit_tags  .= new();
+            $e_edit_tags.set-text(join(" ",$task.tags));
+            $content-area.gtk_container_add($e_edit_tags);
+            $b_edit_tags  .= new(:label('Update tags'));
+            $content-area.gtk_container_add($b_edit_tags);
+            b_edit_tags-register-signal($iter);
             
             # To edit text
             $tev_edit_text .= new;
@@ -682,6 +706,9 @@ sub b_move_down-register-signal ($iter) {
 sub b_edit-register-signal ($iter) {
     $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
 }
+sub b_edit_tags-register-signal ($iter) {
+    $b_edit_tags.register-signal( $ash, 'edit-tags-button-click', 'clicked',:iter($iter));
+}
 sub b_edit_text-register-signal ($iter) {
     $b_edit_text.register-signal( $ash, 'edit-text-button-click', 'clicked',:iter($iter));
 }
@@ -764,7 +791,9 @@ sub save_task($task) {
     $orgmode~="*" x $task.level~" ";
     $orgmode~=$task.todo~" " if $task.todo;
     $orgmode~="\["~$task.priority~"\] " if $task.priority;
-    $orgmode~=$task.header~"\n";
+    $orgmode~=$task.header;
+    $orgmode~=" :"~join(':',$task.tags)~':' if $task.tags;
+    $orgmode~="\n";
     if ($task.text) {
         for $task.text.Array {
             $orgmode~=$_~"\n";
