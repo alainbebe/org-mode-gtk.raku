@@ -2,7 +2,8 @@
 ** DONE Priorities
 CLOSED: [2020-04-26 dim  09:02]
 [#A] Create tag priorities
-** TODO Tag
+** DONE Tag
+CLOSED: [2020-04-27 lun  19:31]
 ** TODO Scheduled date
 ** TODO Deadline date
 * GTK bug
@@ -61,15 +62,11 @@ CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
 
 ** TODO Create a org.pm
-** TODO improve set-task-in-org-from
-with sub in parameter, and not EVAL in code
 ** DONE TODO -> DONE add line with date
 ** DONE Read filename on the command line
 ** TODO DONE to TODO, remove date but exist a blank line if no text
-CLOSED: [2020-04-18 sam  17:41]
 Utiliser update text, 
 en mettant la nouvelle chaine en premier
-** TODO read ex-scale to improve ash writing
 ** DONE read/write preface
 CLOSED: [2020-04-19 dim  16:45]
 * git
