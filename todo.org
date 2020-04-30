@@ -6,6 +6,7 @@ CLOSED: [2020-04-26 dim  09:02]
 CLOSED: [2020-04-27 lun  19:31]
 ** TODO Scheduled date
 ** TODO Deadline date
+** TODO pass to level 3 and more
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
@@ -54,6 +55,8 @@ Solution : $text.encode('UTF-8').bytes
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
 #+PROPERTY: var  foo=1
+** TODO Possibility to do all action with menu
+** TODO Create one (or 2) bar menu
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -61,7 +64,6 @@ CLOSED: [2020-04-21 mar  18:35]
 CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
 
-** TODO Create a org.pm
 ** DONE TODO -> DONE add line with date
 ** DONE Read filename on the command line
 ** TODO DONE to TODO, remove date but exist a blank line if no text
@@ -69,6 +71,8 @@ Utiliser update text,
 en mettant la nouvelle chaine en premier
 ** DONE read/write preface
 CLOSED: [2020-04-19 dim  16:45]
+** TODO Remove @org and create a primary Task
+** TODO Move doesn't work in mode No-done.
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

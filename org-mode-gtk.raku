@@ -40,7 +40,7 @@ my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
-my $no-done=True;       # display with no DONE
+my $no-done=False;      # display with no DONE
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
 my $now = DateTime.now(
@@ -123,13 +123,11 @@ class OrgMode {
             }
         }
     }
-
     method delete-iter() {
         for $.tasks.Array {
             $.delete-iter-task($_);
         }
     }
-
     method inspect-task(Task $task) {
         say $task.iter-get-indices;
         if $task.sub-tasks {
@@ -138,13 +136,20 @@ class OrgMode {
             }
         }
     }
-
     method inspect() {
-    say "begin inspect";
+        say "begin inspect";
         for $.tasks.Array {
             $.inspect-task($_);
         }
-    say "end inspect";
+        say "end inspect";
+    }
+    method find($task) {
+        say "begin inspect";
+        for $.tasks.Array {
+            say $_.header;
+            say $task eq $_;
+        }
+        say "end inspect";
     }
 }
 my OrgMode $om .=new;
@@ -270,6 +275,8 @@ my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::Button $b_del;
 my Gnome::Gtk3::Button $b_add2;
 my Gnome::Gtk3::Button $b_move_up;
+my Gnome::Gtk3::Button $b_move_left;
+my Gnome::Gtk3::Button $b_move_right;
 my Gnome::Gtk3::Button $b_move_down;
 my Gnome::Gtk3::Button $b_edit;
 my Gnome::Gtk3::Button $b_edit_tags;
@@ -296,11 +303,11 @@ sub  add2-branch($iter) {
         $om.tasks = map {
             if $_.is-my-iter($iter) {
                 my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
+                $e_add2.set-text(");
                 create_task($task,$iter);
                 push($_.sub-tasks,$task);
             } ; $_
         }, $om.tasks;
-        $dialog.gtk_widget_destroy;
     }
 }
 sub  search-task-in-org-from($iter) {
@@ -320,7 +327,7 @@ sub  search-task-in-org-from($iter) {
 }
 sub delete-branch($iter) {
     $change=1;
-    $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter
+    $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter in task level 1
 
     # for subtask, find a recusive method
     for $om.tasks -> $task {
@@ -337,7 +344,6 @@ sub delete-branch($iter) {
         }
     }
     $ts.gtk-tree-store-remove($iter);
-    $dialog.gtk_widget_destroy;
 }
 sub search-indice-in-sub-task-from($iter,@org-sub) {
     #TODO to improve
@@ -362,6 +368,10 @@ sub update-text($iter,$new-text) {
              my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
         }
     }
+}
+sub get-iter-from-path(@path) {
+    my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
+    return $ts.get-iter($tp);
 }
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -449,7 +459,6 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
         my $new-text=$text-buffer.get-text( $start, $end, 0);
         update-text($iter,$new-text);
-        $dialog.gtk_widget_destroy;
         1
     }
     method move-down-button-click ( :$iter ) {
@@ -460,7 +469,7 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
         my $iter2 = $ts.get-iter($tp);
         if $iter2.is-valid {  # if not, it's the last child
-#            if search-task-in-org-from($iter2) { # the down child is always a task but aday may be...
+#            if search-task-in-org-from($iter2) { # the down child is always a task but a day may be...
                 $change=1;
                 if $ts.get-path($iter).get-depth==1 {  # level 1 only
                     $ts.swap($iter,$iter2);
@@ -480,6 +489,37 @@ class AppSignalHandlers {
                 }
 #            }
         }
+        1
+    }
+    method move-right-button-click ( :$iter ) {
+        my @path= $ts.get-path($iter).get-indices.Array;
+        return if @path.elems==2;                 # level 3 is not manage
+        return if @path.elems==1 and @path[0]==0; # first task doesn't go to left, rewrite for level 3
+        my $task=search-task-in-org-from($iter);
+        my @path-parent=@path;
+        @path-parent[0]--; # rewrite for level 3
+        my $iter-parent=get-iter-from-path(@path-parent);
+        my $task-parent=search-task-in-org-from($iter-parent);
+        delete-branch($iter); 
+        $task.level++; # todo and sub-task... but wait level 3
+        push($task-parent.sub-tasks,$task); 
+        create_task($task,$iter-parent);  # todo manage sub task, wait level 3
+        $dialog.gtk_widget_destroy; # remove when level 3
+        1
+    }
+    method move-left-button-click ( :$iter ) {
+        my @path= $ts.get-path($iter).get-indices.Array;
+        return if @path.elems==1; # level 1 doesn't go to left
+        my $task=search-task-in-org-from($iter);
+        my @path-parent=@path;
+        pop(@path-parent);
+        my $iter-parent=get-iter-from-path(@path-parent);
+        my $task-parent=search-task-in-org-from($iter-parent);
+        delete-branch($iter); 
+        $task.level--; # todo and sub-task... but wait level 3
+        push($om.tasks,$task);  # pour l'instant insérer task à la fin, plutot faire un insert au bon endroit
+        create_task($task);  # todo manage sub task, wait level 3
+        $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
     method move-up-button-click ( :$iter ) {
@@ -517,7 +557,6 @@ class AppSignalHandlers {
         my $task=search-task-in-org-from($iter);
         $task.header=$e_edit.get-text;
         $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
-        $dialog.gtk_widget_destroy;
         1
     }
     method edit-tags-button-click ( :$iter ) {
@@ -525,7 +564,6 @@ class AppSignalHandlers {
         my $task=search-task-in-org-from($iter);
         $task.tags=split(/" "/,$e_edit_tags.get-text);
         $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
-        $dialog.gtk_widget_destroy;
         1
     }
     method prior-button-click ( :$iter,:$prior --> Int ) {
@@ -535,7 +573,6 @@ class AppSignalHandlers {
             my $task=search-task-in-org-from($iter);
             $task.priority=$prior??"#"~$prior!!"";
             $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
-            $dialog.gtk_widget_destroy;
         }
         $toggle_rb_pr=!$toggle_rb_pr;
         1
@@ -560,13 +597,13 @@ class AppSignalHandlers {
                 $text~~s/^\s*CLOSED.*?\]\n?//;
                 update-text($iter,$text);
             }
-            $dialog.gtk_widget_destroy;
         }
         $toggle_rb=!$toggle_rb;
         1
     }
     method del-button-click ( :$iter --> Int ) {
         delete-branch($iter);
+        $dialog.gtk_widget_destroy;
         1
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
@@ -587,6 +624,12 @@ class AppSignalHandlers {
             my $task=search-task-in-org-from($iter);
 
             # to move
+            $b_move_right  .= new(:label('>'));
+            $content-area.gtk_container_add($b_move_right);
+            b_move_right-register-signal($iter);
+            $b_move_left  .= new(:label('<'));
+            $content-area.gtk_container_add($b_move_left);
+            b_move_left-register-signal($iter);
             $b_move_up  .= new(:label('^'));
             $content-area.gtk_container_add($b_move_up);
             b_move_up-register-signal($iter);
@@ -696,6 +739,12 @@ sub b_rb-register-signal($iter) {
     $rb_td1.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
     $rb_td2.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
     $rb_td3.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
+}
+sub b_move_right-register-signal ($iter) {
+    $b_move_right.register-signal( $ash, 'move-right-button-click', 'clicked',:iter($iter));
+}
+sub b_move_left-register-signal ($iter) {
+    $b_move_left.register-signal( $ash, 'move-left-button-click', 'clicked',:iter($iter));
 }
 sub b_move_up-register-signal ($iter) {
     $b_move_up.register-signal( $ash, 'move-up-button-click', 'clicked',:iter($iter));
