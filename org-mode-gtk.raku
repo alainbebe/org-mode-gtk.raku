@@ -60,6 +60,7 @@ my $now = DateTime.now(
     }
 );
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
+my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 
 #----------------------- class Task & OrgMode
 #use lib ".";
@@ -71,7 +72,7 @@ class Task {
     has Str  $.header    is rw; #  is required
     has Str  @.tags      is rw;
     has Str  @.text      is rw;
-    has Task @.sub-tasks is rw;
+    has Task @.tasks is rw;
     has Gnome::Gtk3::TreeIter $.iter is rw; # TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 
     method display-header {
@@ -110,38 +111,21 @@ class Task {
         # $_.iter ne $iter # TODO doesn't work, why ?
         return $.iter && $.iter.is-valid && $.iter-get-indices eq $ts.get-path($iter).get-indices;
     }
-}
-class OrgMode {
-    has Str  @.preface is rw;
-    has Task @.tasks   is rw;
-
-    method delete-iter-task(Task $task) {
-        $task.iter .=new;
-        if $task.sub-tasks {
-            for $task.sub-tasks.Array {
-                $.delete-iter-task($_);
-            }
-        }
-    }
     method delete-iter() {
-        for $.tasks.Array {
-            $.delete-iter-task($_);
-        }
-    }
-    method inspect-task(Task $task) {
-        say $task.iter-get-indices;
-        if $task.sub-tasks {
-            for $task.sub-tasks.Array {
-                $.inspect-task($_);
+        $.iter .=new;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.delete-iter-task();
             }
         }
     }
     method inspect() {
-        say "begin inspect";
-        for $.tasks.Array {
-            $.inspect-task($_);
+        say $.iter-get-indices; # TODO filter on the primary task
+        if $.tasks {
+            for $.tasks.Array {
+                $_.inspect();
+            }
         }
-        say "end inspect";
     }
     method find($task) {
         say "begin inspect";
@@ -151,8 +135,11 @@ class OrgMode {
         }
         say "end inspect";
     }
+    method expand-row {
+        $tv.expand-row($ts.get-path($.iter),1);
+    }
 }
-my OrgMode $om .=new;
+my Task $om .=new;
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     for $name.IO.lines {
@@ -168,24 +155,24 @@ sub demo_procedural_read($name) {
             $sub-task.todo    =$0[0].Str if $0[0];
             $sub-task.priority=$1[0].Str if $1[0];
             $sub-task.tags=split(/\:/,$3[0])[1..^*-1] if $3[0];
-            push($task.sub-tasks,$sub-task);
+            push($task.tasks,$sub-task);
             push($om.tasks,$task);
         } else {
             if ($om.tasks) {                                 # text in task
                 my $task=pop($om.tasks);
-                if !$task.sub-tasks {                # first task 
+                if !$task.tasks {                # first task 
                     push($task.text,$_);
                 } else {
-                    my @so=$task.sub-tasks.Array;
+                    my @so=$task.tasks.Array;
                     my $sub-task=pop(@so);    
                     push($sub-task.text,$_);
                     push(@so,$sub-task);
-                    $task.sub-tasks=@so;
+                    $task.tasks=@so;
                 }
                 push($om.tasks,$task);
             } else {                                     # preface
                 $presentation = $_ ~~ /presentation\=True/ ?? True !! False;
-                push($om.preface,$_);
+                push($om.text,$_);
             }
         }
     }
@@ -231,7 +218,6 @@ $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debu
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help()));
 
 my Gnome::Gtk3::ScrolledWindow $sw .= new();
-my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
 $tv.set-headers-visible(0);
@@ -305,7 +291,8 @@ sub  add2-branch($iter) {
                 my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
                 $e_add2.set-text(");
                 create_task($task,$iter);
-                push($_.sub-tasks,$task);
+                push($_.tasks,$task);
+                $task.expand-row();
             } ; $_
         }, $om.tasks;
     }
@@ -314,8 +301,8 @@ sub  search-task-in-org-from($iter) {
     my @org_tmp = grep { $_.is-my-iter($iter)}, $om.tasks;
     if (!@org_tmp) { # not found, find in sub
         for $om.tasks -> $task {    # for subtask, find a recusive method
-            if $task.sub-tasks && !@org_tmp {
-                @org_tmp = grep { $_.is-my-iter($iter) }, $task.sub-tasks.Array;
+            if $task.tasks && !@org_tmp {
+                @org_tmp = grep { $_.is-my-iter($iter) }, $task.tasks.Array;
             }
         }
     }
@@ -332,21 +319,21 @@ sub delete-branch($iter) {
     # for subtask, find a recusive method
     for $om.tasks -> $task {
         my @org_sub;
-        if $task.sub-tasks {
-            for $task.sub-tasks.Array {
+        if $task.tasks {
+            for $task.tasks.Array {
                 push(@org_sub,$_) if !$_.is-my-iter($iter); 
             }
         }
         if @org_sub {
-            $task.sub-tasks=@org_sub;
+            $task.tasks=@org_sub;
         } else {
-            $task.sub-tasks:delete;
+            $task.tasks:delete;
         }
     }
     $ts.gtk-tree-store-remove($iter);
 }
 sub search-indice-in-sub-task-from($iter,@org-sub) {
-    #TODO to improve
+    # TODO to improve
     my $i=-1;
     for @org-sub {
         $i++;
@@ -367,6 +354,7 @@ sub update-text($iter,$new-text) {
         for $task.text.Array.reverse {
              my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
         }
+        $task.expand-row();
     }
 }
 sub get-iter-from-path(@path) {
@@ -406,7 +394,7 @@ class AppSignalHandlers {
         if $response ~~ GTK_RESPONSE_ACCEPT {
             $ts.clear();
             $om.tasks=[]; 
-            $om.preface=[]; 
+            $om.text=[]; 
             $filename = $dialog.get-filename;
             open-file($filename) if $filename;
         }
@@ -482,9 +470,9 @@ class AppSignalHandlers {
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
                         my $t_parent=search-task-in-org-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,$t_parent.sub-tasks.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.sub-tasks.Array);
-                        $t_parent.sub-tasks[$line,$line2] = $t_parent.sub-tasks[$line2,$line];
+                        my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
+                        $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
                     }
                 }
 #            }
@@ -502,7 +490,7 @@ class AppSignalHandlers {
         my $task-parent=search-task-in-org-from($iter-parent);
         delete-branch($iter); 
         $task.level++; # todo and sub-task... but wait level 3
-        push($task-parent.sub-tasks,$task); 
+        push($task-parent.tasks,$task); 
         create_task($task,$iter-parent);  # todo manage sub task, wait level 3
         $dialog.gtk_widget_destroy; # remove when level 3
         1
@@ -543,9 +531,9 @@ class AppSignalHandlers {
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
                         my $t_parent=search-task-in-org-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,$t_parent.sub-tasks.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.sub-tasks.Array);
-                        $t_parent.sub-tasks[$line,$line2] = $t_parent.sub-tasks[$line2,$line];
+                        my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
+                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
+                        $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
                     }
                 }
             }
@@ -596,6 +584,10 @@ class AppSignalHandlers {
             } elsif $todo eq 'TODO' && $text~~/^\s*CLOSED/ {
                 $text~~s/^\s*CLOSED.*?\]\n?//;
                 update-text($iter,$text);
+            }
+            if $task.text { # update display text
+                my $text=$task.text.join("\n");
+                $text-buffer.set-text($text);
             }
         }
         $toggle_rb=!$toggle_rb;
@@ -706,7 +698,7 @@ class AppSignalHandlers {
             b_add2-register-signal($iter);
             
             # to delete the task
-            $b_del  .= new(:label('Delete task (and sub-tasks)'));
+            $b_del  .= new(:label('Delete task (and tasks)'));
             $content-area.gtk_container_add($b_del);
             b_del-register-signal($iter);
 
@@ -810,8 +802,8 @@ sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
         }
         $task.iter=$iter_task;
 
-        if $task.sub-tasks {
-            for $task.sub-tasks.Array {
+        if $task.tasks {
+            for $task.tasks.Array {
                 create_task($_,$iter_task);
             }
         }
@@ -848,8 +840,8 @@ sub save_task($task) {
             $orgmode~=$_~"\n";
         }
     }
-    if $task.sub-tasks {
-        for $task.sub-tasks.Array {
+    if $task.tasks {
+        for $task.tasks.Array {
             $orgmode~=save_task($_);
         }
     }
@@ -857,7 +849,7 @@ sub save_task($task) {
 }
 sub save($name) {
     my $orgmode="";
-    for $om.preface {
+    for $om.text {
         $orgmode~=$_~"\n";
     }
     for $om.tasks -> $task {

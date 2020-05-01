@@ -73,6 +73,10 @@ en mettant la nouvelle chaine en premier
 CLOSED: [2020-04-19 dim  16:45]
 ** TODO Remove @org and create a primary Task
 ** TODO Move doesn't work in mode No-done.
+** TODO Populate a special task with TODO of a file
+Search in a file .raku linewith # TODO
+And append this TODO to the task.
+** TODO DONE automatically special task # TODO is remove of the file
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
