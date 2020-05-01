@@ -150,26 +150,8 @@ class Task {
     }
     method delete-branch($iter) {
         $change=1;
-        my $task=search-task-from($iter);
-say $task.header;
-        # récpérer la tache
-        # resuper le parent
-        # enleve la tache du parent
-        # delete tasks si dernier
-
-##        $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter in task level 1
-#
-#        my @org_sub;
-#        if $task.tasks {
-#            for $task.tasks.Array {
-#                push(@org_sub,$_) if !$_.is-my-iter($iter); 
-#            }
-#        }
-#        if @org_sub {
-#            $task.tasks=@org_sub;
-#        } else {
-#            $task.tasks:delete;
-#        }
+        my $task-parent=search-parent($iter);
+        $task-parent.tasks = grep { !$_.is-my-iter($iter) }, $task-parent.tasks;
         $ts.gtk-tree-store-remove($iter);
     }
     method to_text() {
@@ -199,6 +181,16 @@ say $task.header;
     }
 }
 my Task $om .=new(:level(0));
+sub search-parent($iter) {
+    my @path-parent= $ts.get-path($iter).get-indices.Array;
+    pop(@path-parent);
+    if !@path-parent {
+        return $om;
+    } else {
+        my $iter-parent=get-iter-from-path(@path-parent);
+        return $om.search-task-from($iter-parent);
+    }
+}
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
@@ -337,9 +329,6 @@ sub  add2-branch($iter) {
         }, $om.tasks;
     }
 }
-sub delete-branch($iter) {
-    $om.delete-branch($iter) 
-}
 sub search-indice-in-sub-task-from($iter,@org-sub) {
     # TODO to improve
     my $i=-1;
@@ -355,7 +344,7 @@ sub update-text($iter,$new-text) {
     my $iter_child=$ts.iter-children($iter);
     # remove all lines "text"
     while $iter_child.is-valid && !$om.search-task-from($iter_child) { # if no task associate to a task, it's a "text"
-        delete-branch($iter_child);
+        $om.delete-branch($iter_child);
         $iter_child=$ts.iter-children($iter);
     }
     if $task.text {
@@ -496,7 +485,7 @@ class AppSignalHandlers {
         @path-parent[0]--; # rewrite for level 3
         my $iter-parent=get-iter-from-path(@path-parent);
         my $task-parent=$om.search-task-from($iter-parent);
-        delete-branch($iter); 
+        $om.delete-branch($iter); 
         $task.level++; # todo and sub-task... but wait level 3
         push($task-parent.tasks,$task); 
         create_task($task,$iter-parent);  # todo manage sub task, wait level 3
@@ -511,7 +500,7 @@ class AppSignalHandlers {
         pop(@path-parent);
         my $iter-parent=get-iter-from-path(@path-parent);
         my $task-parent=$om.search-task-from($iter-parent);
-        delete-branch($iter); 
+        $om.delete-branch($iter); 
         $task.level--; # todo and sub-task... but wait level 3
         push($om.tasks,$task);  # pour l'instant insérer task à la fin, plutot faire un insert au bon endroit
         create_task($task);  # todo manage sub task, wait level 3
@@ -602,7 +591,7 @@ class AppSignalHandlers {
         1
     }
     method del-button-click ( :$iter --> Int ) {
-        delete-branch($iter);
+        $om.delete-branch($iter);
         $dialog.gtk_widget_destroy;
         1
     }
