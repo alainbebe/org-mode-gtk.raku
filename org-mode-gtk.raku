@@ -135,11 +135,33 @@ class Task {
         }
         say "end inspect";
     }
+    method to_text() {
+        my $orgmode="";
+        if $.level>0 {  # skip for the primary task $om
+            $orgmode~="*" x $.level~" ";
+            $orgmode~=$.todo~" " if $.todo;
+            $orgmode~="\["~$.priority~"\] " if $.priority;
+            $orgmode~=$.header;
+            $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
+            $orgmode~="\n";
+        }
+        if ($.text) {
+            for $.text.Array {
+                $orgmode~=$_~"\n";
+            }
+        }
+        if $.tasks {
+            for $.tasks.Array {
+                $orgmode~=$_.to_text;
+            }
+        }
+        return $orgmode;
+    }
     method expand-row {
         $tv.expand-row($ts.get-path($.iter),1);
     }
 }
-my Task $om .=new;
+my Task $om .=new(:level(0));
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
@@ -809,36 +831,8 @@ sub open-file($name) {
     demo_procedural_read($name);
     populate_task();
 }
-sub save_task($task) {
-    my $orgmode="";
-#say $task;
-    $orgmode~="*" x $task.level~" ";
-    $orgmode~=$task.todo~" " if $task.todo;
-    $orgmode~="\["~$task.priority~"\] " if $task.priority;
-    $orgmode~=$task.header;
-    $orgmode~=" :"~join(':',$task.tags)~':' if $task.tags;
-    $orgmode~="\n";
-    if ($task.text) {
-        for $task.text.Array {
-            $orgmode~=$_~"\n";
-        }
-    }
-    if $task.tasks {
-        for $task.tasks.Array {
-            $orgmode~=save_task($_);
-        }
-    }
-    return $orgmode;
-}
 sub save($name) {
-    my $orgmode="";
-    for $om.text {
-        $orgmode~=$_~"\n";
-    }
-    for $om.tasks -> $task {
-        $orgmode~=save_task($task);
-    }
-	spurt $name, $orgmode;
+	spurt $name, $om.to_text;
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
