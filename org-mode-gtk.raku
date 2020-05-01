@@ -115,7 +115,7 @@ class Task {
         $.iter .=new;
         if $.tasks {
             for $.tasks.Array {
-                $_.delete-iter-task();
+                $_.delete-iter();
             }
         }
     }
@@ -142,42 +142,25 @@ class Task {
 my Task $om .=new;
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
+    my @last=[$om]; # list of last task by level
+    my $last=$om;   # last task for 'text'
     for $name.IO.lines {
-        if $_~~ /^"* " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
-            my Task $task.=new(:header($2.Str),:level(1));
-            $task.todo    =$0[0].Str if $0[0];
-            $task.priority=$1[0].Str if $1[0];
-            $task.tags=split(/\:/,$3[0])[1..^*-1] if $3[0];
-            push($om.tasks,$task);
-        } elsif $_~~ /^"** " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header lvl 2 TODO create recursive sub
-            my $task=pop($om.tasks);
-            my Task $sub-task.=new(:header($2.Str),:level(2));
-            $sub-task.todo    =$0[0].Str if $0[0];
-            $sub-task.priority=$1[0].Str if $1[0];
-            $sub-task.tags=split(/\:/,$3[0])[1..^*-1] if $3[0];
-            push($task.tasks,$sub-task);
-            push($om.tasks,$task);
+        if $_~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
+            my $level=$0.elems;
+            my Task $task.=new(:header($3.Str),:level($level));
+            $task.todo    =$1[0].Str if $1[0];
+            $task.priority=$2[0].Str if $2[0];
+            $task.tags=split(/\:/,$4[0])[1..^*-1] if $4[0];
+            push(@last[$level-1].tasks,$task);
+            @last[$level]=$task;
+            $last=$task;
         } else {
-            if ($om.tasks) {                                 # text in task
-                my $task=pop($om.tasks);
-                if !$task.tasks {                # first task 
-                    push($task.text,$_);
-                } else {
-                    my @so=$task.tasks.Array;
-                    my $sub-task=pop(@so);    
-                    push($sub-task.text,$_);
-                    push(@so,$sub-task);
-                    $task.tasks=@so;
-                }
-                push($om.tasks,$task);
-            } else {                                     # preface
-                $presentation = $_ ~~ /presentation\=True/ ?? True !! False;
-                push($om.text,$_);
-            }
+            push($last.text,$_);
+            $presentation = $_ ~~ /presentation\=True/ ?? True !! False if $_ ~~ /presentation/; # TODO move this line in a new "sub parse-property"
         }
     }
-#    say $om.tasks;
-#    say "after : \n", Dump $om.tasks;
+    #    say $om.tasks;
+    #    say "after : \n", Dump $om.tasks;
 }
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
@@ -289,7 +272,7 @@ sub  add2-branch($iter) {
         $om.tasks = map {
             if $_.is-my-iter($iter) {
                 my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
-                $e_add2.set-text(");
+                $e_add2.set-text("");
                 create_task($task,$iter);
                 push($_.tasks,$task);
                 $task.expand-row();
