@@ -135,6 +135,43 @@ class Task {
         }
         say "end inspect";
     }
+    method search-task-from($iter) {
+        if $.is-my-iter($iter) {
+            return self;
+        } else {
+            if $.tasks {
+                for $.tasks.Array {
+                    my $find=$_.search-task-from($iter);
+                    return $find if $find;
+                }
+            }
+        }
+        return;                 # if click on text 
+    }
+    method delete-branch($iter) {
+        $change=1;
+        my $task=search-task-from($iter);
+say $task.header;
+        # récpérer la tache
+        # resuper le parent
+        # enleve la tache du parent
+        # delete tasks si dernier
+
+##        $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter in task level 1
+#
+#        my @org_sub;
+#        if $task.tasks {
+#            for $task.tasks.Array {
+#                push(@org_sub,$_) if !$_.is-my-iter($iter); 
+#            }
+#        }
+#        if @org_sub {
+#            $task.tasks=@org_sub;
+#        } else {
+#            $task.tasks:delete;
+#        }
+        $ts.gtk-tree-store-remove($iter);
+    }
     method to_text() {
         my $orgmode="";
         if $.level>0 {  # skip for the primary task $om
@@ -257,6 +294,7 @@ $about.set-version('0.1');
 $about.set-license-type(GTK_LICENSE_GPL_3_0);
 $about.set-website("http://www.barbason.be");
 $about.set-website-label("http://www.barbason.be");
+$about.set-authors(CArray[Str].new('Alain BarBason'));
 
 my Gnome::Gtk3::Entry $e_add2;
 my Gnome::Gtk3::Entry $e_edit;
@@ -282,11 +320,8 @@ my Gnome::Gtk3::RadioButton $rb_td3;
 my Gnome::Gtk3::TextView $tev_edit_text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
 
-$about.set-authors(CArray[Str].new('Alain BarBason'));
-
 my X $x .= new;
 $top-window.register-signal( $x, 'exit-gui', 'destroy');
-
 sub  add2-branch($iter) {
     if $e_add2.get-text {
         $change=1;
@@ -302,40 +337,8 @@ sub  add2-branch($iter) {
         }, $om.tasks;
     }
 }
-sub  search-task-in-org-from($iter) {
-    my @org_tmp = grep { $_.is-my-iter($iter)}, $om.tasks;
-    if (!@org_tmp) { # not found, find in sub
-        for $om.tasks -> $task {    # for subtask, find a recusive method
-            if $task.tasks && !@org_tmp {
-                @org_tmp = grep { $_.is-my-iter($iter) }, $task.tasks.Array;
-            }
-        }
-    }
-    if @org_tmp {
-        return pop(@org_tmp);   # if click on a task
-    } else {
-        return;                 # if click on text 
-    }
-}
 sub delete-branch($iter) {
-    $change=1;
-    $om.tasks = grep { !$_.is-my-iter($iter) }, $om.tasks;   # keep all else $iter in task level 1
-
-    # for subtask, find a recusive method
-    for $om.tasks -> $task {
-        my @org_sub;
-        if $task.tasks {
-            for $task.tasks.Array {
-                push(@org_sub,$_) if !$_.is-my-iter($iter); 
-            }
-        }
-        if @org_sub {
-            $task.tasks=@org_sub;
-        } else {
-            $task.tasks:delete;
-        }
-    }
-    $ts.gtk-tree-store-remove($iter);
+    $om.delete-branch($iter) 
 }
 sub search-indice-in-sub-task-from($iter,@org-sub) {
     # TODO to improve
@@ -347,11 +350,11 @@ sub search-indice-in-sub-task-from($iter,@org-sub) {
     return -1;
 }
 sub update-text($iter,$new-text) {
-    my $task=search-task-in-org-from($iter);
+    my $task=$om.search-task-from($iter);
     $task.text=$new-text.split(/\n/);
     my $iter_child=$ts.iter-children($iter);
     # remove all lines "text"
-    while $iter_child.is-valid && !search-task-in-org-from($iter_child) { # if no task associate to a task, it's a "text"
+    while $iter_child.is-valid && !$om.search-task-from($iter_child) { # if no task associate to a task, it's a "text"
         delete-branch($iter_child);
         $iter_child=$ts.iter-children($iter);
     }
@@ -462,19 +465,19 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
         my $iter2 = $ts.get-iter($tp);
         if $iter2.is-valid {  # if not, it's the last child
-#            if search-task-in-org-from($iter2) { # the down child is always a task but a day may be...
+#            if $om.search-task-from($iter2) { # the down child is always a task but a day may be...
                 $change=1;
                 if $ts.get-path($iter).get-depth==1 {  # level 1 only
                     $ts.swap($iter,$iter2);
                     $om.tasks[@path[*-1],@path2[*-1]] = $om.tasks[@path2[*-1],@path[*-1]];
                 } else {                # more difficult that level 1, because "text" is not movable
-                    my $task2=search-task-in-org-from($iter2);
+                    my $task2=$om.search-task-from($iter2);
                     if $task2 {              # if not, probably text et no swap 
                         $ts.swap($iter,$iter2);
                         my $tp=$ts.get-path($iter);
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
-                        my $t_parent=search-task-in-org-from($iter-parent);
+                        my $t_parent=$om.search-task-from($iter-parent);
                         my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
                         my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
                         $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
@@ -488,11 +491,11 @@ class AppSignalHandlers {
         my @path= $ts.get-path($iter).get-indices.Array;
         return if @path.elems==2;                 # level 3 is not manage
         return if @path.elems==1 and @path[0]==0; # first task doesn't go to left, rewrite for level 3
-        my $task=search-task-in-org-from($iter);
+        my $task=$om.search-task-from($iter);
         my @path-parent=@path;
         @path-parent[0]--; # rewrite for level 3
         my $iter-parent=get-iter-from-path(@path-parent);
-        my $task-parent=search-task-in-org-from($iter-parent);
+        my $task-parent=$om.search-task-from($iter-parent);
         delete-branch($iter); 
         $task.level++; # todo and sub-task... but wait level 3
         push($task-parent.tasks,$task); 
@@ -503,11 +506,11 @@ class AppSignalHandlers {
     method move-left-button-click ( :$iter ) {
         my @path= $ts.get-path($iter).get-indices.Array;
         return if @path.elems==1; # level 1 doesn't go to left
-        my $task=search-task-in-org-from($iter);
+        my $task=$om.search-task-from($iter);
         my @path-parent=@path;
         pop(@path-parent);
         my $iter-parent=get-iter-from-path(@path-parent);
-        my $task-parent=search-task-in-org-from($iter-parent);
+        my $task-parent=$om.search-task-from($iter-parent);
         delete-branch($iter); 
         $task.level--; # todo and sub-task... but wait level 3
         push($om.tasks,$task);  # pour l'instant insérer task à la fin, plutot faire un insert au bon endroit
@@ -523,19 +526,19 @@ class AppSignalHandlers {
             @path2[*-1]--;
             my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
             my $iter2 = $ts.get-iter($tp);
-            if search-task-in-org-from($iter2) { # the up child is a task (not a text)
+            if $om.search-task-from($iter2) { # the up child is a task (not a text)
                 $change=1;
                 if $ts.get-path($iter).get-depth==1 {  # level 1 only
                     $ts.swap($iter,$iter2);
                     $om.tasks[@path[*-1],@path2[*-1]] = $om.tasks[@path2[*-1],@path[*-1]];
                 } else {                # more difficult that level 1, because "text" is not movable
-                    my $task2=search-task-in-org-from($iter2);
+                    my $task2=$om.search-task-from($iter2);
                     if $task2 {              # if not, probably text et no swap 
                         $ts.swap($iter,$iter2);
                         my $tp=$ts.get-path($iter);
                         $tp.up; # transform in parent
                         my $iter-parent = $ts.get-iter($tp);
-                        my $t_parent=search-task-in-org-from($iter-parent);
+                        my $t_parent=$om.search-task-from($iter-parent);
                         my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
                         my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
                         $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
@@ -547,25 +550,25 @@ class AppSignalHandlers {
     }
     method edit-button-click ( :$iter ) {
         $change=1;
-        my $task=search-task-in-org-from($iter);
+        my $task=$om.search-task-from($iter);
         $task.header=$e_edit.get-text;
-        $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+        $ts.set_value( $iter, 0,$om.search-task-from($iter).display-header);
         1
     }
     method edit-tags-button-click ( :$iter ) {
         $change=1;
-        my $task=search-task-in-org-from($iter);
+        my $task=$om.search-task-from($iter);
         $task.tags=split(/" "/,$e_edit_tags.get-text);
-        $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+        $ts.set_value( $iter, 0,$om.search-task-from($iter).display-header);
         1
     }
     method prior-button-click ( :$iter,:$prior --> Int ) {
         my Task $task;
         if ($toggle_rb_pr) {  # see definition 
             $change=1;
-            my $task=search-task-in-org-from($iter);
+            my $task=$om.search-task-from($iter);
             $task.priority=$prior??"#"~$prior!!"";
-            $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+            $ts.set_value( $iter, 0,$om.search-task-from($iter).display-header);
         }
         $toggle_rb_pr=!$toggle_rb_pr;
         1
@@ -574,9 +577,9 @@ class AppSignalHandlers {
         my Task $task;
         if ($toggle_rb) {  # see definition 
             $change=1;
-            my $task=search-task-in-org-from($iter);
+            my $task=$om.search-task-from($iter);
             $task.todo=$todo;
-            $ts.set_value( $iter, 0,search-task-in-org-from($iter).display-header);
+            $ts.set_value( $iter, 0,$om.search-task-from($iter).display-header);
             my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
             my $text=$text-buffer.get-text( $start, $end, 0);
@@ -617,8 +620,8 @@ class AppSignalHandlers {
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
         # to edit task
-        if search-task-in-org-from($iter) {      # if not, it's a text not now editable 
-            my $task=search-task-in-org-from($iter);
+        if $om.search-task-from($iter) {      # if not, it's a text not now editable 
+            my $task=$om.search-task-from($iter);
 
             # to move
             $b_move_right  .= new(:label('>'));
@@ -663,7 +666,7 @@ class AppSignalHandlers {
             b_edit_text-register-signal($iter);
             
             # To manage priority A,B,C.
-            $task=search-task-in-org-from($iter);
+            $task=$om.search-task-from($iter);
             my Gnome::Gtk3::Grid $g_prio .= new;
             $content-area.gtk_container_add($g_prio);
             $rb_pr1 .= new(:label('-'));
@@ -681,7 +684,7 @@ class AppSignalHandlers {
             b_rb_prior-register-signal($iter);
 
             # To manage TODO/DONE
-            $task=search-task-in-org-from($iter);
+            $task=$om.search-task-from($iter);
             my Gnome::Gtk3::Grid $g_todo .= new;
             $content-area.gtk_container_add($g_todo);
             $rb_td1 .= new(:label('-'));

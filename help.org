@@ -47,7 +47,7 @@ git reset --hard HEAD
 * Vim
 ** Fold
 set foldmethod=indent
-zc close, zo open, za alterne zC,zO,zA all fold
+zc close, zo open, za alterne zC,zO,zA all fold, zR open all zM close All
 set sw=4 ts=4 sts=4 et tw=78 foldmarker={,} foldlevel=0 foldmethod=marker spell:
 ** Search Highlighting
 :set hlsearch
