@@ -5,6 +5,7 @@ detail
 detail suite
 ** [#B] sub task1                                                     :es:sai:
 ** DONE sub task2 :suite:
+*** Level 3
 * TODO [#D] another task
 * DONE try
 ** DONE sub try 1
@@ -18,3 +19,5 @@ other detail
    CLOSED: [2020-04-18 sam 16:29]
 text
 ** TODO 3
+*** niveau 3
+*** niveau 3 aussi

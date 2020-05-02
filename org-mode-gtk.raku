@@ -88,8 +88,9 @@ class Task {
                 elsif $.priority ~~ /C/ {$display~=' <span foreground="lime">'~$.priority~'</span>'}
             }
 
-            if    ($.level==1) {$display~='<span foreground="blue" > '~$.header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="brown"> '~$.header~'</span>'}
+            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$.header~'</span>'}
+            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$.header~'</span>'}
+            else               {$display~='<span weight="bold" foreground="black"> '~$.header~'</span>'}
 
             if $.tags {
                 $display~=' <span foreground="grey">'~$.tags~'</span>';
@@ -98,6 +99,7 @@ class Task {
         } else {
             if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
             elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
+            else               {$display~='<span foreground="black" size="x-large"      >'~$.header~'</span>'}
         }
         return $display;
     }
@@ -119,11 +121,22 @@ class Task {
             }
         }
     }
+    my $lvl=0;
     method inspect() {
-        say $.iter-get-indices; # TODO filter on the primary task
+        say "ind : ",$.iter-get-indices, " lvl ",$lvl," ",$.header, " level ",$.level; # TODO filter on the primary task
         if $.tasks {
             for $.tasks.Array {
+                $lvl++;
                 $_.inspect();
+                $lvl--;
+            }
+        }
+    }
+    method level-move($change) {
+        $.level+=$change;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.level-move($change);
             }
         }
     }
@@ -154,7 +167,9 @@ class Task {
         $task-parent.tasks = grep { !$_.is-my-iter($iter) }, $task-parent.tasks;
         $ts.gtk-tree-store-remove($iter);
     }
+    #my $j=0;
     method to_text() {
+        #say $j++,"-" x $.level," ",$.header," ";
         my $orgmode="";
         if $.level>0 {  # skip for the primary task $om
             $orgmode~="*" x $.level~" ";
@@ -174,10 +189,45 @@ class Task {
                 $orgmode~=$_.to_text;
             }
         }
+        #$j--;
         return $orgmode;
     }
     method expand-row {
         $tv.expand-row($ts.get-path($.iter),1);
+    }
+    method create_task(Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
+        my Gnome::Gtk3::TreeIter $iter_task;
+        if !($.todo && $.todo eq 'DONE') || !$no-done {
+            my Gnome::Gtk3::TreeIter $parent-iter;
+            if ($.level>0) {
+                if ($.level==1) {
+                    my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
+                    $parent-iter = $ts.get-iter($tp);
+                } else {
+                    $parent-iter = $iter;
+                }
+                $iter_task = $ts.insert-with-values($parent-iter, $pos, 0, $.display-header);
+                if $.text {
+                    for $.text.Array {
+                         my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
+                    }
+                }
+                $.iter=$iter_task;
+            }
+            if $.tasks {
+                for $.tasks.Array {
+                    $_.create_task($iter_task);
+                }
+            }
+        }
+    }
+    method parent($om) {
+        my @path= $ts.get-path($.iter).get-indices.Array;
+        my @path-parent=@path;
+        pop(@path-parent);
+        return $om if !@path-parent;   # level 0
+        my $iter-parent=get-iter-from-path(@path-parent);
+        return $om.search-task-from($iter-parent);
     }
 }
 my Task $om .=new(:level(0));
@@ -314,19 +364,15 @@ my Gnome::Gtk3::TextBuffer $text-buffer;
 
 my X $x .= new;
 $top-window.register-signal( $x, 'exit-gui', 'destroy');
-sub  add2-branch($iter) {
+sub  add2-branch($iter-parent) {
     if $e_add2.get-text {
         $change=1;
-        # now, only on the header 1
-        $om.tasks = map {
-            if $_.is-my-iter($iter) {
-                my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level(2));
-                $e_add2.set-text("");
-                create_task($task,$iter);
-                push($_.tasks,$task);
-                $task.expand-row();
-            } ; $_
-        }, $om.tasks;
+        my $task-parent=$om.search-task-from($iter-parent);
+        my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level($task-parent.level+1));
+        $e_add2.set-text("");
+        $task.create_task($iter-parent);
+        push($task-parent.tasks,$task);
+        $task-parent.expand-row();
     }
 }
 sub search-indice-in-sub-task-from($iter,@org-sub) {
@@ -429,7 +475,7 @@ class AppSignalHandlers {
             $change=1;
             my Task $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1));
             $e_add.set-text("");
-            $task=create_task($task);
+            $task.create_task($iter);
             $om.tasks.push($task);
         }
         1
@@ -478,32 +524,41 @@ class AppSignalHandlers {
     }
     method move-right-button-click ( :$iter ) {
         my @path= $ts.get-path($iter).get-indices.Array;
-        return if @path.elems==2;                 # level 3 is not manage
-        return if @path.elems==1 and @path[0]==0; # first task doesn't go to left, rewrite for level 3
+        return if @path[*-1] eq "0"; # first task doesn't go to left
         my $task=$om.search-task-from($iter);
         my @path-parent=@path;
-        @path-parent[0]--; # rewrite for level 3
+        @path-parent[*-1]--;
         my $iter-parent=get-iter-from-path(@path-parent);
         my $task-parent=$om.search-task-from($iter-parent);
         $om.delete-branch($iter); 
-        $task.level++; # todo and sub-task... but wait level 3
+        $task.level-move(1);
         push($task-parent.tasks,$task); 
-        create_task($task,$iter-parent);  # todo manage sub task, wait level 3
+        $task.create_task($iter-parent);
+        $task-parent.expand-row;
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
+
     method move-left-button-click ( :$iter ) {
-        my @path= $ts.get-path($iter).get-indices.Array;
-        return if @path.elems==1; # level 1 doesn't go to left
         my $task=$om.search-task-from($iter);
-        my @path-parent=@path;
-        pop(@path-parent);
-        my $iter-parent=get-iter-from-path(@path-parent);
-        my $task-parent=$om.search-task-from($iter-parent);
+        return if $task.level <= 1; # level 0 and 1 don't go to left
+        my $task-parent=$task.parent($om);
+        my @path-parent= $ts.get-path($task-parent.iter).get-indices.Array;
+        my $task-grand-parent=$task-parent.parent($om);
+        $task.level-move(-1);
         $om.delete-branch($iter); 
-        $task.level--; # todo and sub-task... but wait level 3
-        push($om.tasks,$task);  # pour l'instant insérer task à la fin, plutot faire un insert au bon endroit
-        create_task($task);  # todo manage sub task, wait level 3
+        my @tasks;
+        for $task-grand-parent.tasks.Array {
+            if $_ eq $task-parent {
+                push(@tasks,$_);
+                push(@tasks,$task);
+            } else {
+                push(@tasks,$_);
+            } 
+        }
+        $task-grand-parent.tasks=@tasks;
+        $task.create_task($task-grand-parent.iter,@path-parent[*-1]+1);
+        $task.expand-row;
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
@@ -781,32 +836,6 @@ sub make-menubar-list-help ( ) {
     $menu
 }
 #--------------------------------interface---------------------------------
-sub create_task(Task $task, Gnome::Gtk3::TreeIter $iter?) {
-    if !($task.todo && $task.todo eq 'DONE') || !$no-done {
-        my Gnome::Gtk3::TreeIter $parent-iter;
-        if (!$iter) {
-            my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
-            $parent-iter = $ts.get-iter($tp);
-        } else {
-            $parent-iter = $iter;
-        }
-        my Gnome::Gtk3::TreeIter $iter_task;
-        $iter_task = $ts.insert-with-values($parent-iter, -1, 0, $task.display-header);
-        if $task.text {
-            for $task.text.Array {
-                 my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
-            }
-        }
-        $task.iter=$iter_task;
-
-        if $task.tasks {
-            for $task.tasks.Array {
-                create_task($_,$iter_task);
-            }
-        }
-    }
-    return $task;
-}
 #-----------------------------------sub-------------------------------
 sub reconstruct_tree { # not good practice, not abuse
     $i=0;
@@ -815,7 +844,7 @@ sub reconstruct_tree { # not good practice, not abuse
     populate_task();
 }
 sub populate_task {
-    $om.tasks = map {create_task($_)}, $om.tasks;
+    $om.create_task;
 #    say "after create task : \n",$om.tasks;
 }
 sub open-file($name) {

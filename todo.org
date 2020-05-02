@@ -71,7 +71,8 @@ Utiliser update text,
 en mettant la nouvelle chaine en premier
 ** DONE read/write preface
 CLOSED: [2020-04-19 dim  16:45]
-** TODO Remove @org and create a primary Task
+** DONE Remove @org and create a primary Task
+CLOSED: [2020-05-02 sam  09:44]
 ** TODO Move doesn't work in mode No-done.
 ** TODO Populate a special task with TODO of a file
 Search in a file .raku linewith # TODO
