@@ -50,7 +50,8 @@ CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** TODO display/edit Preface
-** TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
+** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
+CLOSED: [2020-05-02 sam  11:06]
 ** TODO Activate Link http in "text"
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]

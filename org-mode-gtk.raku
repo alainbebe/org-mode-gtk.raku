@@ -73,7 +73,6 @@ class Task {
     has Str  @.tags      is rw;
     has Str  @.text      is rw;
     has Task @.tasks is rw;
-    has Gnome::Gtk3::TreeIter $.iter is rw; # TODO create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 
     method display-header {
         my $display;
@@ -103,6 +102,43 @@ class Task {
         }
         return $display;
     }
+    method level-move($change) {
+        $.level+=$change;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.level-move($change);
+            }
+        }
+    }
+    #my $j=0;
+    method to_text() {
+        #say $j++,"-" x $.level," ",$.header," ";
+        my $orgmode="";
+        if $.level>0 {  # skip for the primary task $om
+            $orgmode~="*" x $.level~" ";
+            $orgmode~=$.todo~" " if $.todo;
+            $orgmode~="\["~$.priority~"\] " if $.priority;
+            $orgmode~=$.header;
+            $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
+            $orgmode~="\n";
+        }
+        if ($.text) {
+            for $.text.Array {
+                $orgmode~=$_~"\n";
+            }
+        }
+        if $.tasks {
+            for $.tasks.Array {
+                $orgmode~=$_.to_text;
+            }
+        }
+        #$j--;
+        return $orgmode;
+    }
+}
+class GtkTask is Task {
+    has Gnome::Gtk3::TreeIter $.iter is rw;
+
     method iter-get-indices { # find indices IN treestore, not tasks
         if $.iter.defined && $.iter.is-valid {
             return  $ts.get-path($.iter).get-indices
@@ -132,22 +168,6 @@ class Task {
             }
         }
     }
-    method level-move($change) {
-        $.level+=$change;
-        if $.tasks {
-            for $.tasks.Array {
-                $_.level-move($change);
-            }
-        }
-    }
-    method find($task) {
-        say "begin inspect";
-        for $.tasks.Array {
-            say $_.header;
-            say $task eq $_;
-        }
-        say "end inspect";
-    }
     method search-task-from($iter) {
         if $.is-my-iter($iter) {
             return self;
@@ -166,31 +186,6 @@ class Task {
         my $task-parent=search-parent($iter);
         $task-parent.tasks = grep { !$_.is-my-iter($iter) }, $task-parent.tasks;
         $ts.gtk-tree-store-remove($iter);
-    }
-    #my $j=0;
-    method to_text() {
-        #say $j++,"-" x $.level," ",$.header," ";
-        my $orgmode="";
-        if $.level>0 {  # skip for the primary task $om
-            $orgmode~="*" x $.level~" ";
-            $orgmode~=$.todo~" " if $.todo;
-            $orgmode~="\["~$.priority~"\] " if $.priority;
-            $orgmode~=$.header;
-            $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
-            $orgmode~="\n";
-        }
-        if ($.text) {
-            for $.text.Array {
-                $orgmode~=$_~"\n";
-            }
-        }
-        if $.tasks {
-            for $.tasks.Array {
-                $orgmode~=$_.to_text;
-            }
-        }
-        #$j--;
-        return $orgmode;
     }
     method expand-row {
         $tv.expand-row($ts.get-path($.iter),1);
@@ -230,7 +225,7 @@ class Task {
         return $om.search-task-from($iter-parent);
     }
 }
-my Task $om .=new(:level(0));
+my GtkTask $om .=new(:level(0));
 sub search-parent($iter) {
     my @path-parent= $ts.get-path($iter).get-indices.Array;
     pop(@path-parent);
@@ -248,7 +243,7 @@ sub demo_procedural_read($name) {
     for $name.IO.lines {
         if $_~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
             my $level=$0.elems;
-            my Task $task.=new(:header($3.Str),:level($level));
+            my GtkTask $task.=new(:header($3.Str),:level($level));
             $task.todo    =$1[0].Str if $1[0];
             $task.priority=$2[0].Str if $2[0];
             $task.tags=split(/\:/,$4[0])[1..^*-1] if $4[0];
@@ -368,7 +363,7 @@ sub  add2-branch($iter-parent) {
     if $e_add2.get-text {
         $change=1;
         my $task-parent=$om.search-task-from($iter-parent);
-        my Task $task.=new(:header($e_add2.get-text),:todo("TODO"),:level($task-parent.level+1));
+        my GtkTask $task.=new(:header($e_add2.get-text),:todo("TODO"),:level($task-parent.level+1));
         $e_add2.set-text("");
         $task.create_task($iter-parent);
         push($task-parent.tasks,$task);
@@ -473,7 +468,7 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $change=1;
-            my Task $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1));
+            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1));
             $e_add.set-text("");
             $task.create_task($iter);
             $om.tasks.push($task);
@@ -607,7 +602,7 @@ class AppSignalHandlers {
         1
     }
     method prior-button-click ( :$iter,:$prior --> Int ) {
-        my Task $task;
+        my GtkTask $task;
         if ($toggle_rb_pr) {  # see definition 
             $change=1;
             my $task=$om.search-task-from($iter);
@@ -618,7 +613,7 @@ class AppSignalHandlers {
         1
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
-        my Task $task;
+        my GtkTask $task;
         if ($toggle_rb) {  # see definition 
             $change=1;
             my $task=$om.search-task-from($iter);
