@@ -6,7 +6,8 @@ CLOSED: [2020-04-26 dim  09:02]
 CLOSED: [2020-04-27 lun  19:31]
 ** TODO Scheduled date
 ** TODO Deadline date
-** TODO pass to level 3 and more
+** DONE pass to level 3 and more
+CLOSED: [2020-05-03 dim  07:51]
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
@@ -23,8 +24,9 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** TODO Short-Cut  "Ctrl-s" forsave
 ** TODO make a User Manuel
+** TODO Delete "text" of a task
+Presently, it's possible to remove all but a blank line exist enough
 ** DONE Append ScrolBar for long Todo
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** DONE Move task on the tree
@@ -32,19 +34,18 @@ soit en premier en commençant à l'envers
 ** DONE Edit text of a task
 Accent "é" create problem
 Refresh of tree to improve
-** TODO link F11 to maximize the window
+** TODO Add new file menu
 ** DONE Display only TODO task
 CLOSED: [2020-04-25 sam  08:02]
 Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
-** TODO Delete "text" of a task
-Presently, it's possible to remove all but a blank line exist enough
-** DONE Create a different display for README style or TODO style
-** TODO Add new file menu
 ** TODO Sort Priorities
-** TODO Shift-left unfold only current selection, not child 
-or capture keyboard and redifine de Shift-right
+** DONE Create a different display for README style or TODO style
 ** TODO Use GdkEventKey for keyboard
+*** TODO Short-Cut  "Ctrl-s" forsave
+*** TODO link F11 to maximize the window
+*** TODO Shift-left unfold only current selection, not child 
+or capture keyboard and redifine de Shift-right
 ** DONE Accent é create problem in edit "text"
 CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
@@ -53,6 +54,9 @@ Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
 ** TODO Activate Link http in "text"
+I think it's not possible, 
+but create a cell to simulate
+https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
 #+PROPERTY: var  foo=1

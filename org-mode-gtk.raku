@@ -183,7 +183,8 @@ class GtkTask is Task {
     }
     method delete-branch($iter) {
         $change=1;
-        my $task-parent=search-parent($iter);
+        my $task=$.search-task-from($iter);
+        my $task-parent=$.parent($task);
         $task-parent.tasks = grep { !$_.is-my-iter($iter) }, $task-parent.tasks;
         $ts.gtk-tree-store-remove($iter);
     }
@@ -216,26 +217,33 @@ class GtkTask is Task {
             }
         }
     }
-    method parent($om) {
-        my @path= $ts.get-path($.iter).get-indices.Array;
+    method parent($task) {
+        my @path= $ts.get-path($task.iter).get-indices.Array;
         my @path-parent=@path;
         pop(@path-parent);
-        return $om if !@path-parent;   # level 0
+        return self if !@path-parent;   # level 0
         my $iter-parent=get-iter-from-path(@path-parent);
-        return $om.search-task-from($iter-parent);
+        return $.search-task-from($iter-parent);
+    }
+    method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+        # TODO to improve
+        my $i=-1;
+        if $.parent($task).tasks {
+            for $.parent($task).tasks.Array {
+                $i++;
+                return $i if $_.is-my-iter($task.iter);
+            }
+        }
+        return -1;
+    }
+    method swap($task1,$task2) {
+        my $t_parent=$.parent($task1);
+        my $line1=$.search-indice($task1);
+        my $line2=$.search-indice($task2);
+        $t_parent.tasks[$line1,$line2] = $t_parent.tasks[$line2,$line1];
     }
 }
 my GtkTask $om .=new(:level(0));
-sub search-parent($iter) {
-    my @path-parent= $ts.get-path($iter).get-indices.Array;
-    pop(@path-parent);
-    if !@path-parent {
-        return $om;
-    } else {
-        my $iter-parent=get-iter-from-path(@path-parent);
-        return $om.search-task-from($iter-parent);
-    }
-}
 sub demo_procedural_read($name) {
     # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
@@ -370,15 +378,6 @@ sub  add2-branch($iter-parent) {
         $task-parent.expand-row();
     }
 }
-sub search-indice-in-sub-task-from($iter,@org-sub) {
-    # TODO to improve
-    my $i=-1;
-    for @org-sub {
-        $i++;
-        return $i if $_.is-my-iter($iter);
-        }
-    return -1;
-}
 sub update-text($iter,$new-text) {
     my $task=$om.search-task-from($iter);
     $task.text=$new-text.split(/\n/);
@@ -398,6 +397,13 @@ sub update-text($iter,$new-text) {
 sub get-iter-from-path(@path) {
     my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
     return $ts.get-iter($tp);
+}
+sub brother($iter,$inc) {
+    my @path2= $ts.get-path($iter).get-indices.Array;
+    @path2[*-1]=@path2[*-1].Int;
+    @path2[*-1]+=$inc;
+    my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
+    return  $ts.get-iter($tp);
 }
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -487,36 +493,6 @@ class AppSignalHandlers {
         update-text($iter,$new-text);
         1
     }
-    method move-down-button-click ( :$iter ) {
-        my @path= $ts.get-path($iter).get-indices.Array;
-        my @path2= $ts.get-path($iter).get-indices.Array;
-        @path2[*-1]=@path2[*-1].Int;
-        @path2[*-1]++;
-        my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
-        my $iter2 = $ts.get-iter($tp);
-        if $iter2.is-valid {  # if not, it's the last child
-#            if $om.search-task-from($iter2) { # the down child is always a task but a day may be...
-                $change=1;
-                if $ts.get-path($iter).get-depth==1 {  # level 1 only
-                    $ts.swap($iter,$iter2);
-                    $om.tasks[@path[*-1],@path2[*-1]] = $om.tasks[@path2[*-1],@path[*-1]];
-                } else {                # more difficult that level 1, because "text" is not movable
-                    my $task2=$om.search-task-from($iter2);
-                    if $task2 {              # if not, probably text et no swap 
-                        $ts.swap($iter,$iter2);
-                        my $tp=$ts.get-path($iter);
-                        $tp.up; # transform in parent
-                        my $iter-parent = $ts.get-iter($tp);
-                        my $t_parent=$om.search-task-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
-                        $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
-                    }
-                }
-#            }
-        }
-        1
-    }
     method move-right-button-click ( :$iter ) {
         my @path= $ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
@@ -533,13 +509,12 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
-
     method move-left-button-click ( :$iter ) {
         my $task=$om.search-task-from($iter);
         return if $task.level <= 1; # level 0 and 1 don't go to left
-        my $task-parent=$task.parent($om);
+        my $task-parent=$om.parent($task);
         my @path-parent= $ts.get-path($task-parent.iter).get-indices.Array;
-        my $task-grand-parent=$task-parent.parent($om);
+        my $task-grand-parent=$om.parent($task-parent);
         $task.level-move(-1);
         $om.delete-branch($iter); 
         my @tasks;
@@ -557,32 +532,16 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
-    method move-up-button-click ( :$iter ) {
+    method move-up-down-button-click ( :$iter, :$inc  --> Int ) {
         my @path= $ts.get-path($iter).get-indices.Array;
-        if @path[*-1] ne "0" {     # if is not the first child
-            my @path2= $ts.get-path($iter).get-indices.Array;
-            @path2[*-1]=@path2[*-1].Int;
-            @path2[*-1]--;
-            my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
-            my $iter2 = $ts.get-iter($tp);
-            if $om.search-task-from($iter2) { # the up child is a task (not a text)
+        if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
+            my $iter2=brother($iter,$inc);
+            if $iter2.is-valid {   # if not, it's the last child
                 $change=1;
-                if $ts.get-path($iter).get-depth==1 {  # level 1 only
-                    $ts.swap($iter,$iter2);
-                    $om.tasks[@path[*-1],@path2[*-1]] = $om.tasks[@path2[*-1],@path[*-1]];
-                } else {                # more difficult that level 1, because "text" is not movable
-                    my $task2=$om.search-task-from($iter2);
-                    if $task2 {              # if not, probably text et no swap 
-                        $ts.swap($iter,$iter2);
-                        my $tp=$ts.get-path($iter);
-                        $tp.up; # transform in parent
-                        my $iter-parent = $ts.get-iter($tp);
-                        my $t_parent=$om.search-task-from($iter-parent);
-                        my $line=search-indice-in-sub-task-from($iter,$t_parent.tasks.Array);
-                        my $line2=search-indice-in-sub-task-from($iter2,$t_parent.tasks.Array);
-                        $t_parent.tasks[$line,$line2] = $t_parent.tasks[$line2,$line];
-                    }
-                }
+                my $task=$om.search-task-from($iter);
+                my $task2=$om.search-task-from($iter2);
+                $ts.swap($iter,$iter2);
+                $om.swap($task,$task2);
             }
         }
         1
@@ -669,12 +628,12 @@ class AppSignalHandlers {
             $b_move_left  .= new(:label('<'));
             $content-area.gtk_container_add($b_move_left);
             b_move_left-register-signal($iter);
+
             $b_move_up  .= new(:label('^'));
             $content-area.gtk_container_add($b_move_up);
-            b_move_up-register-signal($iter);
             $b_move_down  .= new(:label('v'));
             $content-area.gtk_container_add($b_move_down);
-            b_move_down-register-signal($iter);
+            b-move-up-down-register-signal($iter);
 
             # To edit task
             $e_edit  .= new();
@@ -785,11 +744,9 @@ sub b_move_right-register-signal ($iter) {
 sub b_move_left-register-signal ($iter) {
     $b_move_left.register-signal( $ash, 'move-left-button-click', 'clicked',:iter($iter));
 }
-sub b_move_up-register-signal ($iter) {
-    $b_move_up.register-signal( $ash, 'move-up-button-click', 'clicked',:iter($iter));
-}
-sub b_move_down-register-signal ($iter) {
-    $b_move_down.register-signal( $ash, 'move-down-button-click', 'clicked',:iter($iter));
+sub b-move-up-down-register-signal ($iter) {
+    $b_move_up.register-signal( $ash, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(-1));
+    $b_move_down.register-signal( $ash, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(1));
 }
 sub b_edit-register-signal ($iter) {
     $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
