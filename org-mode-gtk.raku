@@ -40,7 +40,7 @@ my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
-my $no-done=False;      # display with no DONE
+my $no-done=True;       # display with no DONE
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
 my $now = DateTime.now(
@@ -242,6 +242,11 @@ class GtkTask is Task {
         my $line2=$.search-indice($task2);
         $t_parent.tasks[$line1,$line2] = $t_parent.tasks[$line2,$line1];
     }
+    method default {
+        my GtkTask $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1));
+        $task.create_task();
+        $.tasks.push($task);
+    }
 }
 my GtkTask $om .=new(:level(0));
 sub demo_procedural_read($name) {
@@ -408,6 +413,19 @@ sub brother($iter,$inc) {
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
+    method file-new ( --> Int ) {
+        if $change && !$debug {
+            if $md.run==-8 {
+                save($filename);
+            }
+            $md.destroy;
+        }
+        $ts.clear();
+        $om.tasks=[]; 
+        $om.text=[]; 
+        $om.default;
+        1
+    }
     method file-save( ) {
         $change=0;
         save($filename);
@@ -765,6 +783,7 @@ sub create-sub-menu($menu,$name,$ash,$method) {
 } 
 sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"_Save",$ash,'file-save');
     create-sub-menu($menu,"_Open",$ash,'file-open');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
@@ -811,6 +830,6 @@ sub save($name) {
 sub MAIN($arg = '') {
     $top-window.show-all;
     $filename=$arg;
-    open-file($filename) if $filename;
+    $filename??open-file($filename)!!$om.default;
     $m.gtk-main;
 }
