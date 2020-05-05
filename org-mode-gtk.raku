@@ -41,6 +41,7 @@ my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take o
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
+my $prior-A=False;      # display #A          
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
 my $now = DateTime.now(
@@ -168,6 +169,17 @@ class GtkTask is Task {
             }
         }
     }
+    method is-child-prior-A() {
+        return True if $.priority && $.priority eq "#A";
+        if $.tasks {
+            for $.tasks.Array {
+                $lvl++;
+                return True if $_.is-child-prior-A();
+                $lvl--;
+            }
+        }
+        return False;
+    }
     method search-task-from($iter) {
         if $.is-my-iter($iter) {
             return self;
@@ -193,7 +205,10 @@ class GtkTask is Task {
     }
     method create_task(Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
         my Gnome::Gtk3::TreeIter $iter_task;
-        if !($.todo && $.todo eq 'DONE') || !$no-done {
+        if $.level==0 || (
+            !($.todo && $.todo eq 'DONE' && $no-done) 
+            && (!$prior-A ||  $.is-child-prior-A) 
+        ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($.level>0) {
                 if ($.level==1) {
@@ -389,7 +404,7 @@ sub update-text($iter,$new-text) {
     my $iter_child=$ts.iter-children($iter);
     # remove all lines "text"
     while $iter_child.is-valid && !$om.search-task-from($iter_child) { # if no task associate to a task, it's a "text"
-        $om.delete-branch($iter_child);
+        $ts.gtk-tree-store-remove($iter_child);
         $iter_child=$ts.iter-children($iter);
     }
     if $task.text {
@@ -477,6 +492,11 @@ class AppSignalHandlers {
     }
     method option-presentation( ) {
         $presentation=!$presentation;
+        reconstruct_tree();
+        1
+    }
+    method option-prior-A( ) {
+        $prior-A=!$prior-A;
         reconstruct_tree();
         1
     }
@@ -794,6 +814,7 @@ sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
+    create-sub-menu($menu,"#_A",$ash,'option-prior-A');
     $menu
 }
 sub make-menubar-list-debug() {

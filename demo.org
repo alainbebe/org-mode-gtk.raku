@@ -1,12 +1,13 @@
 preface
 #+PROPERTY: var $presentation=True;
-* DOES task :essai:suite:
+* DOES task :essai suite:
 detail
 detail suite
-** [#B] sub task1                                                     :es:sai:
+** [#B] sub task1                                                     :es sai:
 ** DONE sub task2 :suite:
 *** Level 3
 * TODO [#D] another task
+** TODO [#A] Sous A
 * DONE try
 ** DONE sub try 1
 detail of sub task
@@ -21,3 +22,4 @@ text
 ** TODO 3
 *** niveau 3
 *** niveau 3 aussi
+* TODO org-mode-gtk.raku

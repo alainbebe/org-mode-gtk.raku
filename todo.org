@@ -25,7 +25,8 @@ Rajouter les nouvelles
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
 ** TODO make a User Manuel
-** TODO Add new file menu
+** DONE Add new file menu
+CLOSED: [2020-05-05 mar  07:24]
 ** DONE Append ScrolBar for long Todo
 ** DONE implement menu accelerator "Alt-f" for File menu
 ** DONE Move task on the tree
@@ -65,6 +66,15 @@ CLOSED: [2020-04-25 sam  12:33]
 ** TODO Scroll for Manage Task if "text" is long
 ** TODO Create Tab to edit 2 or more files
 ** TODO Separte, momentarily, a file in multiple tabs
+** TODO [#A] Work with only one sub-branch
+sélectionner une branch, mais en fait surtout une sous branche
+et n'afficher que celle-là, comme si c'était une principale
+mais sauver toujours l'ensemble
+Voir créer un onglet pour travailler sur cette sous-branche
+** DONE [#A] Display priority #A
+CLOSED: [2020-05-05 mar  07:16]
+display also header without #A but have a children with #A
+** TODO Display Priority #A/B # A/B/C with or not no priority
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
