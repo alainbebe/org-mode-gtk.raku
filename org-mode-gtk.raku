@@ -365,7 +365,6 @@ my Gnome::Gtk3::Entry $e_edit;
 my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
-my Gnome::Gtk3::Button $b_del;
 my Gnome::Gtk3::Button $b_pop;
 my Gnome::Gtk3::Button $b_add2;
 my Gnome::Gtk3::Button $b_move_up;
@@ -662,6 +661,18 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method del-childeren-button-click ( :$iter --> Int ) {
+        if $om.search-task-from($iter) {      # if not, it's a text not now editable 
+            my $task=$om.search-task-from($iter);
+            if $task.tasks {
+                for $task.tasks.Array {
+                    $om.delete-branch($_.iter);
+                }
+            }
+        }
+        $dialog.gtk_widget_destroy;
+        1
+    }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
@@ -769,9 +780,14 @@ class AppSignalHandlers {
             $b_add2.register-signal( self, 'add2-button-click', 'clicked',:iter($iter));
             
             # to delete the task
-            $b_del  .= new(:label('Delete task (and sub-tasks)'));
+            my Gnome::Gtk3::Button $b_del  .= new(:label('Delete task (and sub-tasks)'));
             $content-area.gtk_container_add($b_del);
             $b_del.register-signal(self, 'del-button-click', 'clicked',:iter($iter));
+
+            # to delete childeren
+            my Gnome::Gtk3::Button $b_del-childeren  .= new(:label('Delete sub-tasks'));
+            $content-area.gtk_container_add($b_del-childeren);
+            $b_del-childeren.register-signal(self, 'del-childeren-button-click', 'clicked',:iter($iter));
 
             # to populate with a external file
             $b_pop  .= new(:label('Populate with TODO from file'));
