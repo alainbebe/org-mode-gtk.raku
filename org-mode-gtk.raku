@@ -682,16 +682,18 @@ class AppSignalHandlers {
             # to move
             $b_move_right  .= new(:label('>'));
             $content-area.gtk_container_add($b_move_right);
-            b_move_right-register-signal($iter);
+            $b_move_right.register-signal(self, 'move-right-button-click', 'clicked',:iter($iter));
+
             $b_move_left  .= new(:label('<'));
             $content-area.gtk_container_add($b_move_left);
-            b_move_left-register-signal($iter);
+            $b_move_left.register-signal(self, 'move-left-button-click', 'clicked',:iter($iter));
 
             $b_move_up  .= new(:label('^'));
             $content-area.gtk_container_add($b_move_up);
             $b_move_down  .= new(:label('v'));
             $content-area.gtk_container_add($b_move_down);
-            b-move-up-down-register-signal($iter);
+            $b_move_up.register-signal(self, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(-1));
+            $b_move_down.register-signal(self, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(1));
 
             # To edit task
             $e_edit  .= new();
@@ -699,7 +701,7 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($e_edit);
             $b_edit  .= new(:label('Update task'));
             $content-area.gtk_container_add($b_edit);
-            b_edit-register-signal($iter);
+            $b_edit.register-signal(self, 'edit-button-click', 'clicked',:iter($iter));
             
             # To edit tags
             $e_edit_tags  .= new();
@@ -707,7 +709,7 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($e_edit_tags);
             $b_edit_tags  .= new(:label('Update tags'));
             $content-area.gtk_container_add($b_edit_tags);
-            b_edit_tags-register-signal($iter);
+            $b_edit_tags.register-signal(self, 'edit-tags-button-click', 'clicked',:iter($iter));
             
             # To edit text
             $tev_edit_text .= new;
@@ -719,7 +721,7 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($tev_edit_text);
             $b_edit_text  .= new(:label('Update text'));
             $content-area.gtk_container_add($b_edit_text);
-            b_edit_text-register-signal($iter);
+            $b_edit_text.register-signal(self, 'edit-text-button-click', 'clicked',:iter($iter));
             
             # To manage priority A,B,C.
             $task=$om.search-task-from($iter);
@@ -737,7 +739,10 @@ class AppSignalHandlers {
             $g_prio.gtk-grid-attach( $rb_pr2, 1, 0, 1, 1);
             $g_prio.gtk-grid-attach( $rb_pr3, 2, 0, 1, 1);
             $g_prio.gtk-grid-attach( $rb_pr4, 3, 0, 1, 1);
-            b_rb_prior-register-signal($iter);
+            $rb_pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior(""));
+            $rb_pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("A"));
+            $rb_pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("B"));
+            $rb_pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("C"));
 
             # To manage TODO/DONE
             $task=$om.search-task-from($iter);
@@ -752,24 +757,26 @@ class AppSignalHandlers {
             $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
             $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
             $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
-            b_rb-register-signal($iter);
+            $rb_td1.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
+            $rb_td2.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
+            $rb_td3.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
 
             # To add a sub-task
             $e_add2  .= new();
             $content-area.gtk_container_add($e_add2);
             $b_add2  .= new(:label('Add sub-task'));
             $content-area.gtk_container_add($b_add2);
-            b_add2-register-signal($iter);
+            $b_add2.register-signal( self, 'add2-button-click', 'clicked',:iter($iter));
             
             # to delete the task
-            $b_del  .= new(:label('Delete task (and tasks)'));
+            $b_del  .= new(:label('Delete task (and sub-tasks)'));
             $content-area.gtk_container_add($b_del);
-            b_del-register-signal($iter);
+            $b_del.register-signal(self, 'del-button-click', 'clicked',:iter($iter));
 
             # to populate with a external file
             $b_pop  .= new(:label('Populate with TODO from file'));
             $content-area.gtk_container_add($b_pop);
-            b_pop-register-signal($iter);
+            $b_pop.register-signal(self, 'pop-button-click', 'clicked',:iter($iter));
 
             # Show the dialog.
             $dialog.show-all;
@@ -784,45 +791,6 @@ class AppSignalHandlers {
 my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
-sub b_add2-register-signal ($iter) {
-    $b_add2.register-signal( $ash, 'add2-button-click', 'clicked',:iter($iter));
-}
-sub b_pop-register-signal ($iter) {
-    $b_pop.register-signal( $ash, 'pop-button-click', 'clicked',:iter($iter));
-}
-sub b_del-register-signal ($iter) {
-    $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));
-}
-sub b_rb_prior-register-signal($iter) {
-    $rb_pr1.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior(""));
-    $rb_pr2.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("A"));
-    $rb_pr3.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("B"));
-    $rb_pr4.register-signal( $ash, 'prior-button-click', 'clicked',:iter($iter),:prior("C"));
-}
-sub b_rb-register-signal($iter) {
-    $rb_td1.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
-    $rb_td2.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
-    $rb_td3.register-signal( $ash, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
-}
-sub b_move_right-register-signal ($iter) {
-    $b_move_right.register-signal( $ash, 'move-right-button-click', 'clicked',:iter($iter));
-}
-sub b_move_left-register-signal ($iter) {
-    $b_move_left.register-signal( $ash, 'move-left-button-click', 'clicked',:iter($iter));
-}
-sub b-move-up-down-register-signal ($iter) {
-    $b_move_up.register-signal( $ash, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(-1));
-    $b_move_down.register-signal( $ash, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(1));
-}
-sub b_edit-register-signal ($iter) {
-    $b_edit.register-signal( $ash, 'edit-button-click', 'clicked',:iter($iter));
-}
-sub b_edit_tags-register-signal ($iter) {
-    $b_edit_tags.register-signal( $ash, 'edit-tags-button-click', 'clicked',:iter($iter));
-}
-sub b_edit_text-register-signal ($iter) {
-    $b_edit_text.register-signal( $ash, 'edit-text-button-click', 'clicked',:iter($iter));
-}
 sub create-sub-menu($menu,$name,$ash,$method) {
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
     $menu-item.set-use-underline(1);
