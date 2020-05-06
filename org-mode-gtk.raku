@@ -160,7 +160,7 @@ class GtkTask is Task {
     }
     my $lvl=0;
     method inspect() {
-        say "ind : ",$.iter-get-indices, " lvl ",$lvl," ",$.header, " level ",$.level; # TODO filter on the primary task
+        say "ind : ",$.iter-get-indices, " lvl ",$lvl," ",$.header, " level ",$.level;
         if $.tasks {
             for $.tasks.Array {
                 $lvl++;
@@ -240,8 +240,7 @@ class GtkTask is Task {
         my $iter-parent=get-iter-from-path(@path-parent);
         return $.search-task-from($iter-parent);
     }
-    method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
-        # TODO to improve
+    method search-indice($task) { # it's the indice on my tree, not Gtk::Tree # TODO to improve
         my $i=-1;
         if $.parent($task).tasks {
             for $.parent($task).tasks.Array {
@@ -264,8 +263,7 @@ class GtkTask is Task {
     }
 }
 my GtkTask $om .=new(:level(0));
-sub demo_procedural_read($name) {
-    # TODO to remove, improve grammar/AST
+sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
     my $last=$om;   # last task for 'text'
     for $name.IO.lines {
@@ -280,7 +278,8 @@ sub demo_procedural_read($name) {
             $last=$task;
         } else {
             push($last.text,$_);
-            $presentation = $_ ~~ /presentation\=True/ ?? True !! False if $_ ~~ /presentation/; # TODO move this line in a new "sub parse-property"
+                                                            # TODO move this line in a new "sub parse-property"
+            $presentation = $_ ~~ /presentation\=True/ ?? True !! False if $_ ~~ /presentation/; 
         }
     }
     #    say $om.tasks;
@@ -367,6 +366,7 @@ my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::Button $b_del;
+my Gnome::Gtk3::Button $b_pop;
 my Gnome::Gtk3::Button $b_add2;
 my Gnome::Gtk3::Button $b_move_up;
 my Gnome::Gtk3::Button $b_move_left;
@@ -637,6 +637,26 @@ class AppSignalHandlers {
         $toggle_rb=!$toggle_rb;
         1
     }
+    method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
+        if $om.search-task-from($iter) {      # if not, it's a text not now editable 
+            my $task=$om.search-task-from($iter);
+            my $i=0;
+            if $task.header.IO.e {
+                for $task.header.IO.lines {
+                    $i++;
+                    if !($_ ~~ /NOTODO/) && $_ ~~ /^(.*?)" # TODO "(.*)$/ {     # NOTODO
+                        my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1)); # TODO create a sub with these 3 lines but I have a problem with parameters
+                        $0 ~~ /^" "*(.*)/;
+                        push($task-todo.text,$i ~ " " ~ $0.Str);
+                        $task-todo.create_task($iter);
+                        $task.tasks.push($task-todo);
+                    }
+                }
+            }
+        $dialog.gtk_widget_destroy;
+        1
+        }
+    }
     method del-button-click ( :$iter --> Int ) {
         $om.delete-branch($iter);
         $dialog.gtk_widget_destroy;
@@ -746,6 +766,11 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($b_del);
             b_del-register-signal($iter);
 
+            # to populate with a external file
+            $b_pop  .= new(:label('Populate with TODO from file'));
+            $content-area.gtk_container_add($b_pop);
+            b_pop-register-signal($iter);
+
             # Show the dialog.
             $dialog.show-all;
             $dialog.gtk-dialog-run;
@@ -761,6 +786,9 @@ $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 $tv.register-signal( $ash, 'tv-button-click', 'row-activated');
 sub b_add2-register-signal ($iter) {
     $b_add2.register-signal( $ash, 'add2-button-click', 'clicked',:iter($iter));
+}
+sub b_pop-register-signal ($iter) {
+    $b_pop.register-signal( $ash, 'pop-button-click', 'clicked',:iter($iter));
 }
 sub b_del-register-signal ($iter) {
     $b_del.register-signal( $ash, 'del-button-click', 'clicked',:iter($iter));

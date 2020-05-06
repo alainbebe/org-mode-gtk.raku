@@ -94,10 +94,12 @@ CLOSED: [2020-05-02 sam  09:44]
 ** DONE Move doesn't work in mode No-done.
 CLOSED: [2020-05-03 dim  17:08]
 ** TODO Read todo of a file
-*** TODO Populate a special task with TODO of a file
+*** DONE Populate a special task with TODO of a file
+CLOSED: [2020-05-06 mer  08:09]
 Search in a file .raku linewith # TODO
 And append this TODO to the task.
 *** TODO DONE automatically special task # TODO is remove of the file
+and ask a question before DONE or Delete ?
 ** TODO [#C] When move (on no-done mod), improve switch
 if 
  * 1
@@ -114,6 +116,19 @@ better is
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create copy/paste
+* org-mode-gtk.raku
+** TODO doesn't work, why ?
+150 # $_.iter ne $iter
+** TODO to improve
+243 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+** TODO to remove, improve grammar/AST
+266 sub demo_procedural_read($name) {
+** TODO move this line in a new "sub parse-property"
+281 
+** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+462 #:parent($!top-window),   
+** TODO create a sub with these 3 lines but I have a problem with parameters
+648 my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1));
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
