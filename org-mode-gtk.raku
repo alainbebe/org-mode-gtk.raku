@@ -44,6 +44,7 @@ my $no-done=True;       # display with no DONE
 my $prior-A=False;      # display #A          
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
+my $display-branch-task; # La tache qui sert de base à l'arborescence
 my $now = DateTime.now(
     formatter => {
         my $dow;
@@ -204,14 +205,15 @@ class GtkTask is Task {
         $tv.expand-row($ts.get-path($.iter),1);
     }
     method create_task(Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
+        my $level=$display-branch-task.level;
         my Gnome::Gtk3::TreeIter $iter_task;
-        if $.level==0 || (
+        if $.level==$level || (
             !($.todo && $.todo eq 'DONE' && $no-done) 
             && (!$prior-A ||  $.is-child-prior-A) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
-            if ($.level>0) {
-                if ($.level==1) {
+            if ($.level>$level) {
+                if ($.level==$level+1) {
                     my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
                     $parent-iter = $ts.get-iter($tp);
                 } else {
@@ -263,6 +265,8 @@ class GtkTask is Task {
     }
 }
 my GtkTask $om .=new(:level(0));
+$display-branch-task=$om;
+
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
     my $last=$om;   # last task for 'text'
@@ -427,6 +431,11 @@ sub brother($iter,$inc) {
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
+    method create-button($label,$method,$iter) {
+        my Gnome::Gtk3::Button $b  .= new(:label($label));
+        $b.register-signal(self, $method, 'clicked',:iter($iter));
+        return $b;
+    }
     method file-new ( --> Int ) {
         if $change && !$debug {
             if $md.run==-8 {
@@ -511,10 +520,10 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $change=1;
-            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1));
+            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($display-branch-task.level+1));
             $e_add.set-text("");
-            $task.create_task($iter);
-            $om.tasks.push($task);
+            $task.create_task();
+            $display-branch-task.tasks.push($task);
         }
         1
     }
@@ -673,6 +682,15 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method display-branch ( :$iter --> Int ) {
+        $display-branch-task=$om.search-task-from($iter);
+        $i=0;
+        $ts.clear();
+        $om.delete-iter();
+        $display-branch-task.create_task();
+        $dialog.gtk_widget_destroy;
+        1
+    }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
@@ -789,6 +807,8 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($b_del-childeren);
             $b_del-childeren.register-signal(self, 'del-childeren-button-click', 'clicked',:iter($iter));
 
+            $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
+
             # to populate with a external file
             $b_pop  .= new(:label('Populate with TODO from file'));
             $content-area.gtk_container_add($b_pop);
@@ -839,22 +859,19 @@ sub make-menubar-list-help ( ) {
     create-sub-menu($menu,"_About",$ash,'help-about');
     $menu
 }
-#--------------------------------interface---------------------------------
 #-----------------------------------sub-------------------------------
-sub reconstruct_tree { # not good practice, not abuse
+sub reconstruct_tree { # not good practice, not abuse # TODO put in Class
     $i=0;
     $ts.clear();
     $om.delete-iter();
-    populate_task();
-}
-sub populate_task {
+    $display-branch-task=$om;
     $om.create_task;
-#    say "after create task : \n",$om.tasks;
 }
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     demo_procedural_read($name);
-    populate_task();
+    $display-branch-task=$om;
+    $om.create_task;
 }
 sub save($name) {
 	spurt $name, $om.to_text;

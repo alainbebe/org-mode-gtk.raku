@@ -52,3 +52,8 @@ To turn the highlighting off permanently, create your own ~/.vimrc and put this 
 ** View 2 file
 :new
 ctrl-w up/down to change
+* TODO Raku
+** TODO Code minimum
+for "org-mode-gtk.raku".IO.lines {
+    .say if /" # TODO "/;
+}
