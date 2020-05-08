@@ -369,22 +369,6 @@ my Gnome::Gtk3::Entry $e_edit;
 my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
-my Gnome::Gtk3::Button $b_pop;
-my Gnome::Gtk3::Button $b_add2;
-my Gnome::Gtk3::Button $b_move_up;
-my Gnome::Gtk3::Button $b_move_left;
-my Gnome::Gtk3::Button $b_move_right;
-my Gnome::Gtk3::Button $b_move_down;
-my Gnome::Gtk3::Button $b_edit;
-my Gnome::Gtk3::Button $b_edit_tags;
-my Gnome::Gtk3::Button $b_edit_text;
-my Gnome::Gtk3::RadioButton $rb_pr1;
-my Gnome::Gtk3::RadioButton $rb_pr2;
-my Gnome::Gtk3::RadioButton $rb_pr3;
-my Gnome::Gtk3::RadioButton $rb_pr4;
-my Gnome::Gtk3::RadioButton $rb_td1;
-my Gnome::Gtk3::RadioButton $rb_td2;
-my Gnome::Gtk3::RadioButton $rb_td3;
 my Gnome::Gtk3::TextView $tev_edit_text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
 
@@ -431,9 +415,9 @@ sub brother($iter,$inc) {
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
-    method create-button($label,$method,$iter) {
+    method create-button($label,$method,$iter,$inc?) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));
-        $b.register-signal(self, $method, 'clicked',:iter($iter));
+        $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
     method file-new ( --> Int ) {
@@ -708,37 +692,22 @@ class AppSignalHandlers {
         if $om.search-task-from($iter) {      # if not, it's a text not now editable 
             my $task=$om.search-task-from($iter);
 
-            # to move
-            $b_move_right  .= new(:label('>'));
-            $content-area.gtk_container_add($b_move_right);
-            $b_move_right.register-signal(self, 'move-right-button-click', 'clicked',:iter($iter));
-
-            $b_move_left  .= new(:label('<'));
-            $content-area.gtk_container_add($b_move_left);
-            $b_move_left.register-signal(self, 'move-left-button-click', 'clicked',:iter($iter));
-
-            $b_move_up  .= new(:label('^'));
-            $content-area.gtk_container_add($b_move_up);
-            $b_move_down  .= new(:label('v'));
-            $content-area.gtk_container_add($b_move_down);
-            $b_move_up.register-signal(self, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(-1));
-            $b_move_down.register-signal(self, 'move-up-down-button-click', 'clicked',:iter($iter),:inc(1));
+            $content-area.gtk_container_add($.create-button('>','move-right-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('<','move-left-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('^','move-up-down-button-click',$iter,-1));
+            $content-area.gtk_container_add($.create-button('v','move-up-down-button-click',$iter,1));
 
             # To edit task
             $e_edit  .= new();
             $e_edit.set-text($task.header);
             $content-area.gtk_container_add($e_edit);
-            $b_edit  .= new(:label('Update task'));
-            $content-area.gtk_container_add($b_edit);
-            $b_edit.register-signal(self, 'edit-button-click', 'clicked',:iter($iter));
+            $content-area.gtk_container_add($.create-button('Update task','edit-button-click',$iter));
             
             # To edit tags
             $e_edit_tags  .= new();
             $e_edit_tags.set-text(join(" ",$task.tags));
             $content-area.gtk_container_add($e_edit_tags);
-            $b_edit_tags  .= new(:label('Update tags'));
-            $content-area.gtk_container_add($b_edit_tags);
-            $b_edit_tags.register-signal(self, 'edit-tags-button-click', 'clicked',:iter($iter));
+            $content-area.gtk_container_add($.create-button('Update tags','edit-tags-button-click',$iter));
             
             # To edit text
             $tev_edit_text .= new;
@@ -748,18 +717,16 @@ class AppSignalHandlers {
                 $text-buffer.set-text($text);
             }
             $content-area.gtk_container_add($tev_edit_text);
-            $b_edit_text  .= new(:label('Update text'));
-            $content-area.gtk_container_add($b_edit_text);
-            $b_edit_text.register-signal(self, 'edit-text-button-click', 'clicked',:iter($iter));
+            $content-area.gtk_container_add($.create-button('Update text','edit-text-button-click',$iter));
             
             # To manage priority A,B,C.
             $task=$om.search-task-from($iter);
             my Gnome::Gtk3::Grid $g_prio .= new;
             $content-area.gtk_container_add($g_prio);
-            $rb_pr1 .= new(:label('-'));
-            $rb_pr2 .= new( :group-from($rb_pr1), :label('A'));
-            $rb_pr3 .= new( :group-from($rb_pr1), :label('B'));
-            $rb_pr4 .= new( :group-from($rb_pr1), :label('C'));
+            my Gnome::Gtk3::RadioButton $rb_pr1 .= new(:label('-'));
+            my Gnome::Gtk3::RadioButton $rb_pr2 .= new( :group-from($rb_pr1), :label('A'));
+            my Gnome::Gtk3::RadioButton $rb_pr3 .= new( :group-from($rb_pr1), :label('B'));
+            my Gnome::Gtk3::RadioButton $rb_pr4 .= new( :group-from($rb_pr1), :label('C'));
             if    !$task.priority          { $rb_pr1.set-active(1);}
             elsif $task.priority eq '#A' { $rb_pr2.set-active(1);}
             elsif $task.priority eq '#B' { $rb_pr3.set-active(1);} 
@@ -777,9 +744,9 @@ class AppSignalHandlers {
             $task=$om.search-task-from($iter);
             my Gnome::Gtk3::Grid $g_todo .= new;
             $content-area.gtk_container_add($g_todo);
-            $rb_td1 .= new(:label('-'));
-            $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
-            $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
+            my Gnome::Gtk3::RadioButton $rb_td1 .= new(:label('-'));
+            my Gnome::Gtk3::RadioButton $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
+            my Gnome::Gtk3::RadioButton $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
             if    !$task.todo          { $rb_td1.set-active(1);}
             elsif $task.todo eq 'TODO' { $rb_td2.set-active(1);}
             elsif $task.todo eq 'DONE' { $rb_td3.set-active(1);} 
@@ -793,26 +760,12 @@ class AppSignalHandlers {
             # To add a sub-task
             $e_add2  .= new();
             $content-area.gtk_container_add($e_add2);
-            $b_add2  .= new(:label('Add sub-task'));
-            $content-area.gtk_container_add($b_add2);
-            $b_add2.register-signal( self, 'add2-button-click', 'clicked',:iter($iter));
+            $content-area.gtk_container_add($.create-button('Add sub-task','add2-button-click',$iter));
             
-            # to delete the task
-            my Gnome::Gtk3::Button $b_del  .= new(:label('Delete task (and sub-tasks)'));
-            $content-area.gtk_container_add($b_del);
-            $b_del.register-signal(self, 'del-button-click', 'clicked',:iter($iter));
-
-            # to delete childeren
-            my Gnome::Gtk3::Button $b_del-childeren  .= new(:label('Delete sub-tasks'));
-            $content-area.gtk_container_add($b_del-childeren);
-            $b_del-childeren.register-signal(self, 'del-childeren-button-click', 'clicked',:iter($iter));
-
+            $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-childeren-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
-
-            # to populate with a external file
-            $b_pop  .= new(:label('Populate with TODO from file'));
-            $content-area.gtk_container_add($b_pop);
-            $b_pop.register-signal(self, 'pop-button-click', 'clicked',:iter($iter));
+            $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
 
             # Show the dialog.
             $dialog.show-all;
