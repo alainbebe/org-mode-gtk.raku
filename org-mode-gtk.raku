@@ -263,6 +263,12 @@ class GtkTask is Task {
         $task.create_task();
         $.tasks.push($task);
     }
+    method reconstruct_tree { # not good practice, not abuse 
+        $i=0;
+        $ts.clear();
+        $.delete-iter();
+        $.create_task;
+    }
 }
 my GtkTask $om .=new(:level(0));
 $display-branch-task=$om;
@@ -484,17 +490,22 @@ class AppSignalHandlers {
     }
     method option-presentation( ) {
         $presentation=!$presentation;
-        reconstruct_tree();
-        1
-    }
-    method option-prior-A( ) {
-        $prior-A=!$prior-A;
-        reconstruct_tree();
+        $display-branch-task.reconstruct_tree();
         1
     }
     method option-no-done( ) {
         $no-done=!$no-done;
-        reconstruct_tree();
+        $display-branch-task.reconstruct_tree();
+        1
+    }
+    method option-prior-A( ) {
+        $prior-A=!$prior-A;
+        $display-branch-task.reconstruct_tree();
+        1
+    }
+    method option-rebase( ) {
+        $display-branch-task=$om;
+        $display-branch-task.reconstruct_tree();
         1
     }
     method help-about( ) {
@@ -800,6 +811,7 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     create-sub-menu($menu,"#_A",$ash,'option-prior-A');
+    create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
     $menu
 }
 sub make-menubar-list-debug() {
@@ -813,13 +825,6 @@ sub make-menubar-list-help ( ) {
     $menu
 }
 #-----------------------------------sub-------------------------------
-sub reconstruct_tree { # not good practice, not abuse # TODO put in Class
-    $i=0;
-    $ts.clear();
-    $om.delete-iter();
-    $display-branch-task=$om;
-    $om.create_task;
-}
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     demo_procedural_read($name);

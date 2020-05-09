@@ -66,15 +66,20 @@ CLOSED: [2020-04-25 sam  12:33]
 ** TODO Scroll for Manage Task if "text" is long
 ** TODO Create Tab to edit 2 or more files
 ** TODO Separte, momentarily, a file in multiple tabs
-** TODO [#A] Work with only one sub-branch
+** DONE [#A] Work with only one sub-branch
+CLOSED: [2020-05-09 sam  07:33]
 sélectionner une branch, mais en fait surtout une sous branche
 et n'afficher que celle-là, comme si c'était une principale
 mais sauver toujours l'ensemble
 Voir créer un onglet pour travailler sur cette sous-branche
+*** DONE Goto to orgine after a display branch
+CLOSED: [2020-05-09 sam  07:33]
 ** DONE [#A] Display priority #A
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
+** TODO Grisé les menus non-utilisables (Top of treesi déjà au Top, save si déja sauver,...)
+** TODO Griser les boutons non-utilisables (^, v,...)
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -116,6 +121,7 @@ better is
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create copy/paste
+** TODO Create Undo/Redo
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter

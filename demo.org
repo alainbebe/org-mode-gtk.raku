@@ -4,7 +4,7 @@ preface
 detail
 detail suite
 ** [#B] sub task1                                                     :es sai:
-** DONE sub task2 :suite:
+** DONE [#B] sub task2                                                :suite:
 *** Level 3
 * TODO [#D] another task
 ** TODO [#A] Sous A
