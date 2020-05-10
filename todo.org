@@ -14,8 +14,10 @@ CLOSED: [2020-05-03 dim  07:51]
 ** DONE Resolve problem "é" in text
 CLOSED: [2020-04-25 sam  19:00]
 it's a problem with count of utf8 char
-** TODO Save file failed if not exist a file name
-** TODO add "Save as"
+** DONE Save file failed if not exist a file name
+CLOSED: [2020-05-10 dim  09:02]
+** DONE add "Save as"
+CLOSED: [2020-05-10 dim  09:02]
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
@@ -80,6 +82,10 @@ display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
 ** TODO Grisé les menus non-utilisables (Top of treesi déjà au Top, save si déja sauver,...)
 ** TODO Griser les boutons non-utilisables (^, v,...)
+** TODO [#A] Disable Markup for code
+Create propery todo that
+** TODO For Open and Save as, remove Ok button
+*** TODO or manage return ?
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -122,6 +128,7 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create copy/paste
 ** TODO Create Undo/Redo
+** TODO Warning if Save as on an existence file
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter

@@ -433,6 +433,9 @@ class AppSignalHandlers {
             }
             $md.destroy;
         }
+        $change=0;
+        $filename='';
+        $top-window.set-title('Org-Mode with GTK and raku');
         $ts.clear();
         $om.tasks=[]; 
         $om.text=[]; 
@@ -440,8 +443,27 @@ class AppSignalHandlers {
         1
     }
     method file-save( ) {
-        $change=0;
-        save($filename);
+        $filename ?? save($filename) !! self.file-save-as();
+    }
+    method file-save-as( ) {
+        my Gnome::Gtk3::FileChooserDialog $dialog .= new(
+            :title("Open File"), 
+            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+            :action(GTK_FILE_CHOOSER_ACTION_SAVE),
+            :button-spec( [
+                "_Ok", GTK_RESPONSE_OK,
+                "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Open", GTK_RESPONSE_ACCEPT
+            ] )
+        );
+        my $response = $dialog.gtk-dialog-run;
+        if $response ~~ GTK_RESPONSE_ACCEPT {
+            $filename = $dialog.get-filename;
+            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
+            save($filename) if $filename;
+        }
+        $dialog.gtk-widget-hide;
+        1
     }
     method file-save-test( ) {
         save("test.org");
@@ -471,6 +493,7 @@ class AppSignalHandlers {
             $om.tasks=[]; 
             $om.text=[]; 
             $filename = $dialog.get-filename;
+            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
             open-file($filename) if $filename;
         }
         $dialog.gtk-widget-hide;
@@ -801,6 +824,7 @@ sub make-menubar-list-file( ) {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"_Save",$ash,'file-save');
+    create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
     create-sub-menu($menu,"_Open",$ash,'file-open');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
@@ -832,12 +856,14 @@ sub open-file($name) {
     $om.create_task;
 }
 sub save($name) {
+    $change=0;
 	spurt $name, $om.to_text;
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
     $top-window.show-all;
     $filename=$arg;
+    $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename; # TODO  improve code
     $filename??open-file($filename)!!$om.default;
     $m.gtk-main;
 }
