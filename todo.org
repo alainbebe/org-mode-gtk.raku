@@ -83,11 +83,14 @@ CLOSED: [2020-05-09 sam  07:33]
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
-** TODO Grisé les menus non-utilisables (Top of treesi déjà au Top, save si déja sauver,...)
-** TODO Griser les boutons non-utilisables (^, v,...)
+** TODO Grisé les menus non-utilisables 
+Top of treesi déjà au Top, save si déja sauvé,...
+** TODO Griser les boutons non-utilisables 
+<, ^, v,..
 ** TODO For Open and Save as, remove Ok button
 *** TODO or manage return ?
 ** TODO [#A] Find Iter of select row, to use with menu
+** TODO Add Cancel when warning for save file
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -135,7 +138,8 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Create Undo/Redo
 ** TODO Warning if Save as on an existent file
 ** TODO Add white line as Orgzly
-** TODO [#A] Warning save diseable for demo.org
+** DONE [#A] Warning save diseable for demo.org
+CLOSED: [2020-05-12 mar  17:42]
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter

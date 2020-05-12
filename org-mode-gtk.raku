@@ -324,7 +324,7 @@ my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 class X {
   method exit-gui ( --> Int ) {
-        if $change && !$debug {
+        if $change && $filename ne "demo.org" {
             if $md.run==-8 {
                 save($filename);
             }
@@ -454,7 +454,7 @@ class AppSignalHandlers {
         return $b;
     }
     method file-new ( --> Int ) {
-        if $change && !$debug {
+        if $change && $filename ne "demo.org" {
             if $md.run==-8 {
                 save($filename);
             }
@@ -498,7 +498,7 @@ class AppSignalHandlers {
         say "\n"; # yes, 2 lines.
     }
     method file-open ( --> Int ) {
-        if $change && !$debug {
+        if $change && $filename ne "demo.org" {
             if $md.run==-8 {
                 save($filename);
             }
@@ -527,7 +527,7 @@ class AppSignalHandlers {
         1
     }
     method file-quit( ) {
-        if $change && !$debug {
+        if $change && $filename ne "demo.org" {
             if $md.run==-8 {
                 save($filename);
             }
