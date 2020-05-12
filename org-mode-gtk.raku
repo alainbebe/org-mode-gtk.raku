@@ -222,7 +222,10 @@ class GtkTask is Task {
                 $iter_task = $ts.insert-with-values($parent-iter, $pos, 0, $.display-header);
                 if $.text {
                     for $.text.Array {
-                         my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
+                        $_ ~~ s/"&"/&amp;/;   # for markup
+                        $_ ~~ s/"<"/&lt;/;
+                        $_ ~~ s/">"/&gt;/;
+                        my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
                     }
                 }
                 $.iter=$iter_task;
@@ -402,7 +405,10 @@ sub update-text($iter,$new-text) {
     }
     if $task.text {
         for $task.text.Array.reverse {
-             my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
+            $_ ~~ s/"&"/&amp;/;   # for markup
+            $_ ~~ s/"<"/&lt;/;
+            $_ ~~ s/">"/&gt;/;
+            my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
         }
         $task.expand-row();
     }

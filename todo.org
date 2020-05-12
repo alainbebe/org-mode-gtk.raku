@@ -18,6 +18,9 @@ it's a problem with count of utf8 char
 CLOSED: [2020-05-10 dim  09:02]
 ** DONE add "Save as"
 CLOSED: [2020-05-10 dim  09:02]
+** DONE [#A] Disable Markup for code
+CLOSED: [2020-05-12 mar  07:42]
+s/</&lt;/
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
