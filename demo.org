@@ -23,3 +23,7 @@ text
 *** niveau 3
 *** niveau 3 aussi
 * TODO org-mode-gtk.raku
+:PROPERTIES:
+:code:     on
+:dode:     ff
+:END:

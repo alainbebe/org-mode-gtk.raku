@@ -85,10 +85,9 @@ display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
 ** TODO Grisé les menus non-utilisables (Top of treesi déjà au Top, save si déja sauver,...)
 ** TODO Griser les boutons non-utilisables (^, v,...)
-** TODO [#A] Disable Markup for code
-Create propery todo that
 ** TODO For Open and Save as, remove Ok button
 *** TODO or manage return ?
+** TODO [#A] Find Iter of select row, to use with menu
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -113,7 +112,10 @@ CLOSED: [2020-05-06 mer  08:09]
 Search in a file .raku linewith # TODO
 And append this TODO to the task.
 *** TODO DONE automatically special task # TODO is remove of the file
-and ask a question before DONE or Delete ?
+Load all todo from file
+Readl all TODO from org, if find in list, remove (line may be change)
+if not find Ask question Delete, DONE
+Append All Todo
 ** TODO [#C] When move (on no-done mod), improve switch
 if 
  * 1
@@ -131,7 +133,9 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create copy/paste
 ** TODO Create Undo/Redo
-** TODO Warning if Save as on an existence file
+** TODO Warning if Save as on an existent file
+** TODO Add white line as Orgzly
+** TODO [#A] Warning save diseable for demo.org
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter
@@ -162,3 +166,5 @@ CLOSED: [2020-04-25 sam  10:42]
 ** TODO Use Perl6::Tidy
 Install fail
 See issue https://github.com/drforr/perl6-Perl6-Parser/issues/24
+** TODO Change color in Insert Mode
+https://stackoverflow.com/questions/7614546/vim-cursorline-color-change-in-insert-mode

@@ -30,6 +30,7 @@ use Gnome::Gtk3::TextBuffer;
 use Gnome::Gtk3::FileChooser;
 use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::ScrolledWindow;
+use Gnome::Gtk3::TreeSelection;
 use NativeCall;
 use Gnome::N::X;
 
@@ -68,13 +69,14 @@ my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 #use lib ".";
 #use Task;
 class Task {
-    has Int  $.level     is rw;
-    has Str  $.todo      is rw;
-    has Str  $.priority  is rw;
-    has Str  $.header    is rw; #  is required
-    has Str  @.tags      is rw;
-    has Str  @.text      is rw;
-    has Task @.tasks is rw;
+    has Int  $.level      is rw;
+    has Str  $.todo       is rw;
+    has Str  $.priority   is rw;
+    has Str  $.header     is rw; #  is required
+    has Str  @.tags       is rw;
+    has Str  @.text       is rw;
+    has      %.properties is rw;
+    has Task @.tasks      is rw;
 
     method display-header {
         my $display;
@@ -123,6 +125,11 @@ class Task {
             $orgmode~=$.header;
             $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
             $orgmode~="\n";
+        }
+        if ($.properties) {
+            $orgmode~=":PROPERTIES:\n";
+            for $.properties.kv -> $k,$v { $orgmode~=":$k:     $v\n"; }
+            $orgmode~=":END:\n";
         }
         if ($.text) {
             for $.text.Array {
@@ -279,6 +286,7 @@ $display-branch-task=$om;
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
     my $last=$om;   # last task for 'text'
+    my $read-property=False;
     for $name.IO.lines {
         if $_~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
             my $level=$0.elems;
@@ -290,13 +298,26 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
             @last[$level]=$task;
             $last=$task;
         } else {
-            push($last.text,$_);
-                                                            # TODO move this line in a new "sub parse-property"
-            $presentation = $_ ~~ /presentation\=True/ ?? True !! False if $_ ~~ /presentation/; 
+            if  /^":PROPERTIES:"$/ {
+                $read-property = True;
+            } elsif /^":END:"$/ {
+                $read-property = False;
+            } else {
+                if $read-property {
+                    /":"(.*?)":"" "+(.*)/;
+                    $last.properties{$0.Str}=$1.Str;
+                    if $last.properties{'presentation'} 
+                        && $last.properties{'presentation'} eq 'False' { # TODO global choice, put in task, inherit for child
+                            $presentation=False
+                    };
+                } else {
+                    push($last.text,$_);
+                }
+            }
         }
     }
-    #    say $om.tasks;
-    #    say "after : \n", Dump $om.tasks;
+#        say $om.tasks;
+#        say "after : \n", Dump $om.tasks;
 }
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
@@ -694,7 +715,7 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
-    method del-childeren-button-click ( :$iter --> Int ) {
+    method del-children-button-click ( :$iter --> Int ) {
         if $om.search-task-from($iter) {      # if not, it's a text not now editable 
             my $task=$om.search-task-from($iter);
             if $task.tasks {
@@ -803,7 +824,7 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($.create-button('Add sub-task','add2-button-click',$iter));
             
             $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
-            $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-childeren-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
             $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
 
