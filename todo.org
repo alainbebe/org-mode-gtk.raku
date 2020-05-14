@@ -87,7 +87,8 @@ display also header without #A but have a children with #A
 Top of treesi déjà au Top, save si déja sauvé,...
 ** TODO Griser les boutons non-utilisables 
 <, ^, v,..
-** TODO For Open and Save as, remove Ok button
+** DONE For Open and Save as, remove Ok button
+CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO [#A] Find Iter of select row, to use with menu
 ** TODO Add Cancel when warning for save file

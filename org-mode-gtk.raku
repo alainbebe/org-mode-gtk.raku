@@ -478,7 +478,7 @@ class AppSignalHandlers {
             #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,
+#                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Open", GTK_RESPONSE_ACCEPT
             ] )
@@ -509,7 +509,7 @@ class AppSignalHandlers {
             #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,
+#                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Open", GTK_RESPONSE_ACCEPT
             ] )
@@ -519,6 +519,8 @@ class AppSignalHandlers {
             $ts.clear();
             $om.tasks=[]; 
             $om.text=[]; 
+            $om.properties={}; # TODO use undefined ?
+            $presentation=True;
             $filename = $dialog.get-filename;
             $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
             open-file($filename) if $filename;

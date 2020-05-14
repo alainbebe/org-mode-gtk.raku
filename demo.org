@@ -1,5 +1,4 @@
 preface
-#+PROPERTY: var $presentation=True;
 * DOES task :essai suite:
 detail
 detail suite
