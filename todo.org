@@ -4,10 +4,13 @@ CLOSED: [2020-04-26 dim  09:02]
 [#A] Create tag priorities
 ** DONE Tag
 CLOSED: [2020-04-27 lun  19:31]
-** TODO Scheduled date
-** TODO Deadline date
+** DONE [#A] Scheduled date
+CLOSED: [2020-05-15 ven 17:59]
+** DONE [#A] Deadline date
+CLOSED: [2020-05-15 ven 17:59]
 ** DONE pass to level 3 and more
 CLOSED: [2020-05-03 dim  07:51]
+** TODO Improve Scheduled et Deadline
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
@@ -92,6 +95,7 @@ CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO [#A] Find Iter of select row, to use with menu
 ** TODO Add Cancel when warning for save file
+** TODO When display only #A, fold all
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -141,6 +145,7 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
+** TODO Date
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter

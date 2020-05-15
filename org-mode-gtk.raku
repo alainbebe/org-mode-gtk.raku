@@ -46,6 +46,22 @@ my $prior-A=False;      # display #A
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
 my $display-branch-task; # La tache qui sert de base à l'arborescence
+my $d-now = DateTime.now(
+    formatter => {
+        my $dow;
+        given .day-of-week {
+            when 1 { $dow='lun'}
+            when 2 { $dow='mar'}
+            when 3 { $dow='mer'}
+            when 4 { $dow='jeu'}
+            when 5 { $dow='ven'}
+            when 6 { $dow='sam'}
+            when 7 { $dow='dim'}
+        }
+        sprintf '%04d-%02d-%02d %s', 
+        .year, .month, .day, $dow
+    }
+);
 my $now = DateTime.now(
     formatter => {
         my $dow;
@@ -58,7 +74,7 @@ my $now = DateTime.now(
             when 6 { $dow='sam'}
             when 7 { $dow='dim'}
         }
-        sprintf '%04d-%02d-%02d %s  %02d:%02d', 
+        sprintf '%04d-%02d-%02d %s %02d:%02d', 
         .year, .month, .day, $dow, .hour, .minute
     }
 );
@@ -68,11 +84,14 @@ my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 #----------------------- class Task & OrgMode
 #use lib ".";
 #use Task;
+
 class Task {
     has Int  $.level      is rw;
     has Str  $.todo       is rw;
     has Str  $.priority   is rw;
     has Str  $.header     is rw; #  is required
+    has Str  $.scheduled  is rw;
+    has Str  $.deadline   is rw;
     has Str  @.tags       is rw;
     has Str  @.text       is rw;
     has      %.properties is rw;
@@ -125,6 +144,12 @@ class Task {
             $orgmode~=$.header;
             $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
             $orgmode~="\n";
+        }
+        if ($.scheduled) {
+            $orgmode~="SCHEDULED: <$.scheduled>\n";
+        }
+        if ($.deadline) {
+            $orgmode~="DEADLINE: <$.deadline>\n";
         }
         if ($.properties) {
             $orgmode~=":PROPERTIES:\n";
@@ -298,7 +323,11 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
             @last[$level]=$task;
             $last=$task;
         } else {
-            if  /^":PROPERTIES:"$/ {
+            if  /^"SCHEDULED: <" (.*?) ">"$/ {
+                $last.scheduled=$0.Str;
+            } elsif  /^"DEADLINE: <" (.*?) ">"$/ {
+                $last.deadline=$0.Str;
+            } elsif  /^":PROPERTIES:"$/ {
                 $read-property = True;
             } elsif /^":END:"$/ {
                 $read-property = False;
@@ -453,6 +482,28 @@ class AppSignalHandlers {
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
+    method manage-date ($date-str is rw) {
+        my Gnome::Gtk3::Dialog $dialog2 .= new(
+            :title("Scheduling"), 
+            :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( [
+                "_Ok", GTK_RESPONSE_OK,     # TODO rajouter un "delete"
+                "_Cancel", GTK_RESPONSE_CANCEL,
+            ] )
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
+        my Gnome::Gtk3::Entry $e_edit .= new();
+        $e_edit.set-text($date-str??$date-str!!$d-now.Str);
+        $content-area.gtk_container_add($e_edit);
+        $dialog2.show-all;
+        my $response = $dialog2.gtk-dialog-run;
+        if $response ~~ GTK_RESPONSE_OK {
+            $date-str=$e_edit.get-text();
+        }
+        $dialog2.gtk_widget_destroy;
+        return $date-str;
+    }
     method file-new ( --> Int ) {
         if $change && $filename ne "demo.org" {
             if $md.run==-8 {
@@ -489,7 +540,7 @@ class AppSignalHandlers {
             $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
             save($filename) if $filename;
         }
-        $dialog.gtk-widget-hide;
+        $dialog.gtk-widget-hide; # TODO destroy ?
         1
     }
     method file-save-test( ) {
@@ -639,6 +690,16 @@ class AppSignalHandlers {
         }
         1
     }
+    method scheduled ( :$iter ) {
+        my $task=$om.search-task-from($iter);
+        $task.scheduled=self.manage-date($task.scheduled);
+        1
+    }
+    method deadline ( :$iter ) {
+        my $task=$om.search-task-from($iter);
+        $task.deadline=self.manage-date($task.deadline);
+        1
+    }
     method edit-button-click ( :$iter ) {
         $change=1;
         my $task=$om.search-task-from($iter);
@@ -743,7 +804,7 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreeIter $iter = $ts.tree-model-get-iter($tree-path);
 
         # Dialog to manage task
-        $dialog .= new(
+        $dialog .= new(   # TODO global variable is necessary ?
             :title("Manage task"), 
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -759,6 +820,9 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($.create-button('<','move-left-button-click',$iter));
             $content-area.gtk_container_add($.create-button('^','move-up-down-button-click',$iter,-1));
             $content-area.gtk_container_add($.create-button('v','move-up-down-button-click',$iter,1));
+
+            $content-area.gtk_container_add($.create-button('Scheduling','scheduled',$iter,1));
+            $content-area.gtk_container_add($.create-button('Deadline','deadline',$iter,1));
 
             # To edit task
             $e_edit  .= new();
