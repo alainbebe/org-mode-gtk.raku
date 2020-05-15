@@ -85,6 +85,12 @@ my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 #use lib ".";
 #use Task;
 
+sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
+    $text ~~ s/"&"/&amp;/;
+    $text ~~ s/"<"/&lt;/;
+    $text ~~ s/">"/&gt;/;
+    return $text;
+}
 class Task {
     has Int  $.level      is rw;
     has Str  $.todo       is rw;
@@ -99,6 +105,7 @@ class Task {
 
     method display-header {
         my $display;
+        my $header=to-markup($.header);
         if $presentation {
             if (!$.todo)             {$display~=' '}
             elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
@@ -110,18 +117,18 @@ class Task {
                 elsif $.priority ~~ /C/ {$display~=' <span foreground="lime">'~$.priority~'</span>'}
             }
 
-            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$.header~'</span>'}
-            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$.header~'</span>'}
-            else               {$display~='<span weight="bold" foreground="black"> '~$.header~'</span>'}
+            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$header~'</span>'}
+            else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
 
             if $.tags {
                 $display~=' <span foreground="grey">'~$.tags~'</span>';
             }
 
         } else {
-            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$.header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$.header~'</span>'}
-            else               {$display~='<span foreground="black" size="x-large"      >'~$.header~'</span>'}
+            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
+            else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
         }
         return $display;
     }
@@ -254,10 +261,7 @@ class GtkTask is Task {
                 $iter_task = $ts.insert-with-values($parent-iter, $pos, 0, $.display-header);
                 if $.text {
                     for $.text.Array {
-                        $_ ~~ s/"&"/&amp;/;   # for markup
-                        $_ ~~ s/"<"/&lt;/;
-                        $_ ~~ s/">"/&gt;/;
-                        my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, $_) 
+                        my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter_task, -1, 0, to-markup($_)) 
                     }
                 }
                 $.iter=$iter_task;
@@ -455,10 +459,7 @@ sub update-text($iter,$new-text) {
     }
     if $task.text {
         for $task.text.Array.reverse {
-            $_ ~~ s/"&"/&amp;/;   # for markup
-            $_ ~~ s/"<"/&lt;/;
-            $_ ~~ s/">"/&gt;/;
-            my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, $_) 
+            my Gnome::Gtk3::TreeIter $iter_t2 = $ts.insert-with-values($iter, 0, 0, to-markup($_)) 
         }
         $task.expand-row();
     }

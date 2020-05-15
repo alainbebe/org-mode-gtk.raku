@@ -146,6 +146,7 @@ No switch 1 et 3, but insert 3 before 1
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
 ** TODO Date
+** TODO compare .bak and original file, and create alert is different
 * org-mode-gtk.raku
 ** TODO doesn't work, why ?
 150 # $_.iter ne $iter
