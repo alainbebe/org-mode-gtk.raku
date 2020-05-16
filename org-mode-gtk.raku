@@ -149,7 +149,7 @@ class Task {
             $orgmode~=$.todo~" " if $.todo;
             $orgmode~="\["~$.priority~"\] " if $.priority;
             $orgmode~=$.header;
-            $orgmode~=" :"~join(':',$.tags)~':' if $.tags;
+            $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags; # TODO why it's necessary to write .Array ?
             $orgmode~="\n";
         }
         if ($.scheduled) {
@@ -317,7 +317,7 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my $last=$om;   # last task for 'text'
     my $read-property=False;
     for $name.IO.lines {
-        if $_~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:.*))? $/ { # header level 1
+        if $_ ~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:((\S*?)\:)+))? \s* $/ { # header 
             my $level=$0.elems;
             my GtkTask $task.=new(:header($3.Str),:level($level));
             $task.todo    =$1[0].Str if $1[0];
@@ -372,7 +372,8 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
-my Gnome::Gtk3::Window $top-window .= new(:title('Org-Mode with GTK and raku'));
+my Gnome::Gtk3::Window $top-window .= new();
+$top-window.set-title('Org-Mode with GTK and raku');
 $top-window.set-default-size( 640, 480);
 
 my Gnome::Gtk3::Grid $g .= new();
@@ -946,6 +947,11 @@ sub make-menubar-list-help ( ) {
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     demo_procedural_read($name);
+    save("test.org");
+    my $proc =     run 'diff','-Z',"$name",'test.org';
+    say "Input file and save file are different. Problem with syntax or bug.
+        You can view the file, but it's may be wrong.
+        Don't save." if $proc.exitcode; 
     $display-branch-task=$om;
     $om.create_task;
 }
