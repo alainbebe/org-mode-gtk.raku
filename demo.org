@@ -6,6 +6,7 @@ detail suite
 ** DONE [#B] sub task2                                                :suite:
 *** Level 3
 * TODO [#D] another task
+SCHEDULED: <2020-05-17 dim>
 ** TODO [#A] Sous A
 * DONE try
 ** DONE sub try 1
@@ -24,6 +25,6 @@ text
 * TODO org-mode-gtk.raku
 SCHEDULED: <2020-05-13 jeu>
 :PROPERTIES:
-:dode:     ff
 :code:     on
+:dode:     ff
 :END:

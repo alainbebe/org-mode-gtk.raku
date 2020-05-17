@@ -53,7 +53,7 @@ Improve this swap if task is hide
 ** TODO Use GdkEventKey for keyboard
 *** TODO Short-Cut  "Ctrl-s" forsave
 *** TODO link F11 to maximize the window
-*** TODO Shift-left unfold only current selection, not child 
+*** TODO Shift-left unfold only current selection, not child
 or capture keyboard and redifine de Shift-right
 ** DONE Accent é create problem in edit "text"
 CLOSED: [2020-04-19 dim  11:00]
@@ -86,9 +86,9 @@ CLOSED: [2020-05-09 sam  07:33]
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
-** TODO Grisé les menus non-utilisables 
+** TODO Grisé les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
-** TODO Griser les boutons non-utilisables 
+** TODO Griser les boutons non-utilisables
 <, ^, v,..
 ** DONE For Open and Save as, remove Ok button
 CLOSED: [2020-05-14 jeu  07:10]
@@ -103,7 +103,7 @@ CLOSED: [2020-04-21 mar  18:35]
 CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
 
-** DONE TODO -> DONE add line with date
+** DONE TODO -&gt; DONE add line with date
 ** DONE Read filename on the command line
 ** TODO DONE to TODO, remove date but exist a blank line if no text
 Utiliser update text, 
@@ -147,19 +147,36 @@ No switch 1 et 3, but insert 3 before 1
 CLOSED: [2020-05-12 mar  17:42]
 ** TODO Date
 ** TODO compare .bak and original file, and create alert is different
+** TODO Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 * org-mode-gtk.raku
+** TODO create a class inheriting of string ?
+88 sub to-markup ($text is rw) {   
+** TODO why it's necessary to write .Array ?
+152 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
 ** TODO doesn't work, why ?
-150 # $_.iter ne $iter
+190 # $_.iter ne $iter
 ** TODO to improve
-243 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+284 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
 ** TODO to remove, improve grammar/AST
-266 sub demo_procedural_read($name) {
-** TODO move this line in a new "sub parse-property"
-281 
+315 sub demo_procedural_read($name) {
+** TODO global choice, put in task, inherit for child
+343 && $last.properties{'presentation'} eq 'False' {
+** TODO rajouter un "delete"
+493 "_Ok", GTK_RESPONSE_OK,    
 ** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-462 #:parent($!top-window),   
+531 #:parent($!top-window),   
+** TODO destroy ?
+545 $dialog.gtk-widget-hide;
+** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+562 #:parent($!top-window),   
+** TODO use undefined ?
+575 $om.properties={};
 ** TODO create a sub with these 3 lines but I have a problem with parameters
-648 my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1));
+766 my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1));
+** TODO global variable is necessary ?
+809 $dialog .= new(  
+** TODO  improve code
+966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

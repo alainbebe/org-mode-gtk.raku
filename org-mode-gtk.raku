@@ -46,21 +46,22 @@ my $prior-A=False;      # display #A
 my $i=0;                # for creation of level1 in tree
 my Str $filename;
 my $display-branch-task; # La tache qui sert de base à l'arborescence
-my $d-now = DateTime.now(
-    formatter => {
-        my $dow;
-        given .day-of-week {
-            when 1 { $dow='lun'}
-            when 2 { $dow='mar'}
-            when 3 { $dow='mer'}
-            when 4 { $dow='jeu'}
-            when 5 { $dow='ven'}
-            when 6 { $dow='sam'}
-            when 7 { $dow='dim'}
-        }
-        sprintf '%04d-%02d-%02d %s', 
-        .year, .month, .day, $dow
+my $format-org-date = sub (DateTime $self) { 
+    my $dow;
+    given $self.day-of-week {
+        when 1 { $dow='lun'}
+        when 2 { $dow='mar'}
+        when 3 { $dow='mer'}
+        when 4 { $dow='jeu'}
+        when 5 { $dow='ven'}
+        when 6 { $dow='sam'}
+        when 7 { $dow='dim'}
     }
+    sprintf '%04d-%02d-%02d %s', 
+        $self.year, $self.month, $self.day, $dow;
+}
+my $d-now = DateTime.now(
+    formatter => $format-org-date
 );
 my $now = DateTime.now(
     formatter => {
@@ -86,22 +87,27 @@ my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 #use Task;
 
 sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
-    $text ~~ s/"&"/&amp;/;
-    $text ~~ s/"<"/&lt;/;
-    $text ~~ s/">"/&gt;/;
+    $text ~~ s:g/"&"/&amp;/;
+    $text ~~ s:g/"<"/&lt;/;
+    $text ~~ s:g/">"/&gt;/;
     return $text;
 }
+class DateOrg {
+    has DateTime $.dt       is rw;
+    has Str      $.repeater is rw;
+    has Int      $.delay    is rw;
+}
 class Task {
-    has Int  $.level      is rw;
-    has Str  $.todo       is rw;
-    has Str  $.priority   is rw;
-    has Str  $.header     is rw; #  is required
-    has Str  $.scheduled  is rw;
-    has Str  $.deadline   is rw;
-    has Str  @.tags       is rw;
-    has Str  @.text       is rw;
-    has      %.properties is rw;
-    has Task @.tasks      is rw;
+    has Int      $.level      is rw;
+    has Str      $.todo       is rw;
+    has Str      $.priority   is rw;
+    has Str      $.header     is rw; #  is required
+    has DateOrg  $.scheduled  is rw;
+    has DateOrg  $.deadline   is rw;
+    has Str      @.tags       is rw;
+    has Str      @.text       is rw;
+    has          %.properties is rw;
+    has Task     @.tasks      is rw;
 
     method display-header {
         my $display;
@@ -153,10 +159,10 @@ class Task {
             $orgmode~="\n";
         }
         if ($.scheduled) {
-            $orgmode~="SCHEDULED: <$.scheduled>\n";
+            $orgmode~="SCHEDULED: <"~$.scheduled.dt~">\n";
         }
         if ($.deadline) {
-            $orgmode~="DEADLINE: <$.deadline>\n";
+            $orgmode~="DEADLINE: <"~$.deadline.dt~">\n";
         }
         if ($.properties) {
             $orgmode~=":PROPERTIES:\n";
@@ -175,6 +181,14 @@ class Task {
         }
         #$j--;
         return $orgmode;
+    }
+    method scheduled-today {
+        say "ind : ",$.header, $.scheduled if $.scheduled && $.scheduled.dt eq $d-now;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.scheduled-today();
+            }
+        }
     }
 }
 class GtkTask is Task {
@@ -312,6 +326,16 @@ class GtkTask is Task {
 my GtkTask $om .=new(:level(0));
 $display-branch-task=$om;
 
+sub date-from-yyyy-mm-dd($str) {
+    return DateOrg.new(
+        dt => DateTime.new(
+            year  => $str.substr(0,4),
+            month => $str.substr(5,2),
+            day   => $str.substr(8,2),
+            formatter => $format-org-date
+        )
+    );
+}
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
     my $last=$om;   # last task for 'text'
@@ -328,9 +352,9 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
             $last=$task;
         } else {
             if  /^"SCHEDULED: <" (.*?) ">"$/ {
-                $last.scheduled=$0.Str;
+                $last.scheduled=date-from-yyyy-mm-dd($0);
             } elsif  /^"DEADLINE: <" (.*?) ">"$/ {
-                $last.deadline=$0.Str;
+                $last.deadline=date-from-yyyy-mm-dd($0);
             } elsif  /^":PROPERTIES:"$/ {
                 $read-property = True;
             } elsif /^":END:"$/ {
@@ -484,7 +508,8 @@ class AppSignalHandlers {
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
-    method manage-date ($date-str is rw) {
+    method manage-date (DateOrg $date is rw) {
+say $date.dt;
         my Gnome::Gtk3::Dialog $dialog2 .= new(
             :title("Scheduling"), 
             :parent($!top-window),
@@ -496,15 +521,21 @@ class AppSignalHandlers {
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
         my Gnome::Gtk3::Entry $e_edit .= new();
-        $e_edit.set-text($date-str??$date-str!!$d-now.Str);
+        $e_edit.set-text($date??$date.dt.Str!!$d-now.Str);
         $content-area.gtk_container_add($e_edit);
         $dialog2.show-all;
         my $response = $dialog2.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_OK {
-            $date-str=$e_edit.get-text();
+             my $ds=$e_edit.get-text();
+             $date.dt = DateTime.new(
+                year  => $ds.Str.substr(0,4),
+                month => $ds.Str.substr(5,2),
+                day   => $ds.Str.substr(8,2),
+                formatter => $format-org-date
+            );
         }
         $dialog2.gtk_widget_destroy;
-        return $date-str;
+        return $date;
     }
     method file-new ( --> Int ) {
         if $change && $filename ne "demo.org" {
@@ -944,14 +975,18 @@ sub make-menubar-list-help ( ) {
     $menu
 }
 #-----------------------------------sub-------------------------------
-sub open-file($name) {
-    spurt $name~".bak",slurp $name; # fast backup
-    demo_procedural_read($name);
+sub verifiy-read($name) {
     save("test.org");
     my $proc =     run 'diff','-Z',"$name",'test.org';
     say "Input file and save file are different. Problem with syntax or bug.
         You can view the file, but it's may be wrong.
         Don't save." if $proc.exitcode; 
+}
+sub open-file($name) {
+    spurt $name~".bak",slurp $name; # fast backup
+    demo_procedural_read($name);
+    $om.scheduled-today();
+    verifiy-read($name);
     $display-branch-task=$om;
     $om.create_task;
 }
