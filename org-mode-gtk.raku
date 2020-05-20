@@ -49,16 +49,25 @@ my $display-branch-task; # La tache qui sert de base à l'arborescence
 my $format-org-date = sub (DateTime $self) { 
     my $dow;
     given $self.day-of-week {
-        when 1 { $dow='lun'}
-        when 2 { $dow='mar'}
-        when 3 { $dow='mer'}
-        when 4 { $dow='jeu'}
-        when 5 { $dow='ven'}
-        when 6 { $dow='sam'}
-        when 7 { $dow='dim'}
+        when 1 { $dow='Mon'}
+        when 2 { $dow='Tue'}
+        when 3 { $dow='Wen'}
+        when 4 { $dow='Thu'}
+        when 5 { $dow='Fri'}
+        when 6 { $dow='Sat'}
+        when 7 { $dow='Son'}
     }
-    sprintf '%04d-%02d-%02d %s', 
-        $self.year, $self.month, $self.day, $dow;
+    if ($self.hour==0 && $self.minute==0) {
+        sprintf '%04d-%02d-%02d %s', 
+            $self.year, $self.month, $self.day, $dow;
+    } else {
+        sprintf '%04d-%02d-%02d %s %02d:%02d', 
+            $self.year, $self.month, $self.day, $dow, $self.hour,$self.minute;
+    }
+}
+my $format-org-time = sub (DateTime $self) { 
+    sprintf '%02d:%02d', 
+            $self.hour,$self.minute;
 }
 my $d-now = DateTime.now(
     formatter => $format-org-date
@@ -79,6 +88,20 @@ my $now = DateTime.now(
         .year, .month, .day, $dow, .hour, .minute
     }
 );
+my token year   {\d\d\d\d}
+my token month  {\d\d}
+my token day    {\d\d}
+my token wday   {<alpha>+}
+my token hour   {\d\d}
+my token minute {\d\d}
+my token time   {<hour>":"<minute>}
+my token re-del {(<[+-]>)(\d+)(\w+)}
+my token dateorg { <year>"-"<month>"-"<day>
+                (" "<wday>)?
+                (" "<time>("-"<time>)?)? 
+                (" ."<re-del>)?       # repeat
+                (" "<re-del>)?        # delay
+} 
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
 
@@ -93,9 +116,18 @@ sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
     return $text;
 }
 class DateOrg {
-    has DateTime $.dt       is rw;
+    has DateTime $.begin    is rw;
+    has DateTime $.end      is rw;
     has Str      $.repeater is rw;
-    has Int      $.delay    is rw;
+    has Str      $.delay    is rw;
+    
+    method str {
+        my $result=     $.begin;
+        $result  ~="-" ~$.end if $.end;
+        $result  ~=" ."~$.repeater if $.repeater;
+        $result  ~=" " ~$.delay    if $.delay;
+        return $result;
+    }
 }
 class Task {
     has Int      $.level      is rw;
@@ -106,7 +138,7 @@ class Task {
     has DateOrg  $.deadline   is rw;
     has Str      @.tags       is rw;
     has Str      @.text       is rw;
-    has          %.properties is rw;
+    has          @.properties is rw; # array, not hash to keep order # array, not hash to keep order # array, not hash to keep order
     has Task     @.tasks      is rw;
 
     method display-header {
@@ -159,14 +191,20 @@ class Task {
             $orgmode~="\n";
         }
         if ($.scheduled) {
-            $orgmode~="SCHEDULED: <"~$.scheduled.dt~">\n";
+            $orgmode~="SCHEDULED: <"~$.scheduled.str~">\n";
         }
         if ($.deadline) {
-            $orgmode~="DEADLINE: <"~$.deadline.dt~">\n";
+            $orgmode~="DEADLINE: <"~$.deadline.str~">\n";
         }
         if ($.properties) {
             $orgmode~=":PROPERTIES:\n";
-            for $.properties.kv -> $k,$v { $orgmode~=":$k:     $v\n"; }
+            for $.properties.Array { 
+                my ($k,$v) = $_;
+                my $len=$k.chars;
+                my $white="";
+                if $len < 8 { $white=" " x (8-$len)} # based on Orgzly alignment
+                $orgmode~=":$k:$white $v\n"; 
+            }
             $orgmode~=":END:\n";
         }
         if ($.text) {
@@ -183,7 +221,7 @@ class Task {
         return $orgmode;
     }
     method scheduled-today {
-        say "ind : ",$.header, $.scheduled if $.scheduled && $.scheduled.dt eq $d-now;
+        say "ind : ",$.header, $.scheduled if $.scheduled && $.scheduled.begin eq $d-now;
         if $.tasks {
             for $.tasks.Array {
                 $_.scheduled-today();
@@ -326,15 +364,42 @@ class GtkTask is Task {
 my GtkTask $om .=new(:level(0));
 $display-branch-task=$om;
 
-sub date-from-yyyy-mm-dd($str) {
-    return DateOrg.new(
-        dt => DateTime.new(
-            year  => $str.substr(0,4),
-            month => $str.substr(5,2),
-            day   => $str.substr(8,2),
-            formatter => $format-org-date
-        )
-    );
+sub date-from-dateorg($do) {
+    my DateOrg $dateorg;
+    if $do[1]{'time'}{'hour'} {
+        $dateorg=DateOrg.new(
+             begin => DateTime.new(
+                year   => $do{'year'},
+                month  => $do{'month'},
+                day    => $do{'day'},
+                hour   => $do[1]{'time'}{'hour'},
+                minute => $do[1]{'time'}{'minute'},
+                formatter => $format-org-date
+            )            
+        );
+    } else {
+        $dateorg=DateOrg.new(
+             begin => DateTime.new(
+                year   => $do{'year'},
+                month  => $do{'month'},
+                day    => $do{'day'},
+                formatter => $format-org-date
+            )            
+        );
+    }
+    if $do[1][0]{'time'}{'hour'} {
+        $dateorg.end=DateTime.new(
+            year   => $do{'year'},
+            month  => $do{'month'},
+            day    => $do{'day'},
+            hour   => $do[1][0]{'time'}{'hour'},
+            minute => $do[1][0]{'time'}{'minute'},
+            formatter => $format-org-time
+        );
+    }
+    $dateorg.repeater=$do[2]{'re-del'}.Str if $do[2]{'re-del'};
+    $dateorg.delay   =$do[3]{'re-del'}.Str if $do[3]{'re-del'};
+    return $dateorg;
 }
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     my @last=[$om]; # list of last task by level
@@ -351,10 +416,10 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
             @last[$level]=$task;
             $last=$task;
         } else {
-            if  /^"SCHEDULED: <" (.*?) ">"$/ {
-                $last.scheduled=date-from-yyyy-mm-dd($0);
-            } elsif  /^"DEADLINE: <" (.*?) ">"$/ {
-                $last.deadline=date-from-yyyy-mm-dd($0);
+            if  /^"SCHEDULED: <" <dateorg> ">"$/ {
+                $last.scheduled=date-from-dateorg($/{'dateorg'});
+            } elsif  /^"DEADLINE: <" <dateorg> ">"$/ {
+                $last.deadline=date-from-dateorg($/{'dateorg'});
             } elsif  /^":PROPERTIES:"$/ {
                 $read-property = True;
             } elsif /^":END:"$/ {
@@ -362,13 +427,13 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
             } else {
                 if $read-property {
                     /":"(.*?)":"" "+(.*)/;
-                    $last.properties{$0.Str}=$1.Str;
-                    if $last.properties{'presentation'} 
-                        && $last.properties{'presentation'} eq 'False' { # TODO global choice, put in task, inherit for child
+                    $last.properties.push(($0.Str,$1.Str));
+                    if $0.Str eq 'presentation' 
+                        && $1.Str eq 'False' { # TODO global choice, put in task, inherit for child
                             $presentation=False
                     };
                 } else {
-                    push($last.text,$_);
+                    push($last.text,$_); # text ou insturction précédente mal formatté
                 }
             }
         }
@@ -454,6 +519,7 @@ $about.set-authors(CArray[Str].new('Alain BarBason'));
 
 my Gnome::Gtk3::Entry $e_add2;
 my Gnome::Gtk3::Entry $e_edit;
+my Gnome::Gtk3::Entry $e_edit-d;
 my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
@@ -508,8 +574,12 @@ class AppSignalHandlers {
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
+    method now (:$iter) {
+        $e_edit-d.set-text($now.Str);
+        1
+    }
     method manage-date (DateOrg $date is rw) {
-say $date.dt;
+say $date.begin;
         my Gnome::Gtk3::Dialog $dialog2 .= new(
             :title("Scheduling"), 
             :parent($!top-window),
@@ -520,19 +590,19 @@ say $date.dt;
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
-        my Gnome::Gtk3::Entry $e_edit .= new();
-        $e_edit.set-text($date??$date.dt.Str!!$d-now.Str);
-        $content-area.gtk_container_add($e_edit);
+        $e_edit-d .= new();
+        $e_edit-d.set-text($date??$date.begin.Str!!$d-now.Str);
+        $content-area.gtk_container_add($e_edit-d);
+        $content-area.gtk_container_add($.create-button('now','now',$iter));
         $dialog2.show-all;
         my $response = $dialog2.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_OK {
-             my $ds=$e_edit.get-text();
-             $date.dt = DateTime.new(
-                year  => $ds.Str.substr(0,4),
-                month => $ds.Str.substr(5,2),
-                day   => $ds.Str.substr(8,2),
-                formatter => $format-org-date
-            );
+            my $ds=$e_edit-d.get-text();  # date string
+            if $ds ~~ /<dateorg>/ {
+                $date=date-from-dateorg($/{'dateorg'});
+            } else {
+                say "erreur de format";
+            }
         }
         $dialog2.gtk_widget_destroy;
         return $date;
@@ -603,7 +673,7 @@ say $date.dt;
             $ts.clear();
             $om.tasks=[]; 
             $om.text=[]; 
-            $om.properties={}; # TODO use undefined ?
+            $om.properties=(); # TODO use undefined ?
             $presentation=True;
             $filename = $dialog.get-filename;
             $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
