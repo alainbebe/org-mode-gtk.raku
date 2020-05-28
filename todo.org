@@ -15,7 +15,9 @@ repeat, delay, hms
 *** TODO Manage "Closed"
 CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
-** TODO Emacs windows write "lun." , orgzly "Mon"
+** DONE Emacs windows write "lun." , orgzly "Mon"
+CLOSED: [2020-05-28 jeu 07:51]
+aligné sur Orgzly, en anglais
 * GTK bug
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
@@ -91,7 +93,7 @@ CLOSED: [2020-05-09 sam  07:33]
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Display Priority #A/B # A/B/C with or not no priority
-** TODO Grisé les menus non-utilisables
+** TODO Griser les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..

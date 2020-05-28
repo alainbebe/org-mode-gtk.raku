@@ -10,6 +10,7 @@ use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Button;
 use Gnome::Gtk3::RadioButton;
+use Gnome::Gtk3::CheckButton;
 use Gnome::Gtk3::Label;
 use Gnome::Gtk3::Entry;
 use Gnome::Gtk3::TreePath;
@@ -31,6 +32,7 @@ use Gnome::Gtk3::FileChooser;
 use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TreeSelection;
+use Gnome::Gtk3::ComboBoxText;
 use NativeCall;
 use Gnome::N::X;
 
@@ -91,16 +93,17 @@ my $now = DateTime.now(
 my token year   {\d\d\d\d}
 my token month  {\d\d}
 my token day    {\d\d}
-my token wday   {<alpha>+}
+my token wday   {<alpha>+}                     # TODO append boundary check
 my token hour   {\d\d}
 my token minute {\d\d}
 my token time   {<hour>":"<minute>}
-my token re-del {(<[+-]>)(\d+)(\w+)}
+my token repeat {(\.?\+\+?)(\d+)(\w+)}         # +, ++, .+
+my token delay  {(\-\-?)(\d+)(\w+)}            # -, --
 my token dateorg { <year>"-"<month>"-"<day>
-                (" "<wday>)?
+                (" "<wday>)?                   # TODO change ( by [ ?
                 (" "<time>("-"<time>)?)? 
-                (" ."<re-del>)?       # repeat
-                (" "<re-del>)?        # delay
+                (" "<repeat>)?
+                (" "<delay>)?
 } 
 my Gnome::Gtk3::TreeStore $ts .= new(:field-types(G_TYPE_STRING));
 my Gnome::Gtk3::TreeView $tv .= new(:model($ts));
@@ -122,10 +125,10 @@ class DateOrg {
     has Str      $.delay    is rw;
     
     method str {
-        my $result=     $.begin;
-        $result  ~="-" ~$.end if $.end;
-        $result  ~=" ."~$.repeater if $.repeater;
-        $result  ~=" " ~$.delay    if $.delay;
+        my Str $result= $.begin.Str;
+        $result      ~= "-" ~$.end if $.end;
+        $result      ~= " " ~$.repeater if $.repeater;
+        $result      ~= " " ~$.delay    if $.delay;
         return $result;
     }
 }
@@ -397,8 +400,8 @@ sub date-from-dateorg($do) {
             formatter => $format-org-time
         );
     }
-    $dateorg.repeater=$do[2]{'re-del'}.Str if $do[2]{'re-del'};
-    $dateorg.delay   =$do[3]{'re-del'}.Str if $do[3]{'re-del'};
+    $dateorg.repeater=$do[2]{'repeat'}.Str if $do[2]{'repeat'};
+    $dateorg.delay   =$do[3]{'delay'}.Str if $do[3]{'delay'};
     return $dateorg;
 }
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
@@ -519,7 +522,6 @@ $about.set-authors(CArray[Str].new('Alain BarBason'));
 
 my Gnome::Gtk3::Entry $e_add2;
 my Gnome::Gtk3::Entry $e_edit;
-my Gnome::Gtk3::Entry $e_edit-d;
 my Gnome::Gtk3::Entry $e_edit_tags;
 my Gnome::Gtk3::Entry $e_edit_text;
 my Gnome::Gtk3::Dialog $dialog;
@@ -569,17 +571,85 @@ sub brother($iter,$inc) {
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
-    method create-button($label,$method,$iter,$inc?) {
+    multi method create-button($label,$method,$iter?,$inc?) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
-    method now (:$iter) {
-        $e_edit-d.set-text($now.Str);
+    multi method create-button($label,$method,Gnome::Gtk3::Entry $entry) {
+        my Gnome::Gtk3::Button $b  .= new(:label($label));
+        $b.register-signal(self, $method, 'clicked',:edit($entry));
+        return $b;
+    }
+    method create-check($method,Gnome::Gtk3::Entry $entry) {
+        my Gnome::Gtk3::CheckButton $cb .= new();
+        $cb.register-signal( self, $method, 'toggled',:edit($entry));
+        return $cb;
+    }
+    method time ( :$widget, :$edit ) {
+        note " button  ",
+         $widget.get-active.Bool ;
+    }
+    method today (:$edit) {
+        my $ds=$d-now.Str.substr(0,14);
+        my $ori=$edit.get-text;
+        $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
+        $edit.set-text($ori); 
+        1
+    }
+    method tomorrow (:$edit) {
+        my $ds=$d-now.later(days => 1).Str.substr(0,14);
+        my $ori=$edit.get-text;
+        $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
+        $edit.set-text($ori); 
+        1
+    }
+    method repeat-i (:$widget, :$edit, :$cbt) {
+        $edit.get-text  ~~ /<dateorg>/;
+        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+        if $widget.get-active-text ne "0" {
+            $d.repeater="+"~$widget.get-active-text~$cbt.get-active-text;
+        } else {
+            $d.repeater="";
+        }
+        $edit.set-text($d.str); 
+        1
+    }
+    method repeat-w (:$widget, :$edit, :$cbt) {
+        $edit.get-text  ~~ /<dateorg>/;
+        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+        if $cbt.get-active-text ne "0" {
+            $d.repeater="+"~$cbt.get-active-text~$widget.get-active-text;
+        } else {
+            $d.repeater="";
+        }
+        $edit.set-text($d.str); 
+        1
+    }
+    method delay-i (:$widget, :$edit, :$cbt) {
+        $edit.get-text  ~~ /<dateorg>/;
+        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+        if $widget.get-active-text ne "0" {
+            $d.delay="-"~$widget.get-active-text~$cbt.get-active-text;
+        } else {
+            $d.delay="";
+        }
+        $edit.set-text($d.str); 
+        1
+    }
+    method delay-w (:$widget, :$edit, :$cbt) {
+        $edit.get-text  ~~ /<dateorg>/;
+        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+        if $cbt.get-active-text ne "0" {
+            $d.delay="-"~$cbt.get-active-text~$widget.get-active-text;
+        } else {
+            $d.delay="";
+        }
+        $edit.set-text($d.str); 
         1
     }
     method manage-date (DateOrg $date is rw) {
-say $date.begin;
+#say $date.begin;
         my Gnome::Gtk3::Dialog $dialog2 .= new(
             :title("Scheduling"), 
             :parent($!top-window),
@@ -590,16 +660,67 @@ say $date.begin;
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
-        $e_edit-d .= new();
-        $e_edit-d.set-text($date??$date.begin.Str!!$d-now.Str);
+
+        # entry
+        my Gnome::Gtk3::Entry $e_edit-d .= new();
+        $e_edit-d.set-text($date??$date.str!!$d-now.Str);
         $content-area.gtk_container_add($e_edit-d);
-        $content-area.gtk_container_add($.create-button('now','now',$iter));
+
+        # 3 button
+        my Gnome::Gtk3::Grid $g3 .= new();
+        $content-area.gtk_container_add($g3);
+
+        $g3.gtk-grid-attach( $.create-button('Today','today',$e_edit-d),            0, 0, 1, 1);
+        $g3.gtk-grid-attach( $.create-button('Tomorrow','tomorrow',$e_edit-d),      1, 0, 1, 1);
+#        $g3.gtk-grid-attach( $.create-button('Next Saturday','next-sat',$e_edit-d), 2, 0, 1, 1);
+
+        # Time
+        my Gnome::Gtk3::Grid $gt .= new();
+        $content-area.gtk_container_add($gt);
+
+#        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Time')),            0, 0, 1, 1);
+#        $gt.gtk-grid-attach( $.create-button('Time','time',$e_edit-d),         0, 1, 1, 1);
+#        $gt.gtk-grid-attach( $.create-check('time',$e_edit-d),                 1, 1, 1, 1);
+
+#        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('End time')),        2, 0, 1, 1);
+#        $gt.gtk-grid-attach( $.create-button('End time','end-time',$e_edit-d), 2, 1, 1, 1);
+#        $gt.gtk-grid-attach( $.create-check('end-time',$e_edit-d),             3, 1, 1, 1);
+
+        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Repeat')),          0, 2, 1, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt-int .=new();
+        $cbt-int.append-text("$_") for 0..10;
+        $cbt-int.set-active(0);
+        $gt.gtk-grid-attach( $cbt-int,                                         0, 3, 1, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt .=new();
+        $cbt.append-text($_) for <d w m y>;
+        $cbt.set-active(1);
+        $gt.gtk-grid-attach( $cbt,                                             1, 3, 1, 1);
+        $cbt-int.register-signal(self, 'repeat-i', 'changed',:edit($e_edit-d),:cbt($cbt));
+        $cbt.register-signal(self, 'repeat-w', 'changed',:edit($e_edit-d),:cbt($cbt-int));
+
+        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Delay')),           0, 4, 1, 1);
+#        $gt.gtk-grid-attach( $.create-button('Delay','delay',$e_edit-d),       0, 5, 1, 1);
+#        $gt.gtk-grid-attach( $.create-check('delay',$e_edit-d),                1, 5, 1, 1);
+
+        my Gnome::Gtk3::ComboBoxText $cbt2-int .=new();
+        $cbt2-int.append-text("$_") for 0..10;
+        $cbt2-int.set-active(0);
+        $gt.gtk-grid-attach( $cbt2-int,                                         0, 5, 1, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt2 .=new();
+        $cbt2.append-text($_) for <d w m y>;
+        $cbt2.set-active(1);
+        $gt.gtk-grid-attach( $cbt2,                                             1, 5, 1, 1);
+        $cbt2-int.register-signal(self, 'delay-i', 'changed',:edit($e_edit-d),:cbt($cbt2));
+        $cbt2.register-signal(self, 'delay-w', 'changed',:edit($e_edit-d),:cbt($cbt2-int));
+
         $dialog2.show-all;
         my $response = $dialog2.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_OK {
             my $ds=$e_edit-d.get-text();  # date string
+#say "resp : ",$ds;
             if $ds ~~ /<dateorg>/ {
                 $date=date-from-dateorg($/{'dateorg'});
+#say "date : ",$date;
             } else {
                 say "erreur de format";
             }
