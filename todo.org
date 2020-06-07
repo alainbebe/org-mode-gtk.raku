@@ -57,7 +57,7 @@ Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Sort Priorities
 ** DONE Create a different display for README style or TODO style
-** TODO Use GdkEventKey for keyboard
+** TODO [#A] Use GdkEventKey for keyboard
 *** TODO Short-Cut  "Ctrl-s" forsave
 *** TODO link F11 to maximize the window
 *** TODO Shift-left unfold only current selection, not child
@@ -73,14 +73,14 @@ CLOSED: [2020-05-02 sam  11:06]
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
 #+PROPERTY: var  foo=1
-** TODO Activate Link http in "text"
+** DONE Activate Link http in "text"
+CLOSED: [2020-06-01 lun 08:06]
 I think it's not possible, 
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
-** TODO Possibility to do all action with menu
+** TODO [#A] Possibility to do all action with menu
+*** TODO [#A] Find Iter of select row, to use with menu
 ** TODO Scroll for Manage Task if "text" is long
-** TODO Create Tab to edit 2 or more files
-*** TODO Separte, momentarily, a file in multiple tabs
 ** DONE [#A] Work with only one sub-branch
 CLOSED: [2020-05-09 sam  07:33]
 sélectionner une branch, mais en fait surtout une sous branche
@@ -92,17 +92,22 @@ CLOSED: [2020-05-09 sam  07:33]
 ** DONE [#A] Display priority #A
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
+** TODO Create Tab to edit 2 or more files
+*** TODO Separte, momentarily, a file in multiple tabs
 ** TODO Display Priority #A/B # A/B/C with or not no priority
 ** TODO Griser les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
-** TODO Griser les boutons non-utilisables
-<, ^, v,..
 ** DONE For Open and Save as, remove Ok button
 CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
-** TODO [#A] Find Iter of select row, to use with menu
+** TODO Griser les boutons non-utilisables
+<, ^, v,..
 ** TODO Add Cancel when warning for save file
 ** TODO When display only #A, fold all
+** TODO Improve link in text
+lancer si on click sur le lien et non sur la tache
+(iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
+si plusieurs liens, ouvir une dialog box ?
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -157,6 +162,7 @@ CLOSED: [2020-05-18 lun 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
+** TODO Create a auto-save
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
 88 sub to-markup ($text is rw) {   
@@ -203,5 +209,9 @@ CLOSED: [2020-04-25 sam  10:42]
 ** TODO Use Perl6::Tidy
 Install fail
 See issue https://github.com/drforr/perl6-Perl6-Parser/issues/24
+my $compiler := nqp::getcomp('perl6');  en erreur
+mais focntionne avec la version 2019.03
+mais malgré ça j'ai une erreur à l'exécution
+même issue
 ** TODO Change color in Insert Mode
 https://stackoverflow.com/questions/7614546/vim-cursorline-color-change-in-insert-mode

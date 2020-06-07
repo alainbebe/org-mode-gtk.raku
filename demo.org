@@ -7,6 +7,7 @@ detail suite
 *** Level 3
 * TODO [#D] another task
 SCHEDULED: <2020-05-18 Mon>
+Mon site http://www.barbason.be blabla
 ** TODO [#A] Sous A
 * DONE try
 ** DONE sub try 1

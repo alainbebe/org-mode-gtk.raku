@@ -581,10 +581,20 @@ class AppSignalHandlers {
         $b.register-signal(self, $method, 'clicked',:edit($entry));
         return $b;
     }
+    multi method create-button($label,$method,Str $text) {
+        my Gnome::Gtk3::Button $b  .= new(:label($label));
+        $b.register-signal(self, $method, 'clicked',:edit($text));
+        return $b;
+    }
     method create-check($method,Gnome::Gtk3::Entry $entry) {
         my Gnome::Gtk3::CheckButton $cb .= new();
         $cb.register-signal( self, $method, 'toggled',:edit($entry));
         return $cb;
+    }
+    method go-to-link ( :$edit ) {
+#        my $proc = run '/opt/firefox/firefox', '--new-tab', $edit;
+        shell "/opt/firefox/firefox --new-tab $edit";
+        1
     }
     method time ( :$widget, :$edit ) {
         note " button  ",
@@ -1069,6 +1079,11 @@ class AppSignalHandlers {
             }
             $content-area.gtk_container_add($tev_edit_text);
             $content-area.gtk_container_add($.create-button('Update text','edit-text-button-click',$iter));
+            if $task.text {
+                my $text=$task.text.join("\n");
+                $text ~~ /(http:..\S*)/;
+                $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
+            }
             
             # To manage priority A,B,C.
             $task=$om.search-task-from($iter);
