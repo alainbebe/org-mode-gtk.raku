@@ -33,6 +33,7 @@ use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
+use Gnome::Gtk3::Notebook;
 use NativeCall;
 use Gnome::N::X;
 
@@ -464,6 +465,7 @@ my Gnome::Gtk3::TreeIter $iter;
 my Gnome::GObject::Type $type .= new;
 my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
 
+# main window
 my Gnome::Gtk3::Window $top-window .= new();
 $top-window.set-title('Org-Mode with GTK and raku');
 $top-window.set-default-size( 640, 480);
@@ -483,13 +485,21 @@ $menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-opt
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help()));
 
+# notebook with tab
+my Gnome::Gtk3::Notebook $nb .= new();
+$g.gtk-grid-attach( $nb, 0, 1, 4, 1);
+
+# first tab
+my Gnome::Gtk3::Label $tab1-label   .= new(:text("Tab 1"));
+
 my Gnome::Gtk3::ScrolledWindow $sw .= new();
+
 $tv.set-hexpand(1);
 $tv.set-vexpand(1);
 $tv.set-headers-visible(0);
 $tv.set-activate-on-single-click(1);
 $sw.gtk-container-add($tv);
-$g.gtk-grid-attach( $sw, 0, 1, 4, 1);
+$nb.append-page($sw,$tab1-label);
 
 my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add task'));
@@ -782,6 +792,13 @@ class AppSignalHandlers {
         save("test.org");
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
+    }
+    method file-open-tab ( --> Int ) {
+        my Gnome::Gtk3::Label $tab2-label   .= new(:text("Tab 2"));
+        my Gnome::Gtk3::Label $tab2-content .= new(:text("It's the second tab"));
+        $nb.append-page($tab2-content,$tab2-label);
+        $top-window.show-all;
+        1
     }
     method file-open ( --> Int ) {
         if $change && $om.header ne "demo.org" {
@@ -1158,7 +1175,8 @@ sub make-menubar-list-file( ) {
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"_Save",$ash,'file-save');
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
-    create-sub-menu($menu,"_Open",$ash,'file-open');
+    create-sub-menu($menu,"_Open File ...",$ash,'file-open');
+    create-sub-menu($menu,"Open File _in a new tab ...",$ash,'file-open-tab');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
