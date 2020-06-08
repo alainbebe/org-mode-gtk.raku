@@ -46,7 +46,6 @@ my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
 my $prior-A=False;      # display #A          
 my $i=0;                # for creation of level1 in tree
-my Str $filename;
 my $display-branch-task; # La tache qui sert de base à l'arborescence
 my $format-org-date = sub (DateTime $self) { 
     my $dow;
@@ -364,8 +363,7 @@ class GtkTask is Task {
         $.create_task;
     }
 }
-my GtkTask $om .=new(:level(0));
-$display-branch-task=$om;
+my GtkTask $om;
 
 sub date-from-dateorg($do) {
     my DateOrg $dateorg;
@@ -405,6 +403,8 @@ sub date-from-dateorg($do) {
     return $dateorg;
 }
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
+    $om .=new(:header($name),:level(0)); # use "header" on level "0" for save the filename
+    $display-branch-task=$om;
     my @last=[$om]; # list of last task by level
     my $last=$om;   # last task for 'text'
     my $read-property=False;
@@ -436,7 +436,7 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
                             $presentation=False
                     };
                 } else {
-                    push($last.text,$_); # text ou insturction précédente mal formatté
+                    push($last.text,$_); # text ou instruction précédente mal formatée
                 }
             }
         }
@@ -449,9 +449,9 @@ my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 class X {
   method exit-gui ( --> Int ) {
-        if $change && $filename ne "demo.org" {
+        if $change && $om.header ne "demo.org" {
             if $md.run==-8 {
-                save($filename);
+                save($om.header);
             }
             $md.destroy;
         }
@@ -739,14 +739,15 @@ class AppSignalHandlers {
         return $date;
     }
     method file-new ( --> Int ) {
-        if $change && $filename ne "demo.org" {
+        if $change && $om.header ne "demo.org" {
             if $md.run==-8 {
-                save($filename);
+                save($om.header);
             }
             $md.destroy;
         }
         $change=0;
-        $filename='';
+        $om.header='';
+        $display-branch-task=$om;
         $top-window.set-title('Org-Mode with GTK and raku');
         $ts.clear();
         $om.tasks=[]; 
@@ -755,7 +756,7 @@ class AppSignalHandlers {
         1
     }
     method file-save( ) {
-        $filename ?? save($filename) !! self.file-save-as();
+        $om.header ?? save($om.header) !! self.file-save-as();
     }
     method file-save-as( ) {
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
@@ -770,9 +771,9 @@ class AppSignalHandlers {
         );
         my $response = $dialog.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_ACCEPT {
-            $filename = $dialog.get-filename;
-            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
-            save($filename) if $filename;
+            $om.header = $dialog.get-filename;
+            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$om.header).Array.pop) if $om.header;
+            save($om.header) if $om.header;
         }
         $dialog.gtk-widget-hide; # TODO destroy ?
         1
@@ -783,9 +784,9 @@ class AppSignalHandlers {
         say "\n"; # yes, 2 lines.
     }
     method file-open ( --> Int ) {
-        if $change && $filename ne "demo.org" {
+        if $change && $om.header ne "demo.org" {
             if $md.run==-8 {
-                save($filename);
+                save($om.header);
             }
             $md.destroy;
         }
@@ -806,17 +807,17 @@ class AppSignalHandlers {
             $om.text=[]; 
             $om.properties=(); # TODO use undefined ?
             $presentation=True;
-            $filename = $dialog.get-filename;
-            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
-            open-file($filename) if $filename;
+            $om.header = $dialog.get-filename;
+            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$om.header).Array.pop) if $om.header;
+            open-file($om.header) if $om.header;
         }
         $dialog.gtk-widget-hide;
         1
     }
     method file-quit( ) {
-        if $change && $filename ne "demo.org" {
+        if $change && $om.header ne "demo.org" {
             if $md.run==-8 {
-                save($filename);
+                save($om.header);
             }
             $md.destroy;
         }
@@ -1203,8 +1204,14 @@ sub save($name) {
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
     $top-window.show-all;
-    $filename=$arg;
+    my $filename=$arg;
     $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename; # TODO  improve code
-    $filename??open-file($filename)!!$om.default;
+    if $filename {
+        open-file($filename);
+    } else {
+        $om .=new(:level(0)); 
+        $display-branch-task=$om;
+        $om.default;
+    }
     $m.gtk-main;
 }
