@@ -151,8 +151,8 @@ better is
  * DONE
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
-** TODO Create copy/paste
 ** TODO Create Undo/Redo
+** TODO Create copy/paste
 ** TODO Warning if Save as on an existent file
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
