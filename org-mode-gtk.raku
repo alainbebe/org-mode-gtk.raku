@@ -38,7 +38,6 @@ use NativeCall;
 
 use Data::Dump;
 
-my $change=0;           # for ask question to save when quit
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
@@ -270,6 +269,7 @@ class GtkFile {
     has                             $.display-branch-task is rw; # La tache qui sert de base à l'arborescence
     has Gnome::Gtk3::Label          $.tab-label     ; #.= new(:text("Tab 1"));
     has Gnome::Gtk3::ScrolledWindow $sw             ; #.= new();
+    has Int                         $.change        is rw =0;           # for ask question to save when quit
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -316,7 +316,7 @@ class GtkFile {
         return;                 # if click on text 
     }
     method delete-branch($iter) {
-        $change=1;
+        $.change=1;
         my $task=$.search-task-from($.om,$iter);
         my GtkTask $task-parent=$.parent($task);
         $task-parent.tasks = grep { !$.is-my-iter($_,$iter) }, $task-parent.tasks;
@@ -403,6 +403,41 @@ class GtkFile {
             }
         }
     }
+    method file-save-as {
+        my Gnome::Gtk3::FileChooserDialog $dialog .= new(
+            :title("Open File"), 
+            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+            :action(GTK_FILE_CHOOSER_ACTION_SAVE),
+            :button-spec( [
+#                "_Ok", GTK_RESPONSE_OK,
+                "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Open", GTK_RESPONSE_ACCEPT
+            ] )
+        );
+        my $response = $dialog.gtk-dialog-run;
+        if $response ~~ GTK_RESPONSE_ACCEPT {
+            $!om.header = $dialog.get-filename; # TODO add .org if not .*
+            $.save if $!om.header;
+        }
+        $dialog.gtk-widget-hide; # TODO destroy ?
+        1
+    }
+    method save ($name?) {
+        $!change=0;
+        spurt $name ?? $name !! $!om.header, $!om.to_text;
+    }
+    method try-save {
+        if $!change && (!$!om.header || $!om.header ne "demo.org") {
+            my Gnome::Gtk3::MessageDialog $md .=new(
+                                :message('Voulez-vous sauver votre fichier ?'),
+                                :buttons(GTK_BUTTONS_YES_NO)
+            ); # TODO Add a Cancel and return true/false
+            if $md.run==-8 {
+                $!om.header ?? $.save !! $.file-save-as();
+            }
+            $md.destroy;
+        }
+    }
 }
 class GtkFiles {
     has GtkFile     @.gf is rw; 
@@ -410,6 +445,9 @@ class GtkFiles {
 
     method courant {
         return @!gf[$.idTab];
+    }
+    method try-save {
+        $_.try-save for @.gf;
     }
 }
 
@@ -495,7 +533,6 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
 }
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
-my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
 my Gnome::Gtk3::TreeIter $iter;
 
 my Gnome::GObject::Type $type .= new;
@@ -548,7 +585,7 @@ my Gnome::Gtk3::TextBuffer $text-buffer;
 
 sub  add2-branch($iter-parent) {
     if $e_add2.get-text {
-        $change=1;
+        $gfs.courant.change=1;
         my $task-parent=$gfs.courant.search-task-from($gfs.courant.om,$iter-parent);
         my GtkTask $task.=new(:header($e_add2.get-text),:todo("TODO"),:level($task-parent.level+1));
         $e_add2.set-text("");
@@ -589,12 +626,7 @@ class AppSignalHandlers {
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
 
     method exit-gui ( --> Int ) {
-        if $change && $gfs.courant.om.header ne "demo.org" {
-            if $md.run==-8 {
-                save($gfs.courant.om.header);
-            }
-            $md.destroy;
-        }
+        $gfs.courant.try-save();
         $m.gtk-main-quit;
         1
     }
@@ -764,13 +796,8 @@ class AppSignalHandlers {
         return $date;
     }
     method file-new ( --> Int ) {
-        if $change && $gfs.courant.om.header ne "demo.org" {
-            if $md.run==-8 {
-                save($gfs.courant.om.header);
-            }
-            $md.destroy;
-        }
-        $change=0;
+        $gfs.courant.try-save;
+        $gfs.courant.change=0; # TODO #A faire un .new
         $gfs.courant.om.header='';
         $gfs.courant.display-branch-task=$gfs.courant.om;
         $top-window.set-title('Org-Mode with GTK and raku');
@@ -781,30 +808,14 @@ class AppSignalHandlers {
         1
     }
     method file-save( ) {
-        $gfs.courant.om.header ?? save($gfs.courant.om.header) !! self.file-save-as();
+        $gfs.courant.om.header ?? $gfs.courant.save !! $gfs.courant.file-save-as();
     }
     method file-save-as( ) {
-        my Gnome::Gtk3::FileChooserDialog $dialog .= new(
-            :title("Open File"), 
-            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-            :action(GTK_FILE_CHOOSER_ACTION_SAVE),
-            :button-spec( [
-#                "_Ok", GTK_RESPONSE_OK,
-                "_Cancel", GTK_RESPONSE_CANCEL,
-                "_Open", GTK_RESPONSE_ACCEPT
-            ] )
-        );
-        my $response = $dialog.gtk-dialog-run;
-        if $response ~~ GTK_RESPONSE_ACCEPT {
-            $gfs.courant.om.header = $dialog.get-filename; # TODO add .org if not .*
-            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gfs.courant.om.header).Array.pop) if $gfs.courant.om.header;
-            save($gfs.courant.om.header) if $gfs.courant.om.header;
-        }
-        $dialog.gtk-widget-hide; # TODO destroy ?
+        $gfs.courant.file-save-as;
         1
     }
     method file-save-test( ) {
-        save("test.org");
+        $gfs.courant.save("test.org");
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
     }
@@ -819,18 +830,11 @@ class AppSignalHandlers {
         1
     }
     method file-open ( --> Int ) {
-        if $change && $gfs.courant.om.header ne "demo.org" {
-            if $md.run==-8 {
-                save($gfs.courant.om.header);
-            }
-            $md.destroy;
-        }
+        $gfs.courant.try-save();
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
             :title("Open File"), 
-            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
-#                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Open", GTK_RESPONSE_ACCEPT
             ] )
@@ -850,12 +854,7 @@ class AppSignalHandlers {
         1
     }
     method file-quit( ) {
-        if $change && $gfs.courant.om.header ne "demo.org" { # TODO check si header existe (cas si on commence avec un new file)
-            if $md.run==-8 {
-                save($gfs.courant.om.header);
-            }
-            $md.destroy;
-        }
+        $gfs.try-save();
         $m.gtk-main-quit;
     }
     method debug-inspect( ) {
@@ -892,7 +891,7 @@ class AppSignalHandlers {
     }
     method add-button-click ( ) {
         if $e_add.get-text {
-            $change=1;
+            $gfs.courant.change=1;
             my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gfs.courant.display-branch-task.level+1));
             $e_add.set-text("");
             $gfs.courant.create_task($task);
@@ -905,7 +904,7 @@ class AppSignalHandlers {
         1
     }
     method edit-text-button-click ( :$iter ) {
-        $change=1;
+        $gfs.courant.change=1;
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
         my $new-text=$text-buffer.get-text( $start, $end, 0);
@@ -956,7 +955,7 @@ class AppSignalHandlers {
         if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
             my $iter2=brother($iter,$inc);
             if $iter2.is-valid {   # if not, it's the last child
-                $change=1;
+                $gfs.courant.change=1;
                 my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
                 my $task2=$gfs.courant.search-task-from($gfs.courant.om,$iter2);
                 $gfs.courant.ts.swap($iter,$iter2);
@@ -976,14 +975,14 @@ class AppSignalHandlers {
         1
     }
     method edit-button-click ( :$iter ) {
-        $change=1;
+        $gfs.courant.change=1;
         my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
         $task.header=$e_edit.get-text;
         $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
         1
     }
     method edit-tags-button-click ( :$iter ) {
-        $change=1;
+        $gfs.courant.change=1;
         my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
         $task.tags=split(/" "/,$e_edit_tags.get-text);
         $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
@@ -992,7 +991,7 @@ class AppSignalHandlers {
     method prior-button-click ( :$iter,:$prior --> Int ) {
         my GtkTask $task;
         if ($toggle_rb_pr) {  # see definition 
-            $change=1;
+            $gfs.courant.change=1;
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             $task.priority=$prior??"#"~$prior!!"";
             $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
@@ -1003,7 +1002,7 @@ class AppSignalHandlers {
     method todo-button-click ( :$iter,:$todo --> Int ) {
         my GtkTask $task;
         if ($toggle_rb) {  # see definition 
-            $change=1;
+            $gfs.courant.change=1;
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             $task.todo=$todo;
             $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
@@ -1184,7 +1183,7 @@ class AppSignalHandlers {
         }
         1
     }
-}
+} # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
 sub create-sub-menu($menu,$name,$ash,$method) {
@@ -1225,7 +1224,7 @@ sub make-menubar-list-help ( ) {
 }
 #-----------------------------------sub-------------------------------
 sub verifiy-read($name) {
-    save("test.org");
+    $gfs.courant.save("test.org");
     my $proc =     run 'diff','-Z',"$name",'test.org';
     say "Input file and save file are different. Problem with syntax or bug.
         You can view the file, but it's may be wrong.
@@ -1237,10 +1236,6 @@ sub open-file($name) {
     $gfs.courant.om.scheduled-today();
     verifiy-read($name);
     $gfs.courant.create_task($gfs.courant.om);
-}
-sub save($name) {
-    $change=0;
-	spurt $name, $gfs.courant.om.to_text;
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {

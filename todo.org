@@ -93,14 +93,16 @@ CLOSED: [2020-05-09 sam  07:33]
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Create Tab to edit 2 or more files
-*** TODO [#A] put $change in GtkFile
+*** DONE [#A] put $change in GtkFile
+CLOSED: [2020-06-14 dim 09:21]
 *** TODO [#A] put "Presentation" i GtkFile
-*** TODO [#A] use filename for label of tab
+*** TODO use filename for label of tab
 *** TODO Improve Menu
 open in new tab
 close tab
 close all tab
-*** TODO [#A] File/Quit loop on tab
+*** DONE [#A] File/Quit loop on tab
+CLOSED: [2020-06-14 dim 09:21]
 ** TODO Separte, momentarily, a file in multiple tabs
 ** TODO Display Priority #A/B # A/B/C with or not no priority
 ** TODO Griser les menus non-utilisables
@@ -171,6 +173,7 @@ CLOSED: [2020-05-18 lun 07:20]
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
 ** TODO Create a auto-save
+** TODO Add Cancel for confirmation save file
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
 88 sub to-markup ($text is rw) {   
