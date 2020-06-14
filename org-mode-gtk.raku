@@ -35,7 +35,6 @@ use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gtk3::Notebook;
 use NativeCall;
-use Gnome::N::X;
 
 use Data::Dump;
 
@@ -46,6 +45,7 @@ my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take o
 my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
 my $prior-A=False;      # display #A          
+my $prior-B=False;      # display #B          
 my $i=0;                # for creation of level1 in tree
 
 # notebook with tab
@@ -245,10 +245,19 @@ class GtkTask is Task {
         }
     }
     method is-child-prior-A() {
-        return True if $.priority && $.priority eq "#A";
+        return True if $.priority && $.priority eq "#A"; 
         if $.tasks {
             for $.tasks.Array {
                 return True if $_.is-child-prior-A();
+            }
+        }
+        return False;
+    }
+    method is-child-prior-B() {
+        return True if $.priority && $.priority eq "#B"; # TODO use anonyme function to merge with #A (and other)
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.is-child-prior-B();
             }
         }
         return False;
@@ -322,6 +331,7 @@ class GtkFile {
         if $task.level==$level || (
             !($task.todo && $task.todo eq 'DONE' && $no-done) 
             && (!$prior-A ||  $task.is-child-prior-A) 
+            && (!$prior-B ||  $task.is-child-prior-B) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
@@ -486,18 +496,6 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::MessageDialog $md .=new(:message('Voulez-vous sauvez votre fichier ?'),:buttons(GTK_BUTTONS_YES_NO));
-class X {
-  method exit-gui ( --> Int ) {
-        if $change && $gfs.courant.om.header ne "demo.org" {
-            if $md.run==-8 {
-                save($gfs.courant.om.header);
-            }
-            $md.destroy;
-        }
-    $m.gtk-main-quit;
-    1
-  }
-}
 my Gnome::Gtk3::TreeIter $iter;
 
 my Gnome::GObject::Type $type .= new;
@@ -548,8 +546,6 @@ my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::TextView $tev_edit_text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
 
-my X $x .= new;
-$top-window.register-signal( $x, 'exit-gui', 'destroy');
 sub  add2-branch($iter-parent) {
     if $e_add2.get-text {
         $change=1;
@@ -592,6 +588,16 @@ class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
 
+    method exit-gui ( --> Int ) {
+        if $change && $gfs.courant.om.header ne "demo.org" {
+            if $md.run==-8 {
+                save($gfs.courant.om.header);
+            }
+            $md.destroy;
+        }
+        $m.gtk-main-quit;
+        1
+    }
     multi method create-button($label,$method,$iter?,$inc?) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
@@ -867,6 +873,11 @@ class AppSignalHandlers {
     }
     method option-prior-A( ) {
         $prior-A=!$prior-A;
+        $gfs.courant.reconstruct_tree();
+        1
+    }
+    method option-prior-B( ) {
+        $prior-B=!$prior-B;
         $gfs.courant.reconstruct_tree();
         1
     }
@@ -1198,6 +1209,7 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     create-sub-menu($menu,"#_A",$ash,'option-prior-A');
+    create-sub-menu($menu,"#_B",$ash,'option-prior-B');
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
     $menu
 }
@@ -1244,6 +1256,7 @@ sub MAIN($arg = '') {
     }
     $gfs.courant.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $nb.register-signal( $ash, 'switch-page', 'switch-page');
+    $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.show-all;
     $m.gtk-main;
 }

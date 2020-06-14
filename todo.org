@@ -57,7 +57,7 @@ Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Sort Priorities
 ** DONE Create a different display for README style or TODO style
-** TODO [#A] Use GdkEventKey for keyboard
+** TODO [#B] Use GdkEventKey for keyboard
 *** TODO Short-Cut  "Ctrl-s" forsave
 *** TODO link F11 to maximize the window
 *** TODO Shift-left unfold only current selection, not child
@@ -78,8 +78,8 @@ CLOSED: [2020-06-01 lun 08:06]
 I think it's not possible, 
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
-** TODO [#A] Possibility to do all action with menu
-*** TODO [#A] Find Iter of select row, to use with menu
+** TODO [#B] Possibility to do all action with menu
+*** TODO Find Iter of select row, to use with menu
 ** TODO Scroll for Manage Task if "text" is long
 ** DONE [#A] Work with only one sub-branch
 CLOSED: [2020-05-09 sam  07:33]
@@ -93,7 +93,15 @@ CLOSED: [2020-05-09 sam  07:33]
 CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Create Tab to edit 2 or more files
-*** TODO Separte, momentarily, a file in multiple tabs
+*** TODO [#A] put $change in GtkFile
+*** TODO [#A] put "Presentation" i GtkFile
+*** TODO [#A] use filename for label of tab
+*** TODO Improve Menu
+open in new tab
+close tab
+close all tab
+*** TODO [#A] File/Quit loop on tab
+** TODO Separte, momentarily, a file in multiple tabs
 ** TODO Display Priority #A/B # A/B/C with or not no priority
 ** TODO Griser les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
