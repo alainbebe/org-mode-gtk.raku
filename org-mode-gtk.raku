@@ -449,6 +449,21 @@ class GtkFiles {
     method try-save {
         $_.try-save for @.gf;
     }
+    method remove-tab {
+        $.courant.try-save;
+        $nb.remove-page($!idTab);
+        @.gf=grep {!($_ === self.courant)}, @.gf;
+    }
+    method file-new-tab {
+        my GtkFile $omf .=new; 
+        $.gf.push($omf);
+        $.idTab=$.gf.elems-1;
+        $nb.set-current-page($.idTab);
+    }
+    method inspect {
+        say "Inspect :";
+        $_.inspect($_.om) for @.gf;
+    }
 }
 
 my GtkFiles $gfs.=new;
@@ -796,15 +811,16 @@ class AppSignalHandlers {
         return $date;
     }
     method file-new ( --> Int ) {
-        $gfs.courant.try-save;
-        $gfs.courant.change=0; # TODO #A faire un .new
-        $gfs.courant.om.header='';
-        $gfs.courant.display-branch-task=$gfs.courant.om;
-        $top-window.set-title('Org-Mode with GTK and raku');
-        $gfs.courant.ts.clear();
-        $gfs.courant.om.tasks=[]; 
-        $gfs.courant.om.text=[]; 
+        $gfs.remove-tab;
+        self.file-new-tab; # TODO insert not append the new file 
+        1
+    }
+    method file-new-tab ( --> Int ) { # TODO put in GtkFiles
+        $gfs.file-new-tab;
+        $gfs.courant.tv.register-signal( self, 'tv-button-click', 'row-activated');
         $gfs.courant.default;
+        $top-window.show-all;
+        $nb.set-current-page($gfs.idTab);
         1
     }
     method file-save( ) {
@@ -818,16 +834,6 @@ class AppSignalHandlers {
         $gfs.courant.save("test.org");
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
-    }
-    method file-new-tab ( --> Int ) {
-        my GtkFile $omf .=new; 
-        $gfs.gf.push($omf);
-        $gfs.idTab=$gfs.gf.elems-1;
-        $gfs.courant.default;
-        $gfs.courant.tv.register-signal( self, 'tv-button-click', 'row-activated');
-        $top-window.show-all;
-        $nb.set-current-page($gfs.idTab);
-        1
     }
     method file-open ( --> Int ) {
         $gfs.courant.try-save();
@@ -853,12 +859,16 @@ class AppSignalHandlers {
         $dialog.gtk-widget-hide;
         1
     }
+    method file-close-tab {
+        $gfs.remove-tab;
+        1
+    }
     method file-quit( ) {
         $gfs.try-save();
         $m.gtk-main-quit;
     }
     method debug-inspect( ) {
-        $gfs.courant.inspect($gfs.courant.om);
+        $gfs.inspect();
     }
     method option-presentation( ) {
         $presentation=!$presentation;
@@ -872,11 +882,13 @@ class AppSignalHandlers {
     }
     method option-prior-A( ) {
         $prior-A=!$prior-A;
+        $prior-B=False;
         $gfs.courant.reconstruct_tree();
         1
     }
     method option-prior-B( ) {
         $prior-B=!$prior-B;
+        $prior-A=False;
         $gfs.courant.reconstruct_tree();
         1
     }
@@ -1200,6 +1212,7 @@ sub make-menubar-list-file( ) {
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
     create-sub-menu($menu,"_Open File ...",$ash,'file-open');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
+    create-sub-menu($menu,"_Close Tab",$ash,'file-close-tab');
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
@@ -1241,9 +1254,7 @@ sub open-file($name) {
 sub MAIN($arg = '') {
     $top-window.show-all;
     my $filename=$arg;
-    $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename; # TODO  improve code
-    my GtkFile $omf .=new; 
-    $gfs.gf.push($omf);
+    $gfs.file-new-tab;
     if $filename {
         open-file($filename);
     } else {

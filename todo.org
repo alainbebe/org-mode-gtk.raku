@@ -113,11 +113,12 @@ CLOSED: [2020-05-14 jeu  07:10]
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
 ** TODO Add Cancel when warning for save file
-** TODO When display only #A, fold all
+** TODO [#A] When display only #A, fold all
 ** TODO Improve link in text
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
+** TODO Refactoring new file with GtkFile = .new
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
