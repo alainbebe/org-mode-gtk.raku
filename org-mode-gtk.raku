@@ -1044,12 +1044,48 @@ class AppSignalHandlers {
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             my $i=0;
             if $task.header.IO.e {
+                my %todos;
                 for $task.header.IO.lines {
                     $i++;
                     if !($_ ~~ /NOTODO/) && $_ ~~ /^(.*?)" # TODO "(.*)$/ {     # NOTODO
-                        my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1)); # TODO create a sub with these 3 lines but I have a problem with parameters
-                        $0 ~~ /^" "*(.*)/;
-                        push($task-todo.text,$i ~ " " ~ $0.Str);
+                        my $comment=$1.Str;
+                        $0 ~~ /^" "*(.*)/;                            # enlève les blancs
+                        my $code=$0.Str;
+                        %todos{$code}=("$i",$comment);
+                    }
+                }
+                if $task.tasks {
+                    for $task.tasks.Array {
+                        if $_.todo eq "TODO" {
+                            my $comment=$_.header;
+                            my $code=$_.text;
+                            $code ~~ s/^\d+" "//;                            # enlève les numeros
+                            if %todos{$code} {
+                                if %todos{$code}[1] eq $comment {
+                                    $gfs.courant.change=1;
+                                    update-text($_.iter,%todos{$code}[0] ~ " " ~ $code); # pour la mise à jour des numéros de ligne
+                                    %todos{$code}=0;
+                                } else {
+                                    $gfs.courant.change=1;
+                                    $_.todo="DONE";
+                                    $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
+                                    update-text($_.iter,"CLOSED: [$now]\n"~$_.text);
+                                } 
+                            } else {
+                                $gfs.courant.change=1;
+                                $_.todo="DONE";
+                                $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
+                                update-text($_.iter,"CLOSED: [$now]\n"~$_.text);
+                            }
+                        }
+                    }
+                }
+                for %todos.kv -> $code,$comment {
+                    if $comment {
+                        $gfs.courant.change=1;
+                        say "$code - $comment";
+                        my GtkTask $task-todo.=new(:header($comment[1]),:todo('TODO'),:level($task.level+1));
+                        push($task-todo.text,$comment[0] ~ " " ~ $code);
                         $gfs.courant.create_task($task-todo,$iter);
                         $task.tasks.push($task-todo);
                     }

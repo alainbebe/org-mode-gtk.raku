@@ -69,7 +69,8 @@ remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
-** TODO display/edit Preface
+** TODO [#B] Possibility to do all action with menu
+*** TODO Find Iter of select row, to use with menu
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
 #+PROPERTY: var  foo=1
@@ -78,8 +79,7 @@ CLOSED: [2020-06-01 lun 08:06]
 I think it's not possible, 
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
-** TODO [#B] Possibility to do all action with menu
-*** TODO Find Iter of select row, to use with menu
+** TODO display/edit Preface
 ** TODO Scroll for Manage Task if "text" is long
 ** DONE [#A] Work with only one sub-branch
 CLOSED: [2020-05-09 sam  07:33]
@@ -113,7 +113,7 @@ CLOSED: [2020-05-14 jeu  07:10]
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
 ** TODO Add Cancel when warning for save file
-** TODO [#A] When display only #A, fold all
+** TODO [#A] When display only #A, unfold all
 ** TODO Improve link in text
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
@@ -137,12 +137,14 @@ CLOSED: [2020-04-19 dim  16:45]
 CLOSED: [2020-05-02 sam  09:44]
 ** DONE Move doesn't work in mode No-done.
 CLOSED: [2020-05-03 dim  17:08]
-** TODO Read todo of a file
+** DONE Read todo of a file
+CLOSED: [2020-06-20 sam 13:40]
 *** DONE Populate a special task with TODO of a file
 CLOSED: [2020-05-06 mer  08:09]
 Search in a file .raku linewith # TODO
 And append this TODO to the task.
-*** TODO DONE automatically special task # TODO is remove of the file
+*** DONE [#B] DONE automatically special task # TODO is remove of the file
+CLOSED: [2020-06-20 sam 13:40]
 Load all todo from file
 Readl all TODO from org, if find in list, remove (line may be change)
 if not find Ask question Delete, DONE
@@ -177,33 +179,65 @@ Use Array, not Hash
 ** TODO Add Cancel for confirmation save file
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
-88 sub to-markup ($text is rw) {   
+115 sub to-markup ($text is rw) {   
 ** TODO why it's necessary to write .Array ?
-152 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
+193 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
 ** TODO doesn't work, why ?
-190 # $_.iter ne $iter
+302 # $_.iter ne $iter
 ** TODO to improve
-284 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+374 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
 ** TODO to remove, improve grammar/AST
-315 sub demo_procedural_read($name) {
-** TODO global choice, put in task, inherit for child
+508 sub demo_procedural_read($name) {
+** DONE global choice, put in task, inherit for child
+CLOSED: [2020-06-20 sam 13:36]
 343 && $last.properties{'presentation'} eq 'False' {
 ** TODO rajouter un "delete"
-493 "_Ok", GTK_RESPONSE_OK,    
+742 "_Ok", GTK_RESPONSE_OK,    
 ** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-531 #:parent($!top-window),   
+409 #:parent($!top-window),   
 ** TODO destroy ?
-545 $dialog.gtk-widget-hide;
-** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+422 $dialog.gtk-widget-hide;
+** DONE BUG Cannot look up attributes in a AppSignalHandlers type object
+CLOSED: [2020-06-20 sam 13:36]
 562 #:parent($!top-window),   
-** TODO use undefined ?
+** DONE use undefined ?
+CLOSED: [2020-06-20 sam 13:36]
 575 $om.properties={};
-** TODO create a sub with these 3 lines but I have a problem with parameters
+** DONE create a sub with these 3 lines but I have a problem with parameters
+CLOSED: [2020-06-20 sam 13:36]
 766 my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1));
-** TODO global variable is necessary ?
+** DONE global variable is necessary ?
+CLOSED: [2020-06-20 sam 13:36]
 809 $dialog .= new(  
-** TODO  improve code
+** DONE  improve code
+CLOSED: [2020-06-20 sam 13:36]
 966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
+** TODO use undefined ?
+853 $gfs.courant.om.properties=();
+** TODO insert not append the new file
+815 self.file-new-tab;
+** TODO try to pass ialog as parameter
+1137 $dialog .= new(            
+** TODO doesn't work il multi-tab. Very strange.
+1138 #            :title("Manage task"),
+** TODO global choice, put in task, inherit for child
+537 && $1.Str eq 'False' {
+** TODO use anonyme function to merge with #A (and other)
+256 return True if $.priority && $.priority eq "#B";
+** TODO change ( by [ ?
+105 (" "<wday>)?                  
+** TODO append boundary check
+98 my token wday   {<alpha>+}                    
+** TODO not very good, but work
+687 $ori ~~ s/^.**14/$ds/;
+** TODO Add a Cancel and return true/false
+434 );
+** TODO remove when level 3
+962 $dialog.gtk_widget_destroy;
+** TODO put in GtkFiles
+818 method file-new-tab ( --> Int ) {
+** TODO add .org if not .*
+419 $!om.header = $dialog.get-filename;
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
