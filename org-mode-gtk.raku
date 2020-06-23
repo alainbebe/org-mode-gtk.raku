@@ -1105,8 +1105,9 @@ class AppSignalHandlers {
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             if $task.tasks {
                 for $task.tasks.Array {
-                    $gfs.courant.delete-branch($_.iter);
+                    $gfs.courant.ts.gtk-tree-store-remove($_.iter) if $_.iter;
                 }
+                $task.tasks = [];
             }
         }
         1
