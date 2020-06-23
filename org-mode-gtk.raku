@@ -1169,7 +1169,9 @@ class AppSignalHandlers {
                 my $text=$task.text.join("\n");
                 $text-buffer.set-text($text);
             }
-            $content-area.gtk_container_add($tev_edit_text);
+            my Gnome::Gtk3::ScrolledWindow $swt .= new();
+            $swt.gtk-container-add($tev_edit_text);
+            $content-area.gtk_container_add($swt);
             $content-area.gtk_container_add($.create-button('Update text','edit-text-button-click',$iter));
             if $task.text {
                 my $text=$task.text.join("\n");

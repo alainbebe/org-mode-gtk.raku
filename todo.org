@@ -81,7 +81,8 @@ I think it's not possible,
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
 ** TODO display/edit Preface
-** TODO Scroll for Manage Task if "text" is long
+** DONE Scroll for Manage Task if "text" is long
+CLOSED: [2020-06-23 mar 18:55]
 ** DONE [#A] Work with only one sub-branch
 CLOSED: [2020-05-09 sam  07:33]
 sélectionner une branch, mais en fait surtout une sous branche
