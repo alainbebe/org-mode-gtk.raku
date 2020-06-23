@@ -49,7 +49,8 @@ CLOSED: [2020-05-05 mar  07:24]
 ** DONE Edit text of a task
 Accent "é" create problem
 Refresh of tree to improve
-** TODO Delete "text" of a task
+** DONE Delete "text" of a task
+CLOSED: [2020-06-23 mar 07:50]
 Presently, it's possible to remove all but a blank line exist enough
 ** DONE Display only TODO task
 CLOSED: [2020-04-25 sam  08:02]
@@ -128,7 +129,8 @@ CLOSED: [2020-04-21 mar  19:29]
 
 ** DONE TODO -&gt; DONE add line with date
 ** DONE Read filename on the command line
-** TODO DONE to TODO, remove date but exist a blank line if no text
+** DONE DONE to TODO, remove date but exist a blank line if no text
+CLOSED: [2020-06-23 mar 07:50]
 Utiliser update text, 
 en mettant la nouvelle chaine en premier
 ** DONE read/write preface

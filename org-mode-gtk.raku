@@ -618,7 +618,7 @@ sub update-text($iter,$new-text) {
         $gfs.courant.ts.gtk-tree-store-remove($iter_child);
         $iter_child=$gfs.courant.ts.iter-children($iter);
     }
-    if $task.text {
+    if $task.text && $task.text.chars>0 {
         for $task.text.Array.reverse {
             my Gnome::Gtk3::TreeIter $iter_t2 = $gfs.courant.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
         }
@@ -1027,7 +1027,7 @@ class AppSignalHandlers {
                 } else {
                     update-text($iter,"CLOSED: [$now]");
                 }
-            } elsif $todo eq 'TODO' && $text~~/^\s*CLOSED/ {
+            } elsif $text~~/^\s*CLOSED/ {
                 $text~~s/^\s*CLOSED.*?\]\n?//;
                 update-text($iter,$text);
             }
