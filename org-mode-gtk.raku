@@ -45,6 +45,7 @@ my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
 my $prior-A=False;      # display #A          
 my $prior-B=False;      # display #B          
+my $prior-C=False;      # display #C          
 my $i=0;                # for creation of level1 in tree
 
 # notebook with tab
@@ -253,10 +254,19 @@ class GtkTask is Task {
         return False;
     }
     method is-child-prior-B() {
-        return True if $.priority && $.priority eq "#B"; # TODO use anonyme function to merge with #A (and other)
+        return True if $.priority && $.priority eq "#B"; # TODO [#A] use anonyme function to merge with #A (and other)
         if $.tasks {
             for $.tasks.Array {
                 return True if $_.is-child-prior-B();
+            }
+        }
+        return False;
+    }
+    method is-child-prior-C() {
+        return True if $.priority && $.priority eq "#C";
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.is-child-prior-C();
             }
         }
         return False;
@@ -332,6 +342,7 @@ class GtkFile {
             !($task.todo && $task.todo eq 'DONE' && $no-done) 
             && (!$prior-A ||  $task.is-child-prior-A) 
             && (!$prior-B ||  $task.is-child-prior-B) 
+            && (!$prior-C ||  $task.is-child-prior-C) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
@@ -436,6 +447,11 @@ class GtkFile {
                 $!om.header ?? $.save !! $.file-save-as();
             }
             $md.destroy;
+        }
+    }
+    method expand-rows {
+        for $.om.tasks.Array {
+            $.expand-row($_) if $_.iter.is-valid;
         }
     }
 }
@@ -883,13 +899,25 @@ class AppSignalHandlers {
     method option-prior-A( ) {
         $prior-A=!$prior-A;
         $prior-B=False;
+        $prior-C=False;
         $gfs.courant.reconstruct_tree();
+        $gfs.courant.expand-rows;
         1
     }
     method option-prior-B( ) {
         $prior-B=!$prior-B;
         $prior-A=False;
+        $prior-C=False;
         $gfs.courant.reconstruct_tree();
+        $gfs.courant.expand-rows;
+        1
+    }
+    method option-prior-C( ) {
+        $prior-C=!$prior-C;
+        $prior-A=False;
+        $prior-B=False;
+        $gfs.courant.reconstruct_tree();
+        $gfs.courant.expand-rows;
         1
     }
     method option-rebase( ) {
@@ -1259,8 +1287,7 @@ sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
-    create-sub-menu($menu,"#_A",$ash,'option-prior-A');
-    create-sub-menu($menu,"#_B",$ash,'option-prior-B');
+    create-sub-menu($menu,"#_$_",$ash,"option-prior-$_") for "A".."C";
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
     $menu
 }

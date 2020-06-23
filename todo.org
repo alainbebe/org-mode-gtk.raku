@@ -116,11 +116,15 @@ CLOSED: [2020-05-14 jeu  07:10]
 <, ^, v,..
 ** TODO Add Cancel when warning for save file
 ** TODO [#A] When display only #A, unfold all
+Réflechir à comment afficherles arbres claisemés
 ** TODO Improve link in text
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
 ** TODO Refactoring new file with GtkFile = .new
+** TODO [#A] Fold All
+Option/fold all
+** TODO [#A] When Add-sun task unflod task, not sub-task
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -182,24 +186,24 @@ Use Array, not Hash
 ** TODO Add Cancel for confirmation save file
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
-115 sub to-markup ($text is rw) {   
+116 sub to-markup ($text is rw) {   
 ** TODO why it's necessary to write .Array ?
-193 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
+194 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
 ** TODO doesn't work, why ?
-302 # $_.iter ne $iter
+312 # $_.iter ne $iter
 ** TODO to improve
-374 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+385 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
 ** TODO to remove, improve grammar/AST
-508 sub demo_procedural_read($name) {
+524 sub demo_procedural_read($name) {
 ** DONE global choice, put in task, inherit for child
 CLOSED: [2020-06-20 sam 13:36]
 343 && $last.properties{'presentation'} eq 'False' {
 ** TODO rajouter un "delete"
-742 "_Ok", GTK_RESPONSE_OK,    
+758 "_Ok", GTK_RESPONSE_OK,    
 ** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-409 #:parent($!top-window),   
+420 #:parent($!top-window),   
 ** TODO destroy ?
-422 $dialog.gtk-widget-hide;
+433 $dialog.gtk-widget-hide;
 ** DONE BUG Cannot look up attributes in a AppSignalHandlers type object
 CLOSED: [2020-06-20 sam 13:36]
 562 #:parent($!top-window),   
@@ -216,31 +220,37 @@ CLOSED: [2020-06-20 sam 13:36]
 CLOSED: [2020-06-20 sam 13:36]
 966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
 ** TODO use undefined ?
-853 $gfs.courant.om.properties=();
-** TODO insert not append the new file
+869 $gfs.courant.om.properties=();
+** DONE insert not append the new file
+CLOSED: [2020-06-24 mer 07:52]
 815 self.file-new-tab;
 ** TODO try to pass ialog as parameter
-1137 $dialog .= new(            
+1161 $dialog .= new(            
 ** TODO doesn't work il multi-tab. Very strange.
-1138 #            :title("Manage task"),
+1162 #            :title("Manage task"),
 ** TODO global choice, put in task, inherit for child
-537 && $1.Str eq 'False' {
-** TODO use anonyme function to merge with #A (and other)
+553 && $1.Str eq 'False' {
+** DONE use anonyme function to merge with #A (and other)
+CLOSED: [2020-06-24 mer 07:52]
 256 return True if $.priority && $.priority eq "#B";
 ** TODO change ( by [ ?
-105 (" "<wday>)?                  
+106 (" "<wday>)?                  
 ** TODO append boundary check
-98 my token wday   {<alpha>+}                    
+99 my token wday   {<alpha>+}                    
 ** TODO not very good, but work
-687 $ori ~~ s/^.**14/$ds/;
+703 $ori ~~ s/^.**14/$ds/;
 ** TODO Add a Cancel and return true/false
-434 );
+445 );
 ** TODO remove when level 3
-962 $dialog.gtk_widget_destroy;
+990 $dialog.gtk_widget_destroy;
 ** TODO put in GtkFiles
-818 method file-new-tab ( --> Int ) {
+834 method file-new-tab ( --> Int ) {
 ** TODO add .org if not .*
-419 $!om.header = $dialog.get-filename;
+430 $!om.header = $dialog.get-filename;
+** TODO #A use anonyme function to merge with #A (and other)
+257 return True if $.priority && $.priority eq "#B";
+** TODO insert not append the new file 
+831 self.file-new-tab;
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
