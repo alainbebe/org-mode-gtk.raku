@@ -586,6 +586,7 @@ my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option()));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help()));
 
@@ -925,6 +926,14 @@ class AppSignalHandlers {
         $gfs.courant.reconstruct_tree();
         1
     }
+    method view-fold-all {
+        $gfs.courant.tv.collapse-all;
+        1
+    }
+    method view-unfold-all {
+        $gfs.courant.tv.expand-all;
+        1
+    }
     method help-about( ) {
         $about.gtk-dialog-run;
         $about.gtk-widget-hide;
@@ -1149,6 +1158,18 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method fold-branch (:$iter) {
+        $gfs.courant.tv.collapse-row($gfs.courant.ts.get-path($iter));
+        1
+    }
+    method unfold-branch (:$iter ) {
+        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),0);
+        1
+    }
+    method unfold-branch-child (:$iter ) {
+        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1); # TOTO merge with unfold-branc :refactoring:
+        1
+    }
     method switch-page ( N-GObject $page, Int $id ) {
         $gfs.idTab=$id;
         1
@@ -1252,6 +1273,9 @@ class AppSignalHandlers {
             $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
             $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Fold branch','fold-branch',$iter));
+            $content-area.gtk_container_add($.create-button('Unfold branch','unfold-branch',$iter));
+            $content-area.gtk_container_add($.create-button('Unfold branch and child','unfold-branch-child',$iter));
 
             # Show the dialog.
             $dialog.show-all;
@@ -1289,6 +1313,12 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     create-sub-menu($menu,"#_$_",$ash,"option-prior-$_") for "A".."C";
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
+    $menu
+}
+sub make-menubar-list-view() {
+    my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"_Fold All",$ash,'view-fold-all');
+    create-sub-menu($menu,"_Unfold All",$ash,'view-unfold-all');
     $menu
 }
 sub make-menubar-list-debug() {
