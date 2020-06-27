@@ -1186,30 +1186,32 @@ class AppSignalHandlers {
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        my Gnome::Gtk3::Grid $g .= new();
+        $content-area.gtk_container_add($g);
 
         # to edit task
         if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
             my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
 
-            $content-area.gtk_container_add($.create-button('>','move-right-button-click',$iter));
-            $content-area.gtk_container_add($.create-button('<','move-left-button-click',$iter));
-            $content-area.gtk_container_add($.create-button('^','move-up-down-button-click',$iter,-1));
-            $content-area.gtk_container_add($.create-button('v','move-up-down-button-click',$iter,1));
+            $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
+            $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
+            $g.gtk-grid-attach($.create-button('v','move-up-down-button-click',$iter,1),     1, 1, 2, 1);
+            $g.gtk-grid-attach($.create-button('>','move-right-button-click',$iter),         3, 0, 1, 2);
 
-            $content-area.gtk_container_add($.create-button('Scheduling','scheduled',$iter,1));
-            $content-area.gtk_container_add($.create-button('Deadline','deadline',$iter,1));
+            $g.gtk-grid-attach($.create-button('Scheduling','scheduled',$iter,1),            0, 2, 2, 1);
+            $g.gtk-grid-attach($.create-button('Deadline','deadline',$iter,1),               2, 2, 2, 1);
 
             # To edit task
             $e_edit  .= new();
             $e_edit.set-text($task.header);
-            $content-area.gtk_container_add($e_edit);
-            $content-area.gtk_container_add($.create-button('Update task','edit-button-click',$iter));
+            $g.gtk-grid-attach($e_edit,                                                       0, 3, 2, 1);
+            $g.gtk-grid-attach($.create-button('Update task','edit-button-click',$iter),      0, 4, 2, 1);
             
             # To edit tags
             $e_edit_tags  .= new();
             $e_edit_tags.set-text(join(" ",$task.tags));
-            $content-area.gtk_container_add($e_edit_tags);
-            $content-area.gtk_container_add($.create-button('Update tags','edit-tags-button-click',$iter));
+            $g.gtk-grid-attach($e_edit_tags,                                                  2, 3, 2, 1);
+            $g.gtk-grid-attach($.create-button('Update tags','edit-tags-button-click',$iter), 2, 4, 2, 1);
             
             # To edit text
             $tev_edit_text .= new;
