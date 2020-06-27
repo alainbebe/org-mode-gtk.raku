@@ -338,11 +338,11 @@ class GtkFile {
     method create_task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
         my $level=$.display-branch-task.level;
         my Gnome::Gtk3::TreeIter $iter_task;
-        if $task.level==$level || (
-            !($task.todo && $task.todo eq 'DONE' && $no-done) 
-            && (!$prior-A ||  $task.is-child-prior-A) 
-            && (!$prior-B ||  $task.is-child-prior-B) 
-            && (!$prior-C ||  $task.is-child-prior-C) 
+        if $task.level==$level || (                                 # display always the base level 
+            !($task.todo && $task.todo eq 'DONE' && $no-done)       # by default, donn't display DONE
+            && (!$prior-A || $task.is-child-prior-A) 
+            && (!$prior-B || $task.is-child-prior-B || $task.is-child-prior-A) 
+            && (!$prior-C || $task.is-child-prior-C || $task.is-child-prior-B || $task.is-child-prior-A) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
@@ -1308,7 +1308,9 @@ sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
-    create-sub-menu($menu,"#_$_",$ash,"option-prior-$_") for "A".."C";
+    create-sub-menu($menu,"#_A",$ash,"option-prior-A");
+    create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
+    create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
     $menu
 }

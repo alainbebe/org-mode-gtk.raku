@@ -106,7 +106,8 @@ close all tab
 *** DONE [#A] File/Quit loop on tab
 CLOSED: [2020-06-14 dim 09:21]
 ** TODO Separte, momentarily, a file in multiple tabs
-** TODO Display Priority #A/B # A/B/C with or not no priority
+** DONE Display Priority #A/B # A/B/C with or not no priority
+CLOSED: [2020-06-27 sam 11:35]
 ** TODO Griser les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
 ** DONE For Open and Save as, remove Ok button
