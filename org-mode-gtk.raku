@@ -332,8 +332,8 @@ class GtkFile {
         $task-parent.tasks = grep { !$.is-my-iter($_,$iter) }, $task-parent.tasks;
         $.ts.gtk-tree-store-remove($iter);
     }
-    method expand-row($task) {
-        $.tv.expand-row($.ts.get-path($task.iter),1);
+    method expand-row($task,$child) {
+        $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
     method create_task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
         my $level=$.display-branch-task.level;
@@ -447,11 +447,6 @@ class GtkFile {
                 $!om.header ?? $.save !! $.file-save-as();
             }
             $md.destroy;
-        }
-    }
-    method expand-rows {
-        for $.om.tasks.Array {
-            $.expand-row($_) if $_.iter.is-valid;
         }
     }
 }
@@ -623,7 +618,7 @@ sub  add2-branch($iter-parent) {
         $e_add2.set-text("");
         $gfs.courant.create_task($task,$iter-parent);
         push($task-parent.tasks,$task);
-        $gfs.courant.expand-row($task-parent);
+        $gfs.courant.expand-row($task-parent,0);
     }
 }
 sub update-text($iter,$new-text) {
@@ -639,7 +634,7 @@ sub update-text($iter,$new-text) {
         for $task.text.Array.reverse {
             my Gnome::Gtk3::TreeIter $iter_t2 = $gfs.courant.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
         }
-        $gfs.courant.expand-row($task);
+        $gfs.courant.expand-row($task,0);
     }
 }
 sub get-iter-from-path(@path) {
@@ -902,7 +897,7 @@ class AppSignalHandlers {
         $prior-B=False;
         $prior-C=False;
         $gfs.courant.reconstruct_tree();
-        $gfs.courant.expand-rows;
+        $prior-A??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-prior-B( ) {
@@ -910,7 +905,7 @@ class AppSignalHandlers {
         $prior-A=False;
         $prior-C=False;
         $gfs.courant.reconstruct_tree();
-        $gfs.courant.expand-rows;
+        $prior-B??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-prior-C( ) {
@@ -918,7 +913,7 @@ class AppSignalHandlers {
         $prior-A=False;
         $prior-B=False;
         $gfs.courant.reconstruct_tree();
-        $gfs.courant.expand-rows;
+        $prior-C??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-rebase( ) {
@@ -972,7 +967,7 @@ class AppSignalHandlers {
         $task.level-move(1);
         push($task-parent.tasks,$task); 
         $gfs.courant.create_task($task,$iter-parent);
-        $gfs.courant.expand-row($task-parent);
+        $gfs.courant.expand-row($task-parent,0);
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
@@ -995,7 +990,7 @@ class AppSignalHandlers {
         }
         $task-grand-parent.tasks=@tasks;
         $gfs.courant.create_task($task,$task-grand-parent.iter,@path-parent[*-1]+1);
-        $gfs.courant.expand-row($task);
+        $gfs.courant.expand-row($task,0);
         $dialog.gtk_widget_destroy; # TODO remove when level 3
         1
     }
@@ -1167,7 +1162,7 @@ class AppSignalHandlers {
         1
     }
     method unfold-branch-child (:$iter ) {
-        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1); # TOTO merge with unfold-branc :refactoring:
+        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1); # TODO merge with unfold-branch :refactoring:
         1
     }
     method switch-page ( N-GObject $page, Int $id ) {

@@ -115,16 +115,19 @@ CLOSED: [2020-05-14 jeu  07:10]
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
 ** TODO Add Cancel when warning for save file
-** TODO [#A] When display only #A, unfold all
+** DONE [#A] When display only #A, unfold all
+CLOSED: [2020-06-27 sam 09:42]
 Réflechir à comment afficherles arbres claisemés
 ** TODO Improve link in text
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
 ** TODO Refactoring new file with GtkFile = .new
-** TODO [#A] Fold All
+** DONE [#A] Fold All
+CLOSED: [2020-06-27 sam 09:17]
 Option/fold all
-** TODO [#A] When Add-sun task unflod task, not sub-task
+** DONE [#A] When Add-sub task unflod task, not sub-task
+CLOSED: [2020-06-27 sam 09:31]
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -249,7 +252,7 @@ CLOSED: [2020-06-24 mer 07:52]
 430 $!om.header = $dialog.get-filename;
 ** TODO #A use anonyme function to merge with #A (and other)
 257 return True if $.priority && $.priority eq "#B";
-** TODO insert not append the new file 
+** TODO insert not append the new file
 831 self.file-new-tab;
 * git
 ** DONE diff ne pas afficher les blancs
