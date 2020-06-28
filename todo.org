@@ -177,7 +177,7 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create Undo/Redo
 ** TODO Create copy/paste
-** TODO Warning if Save as on an existent file
+** TODO [#A] Warning if Save as on an existent file
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
@@ -186,8 +186,7 @@ CLOSED: [2020-05-18 lun 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
-** TODO Create a auto-save
-** TODO Add Cancel for confirmation save file
+** TODO [#A] Create a auto-save
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
 116 sub to-markup ($text is rw) {   
@@ -198,16 +197,16 @@ Use Array, not Hash
 ** TODO to improve
 385 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
 ** TODO to remove, improve grammar/AST
-524 sub demo_procedural_read($name) {
+522 sub demo_procedural_read($name) {
 ** DONE global choice, put in task, inherit for child
 CLOSED: [2020-06-20 sam 13:36]
 343 && $last.properties{'presentation'} eq 'False' {
 ** TODO rajouter un "delete"
-758 "_Ok", GTK_RESPONSE_OK,    
+757 "_Ok", GTK_RESPONSE_OK,    
 ** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
 420 #:parent($!top-window),   
 ** TODO destroy ?
-433 $dialog.gtk-widget-hide;
+436 $dialog.gtk-widget-hide;
 ** DONE BUG Cannot look up attributes in a AppSignalHandlers type object
 CLOSED: [2020-06-20 sam 13:36]
 562 #:parent($!top-window),   
@@ -224,16 +223,16 @@ CLOSED: [2020-06-20 sam 13:36]
 CLOSED: [2020-06-20 sam 13:36]
 966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
 ** TODO use undefined ?
-869 $gfs.courant.om.properties=();
+868 $gfs.courant.om.properties=();
 ** DONE insert not append the new file
 CLOSED: [2020-06-24 mer 07:52]
 815 self.file-new-tab;
 ** TODO try to pass ialog as parameter
-1161 $dialog .= new(            
+1180 $dialog .= new(            
 ** TODO doesn't work il multi-tab. Very strange.
-1162 #            :title("Manage task"),
+1181 #            :title("Manage task"),
 ** TODO global choice, put in task, inherit for child
-553 && $1.Str eq 'False' {
+551 && $1.Str eq 'False' {
 ** DONE use anonyme function to merge with #A (and other)
 CLOSED: [2020-06-24 mer 07:52]
 256 return True if $.priority && $.priority eq "#B";
@@ -242,19 +241,33 @@ CLOSED: [2020-06-24 mer 07:52]
 ** TODO append boundary check
 99 my token wday   {<alpha>+}                    
 ** TODO not very good, but work
-703 $ori ~~ s/^.**14/$ds/;
+702 $ori ~~ s/^.**14/$ds/;
 ** TODO Add a Cancel and return true/false
-445 );
-** TODO remove when level 3
+448 );
+** DONE remove when level 3
+CLOSED: [2020-06-28 dim 08:57]
 990 $dialog.gtk_widget_destroy;
 ** TODO put in GtkFiles
-834 method file-new-tab ( --> Int ) {
-** TODO add .org if not .*
+833 method file-new-tab ( --> Int ) {
+** DONE [#A] add .org if not .*
+CLOSED: [2020-06-28 dim 08:57]
 430 $!om.header = $dialog.get-filename;
-** TODO #A use anonyme function to merge with #A (and other)
+** DONE #A use anonyme function to merge with #A (and other)
+CLOSED: [2020-06-28 dim 08:57]
 257 return True if $.priority && $.priority eq "#B";
-** TODO insert not append the new file
+** DONE insert not append the new file
+CLOSED: [2020-06-28 dim 08:57]
 831 self.file-new-tab;
+** TODO [#A] rewrite with regex
+431 my @path=split(/\//,$!om.header);
+** TODO remove when reselect the good branch.
+997 $dialog.gtk_widget_destroy;
+** TODO [#A] use anonyme function to merge with #A (and other)
+257 return True if $.priority && $.priority eq "#B";
+** TODO insert not append the new file 
+830 self.file-new-tab;
+** TODO merge with unfold-branch :refactoring:
+1168 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

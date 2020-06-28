@@ -427,7 +427,10 @@ class GtkFile {
         );
         my $response = $dialog.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_ACCEPT {
-            $!om.header = $dialog.get-filename; # TODO add .org if not .*
+            $!om.header = $dialog.get-filename;
+            my @path=split(/\//,$!om.header); # TODO [#A] rewrite with regex
+            my $name=pop(@path);
+            $!om.header~=".org" if !($name ~~ /\./);
             $.save if $!om.header;
         }
         $dialog.gtk-widget-hide; # TODO destroy ?
@@ -991,7 +994,7 @@ class AppSignalHandlers {
         $task-grand-parent.tasks=@tasks;
         $gfs.courant.create_task($task,$task-grand-parent.iter,@path-parent[*-1]+1);
         $gfs.courant.expand-row($task,0);
-        $dialog.gtk_widget_destroy; # TODO remove when level 3
+        $dialog.gtk_widget_destroy; # TODO remove when reselect the good branch.
         1
     }
     method move-up-down-button-click ( :$iter, :$inc  --> Int ) {
@@ -1072,6 +1075,7 @@ class AppSignalHandlers {
         1
     }
     method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
+        # TODO desable change in GTK to these tasks
         if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             my $i=0;
@@ -1093,17 +1097,18 @@ class AppSignalHandlers {
                             my $code=$_.text;
                             $code ~~ s/^\d+" "//;                            # enlève les numeros
                             if %todos{$code} {
-                                if %todos{$code}[1] eq $comment {
+                                if %todos{$code}[1] eq $comment {   # Todo existe déja
                                     $gfs.courant.change=1;
                                     update-text($_.iter,%todos{$code}[0] ~ " " ~ $code); # pour la mise à jour des numéros de ligne
+                                    # TODO [#A] parse header for priority #A et tag :tag:
                                     %todos{$code}=0;
-                                } else {
+                                } else {                            # new Todo
                                     $gfs.courant.change=1;
                                     $_.todo="DONE";
                                     $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
                                     update-text($_.iter,"CLOSED: [$now]\n"~$_.text);
                                 } 
-                            } else {
+                            } else {                                # Todo delete
                                 $gfs.courant.change=1;
                                 $_.todo="DONE";
                                 $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
