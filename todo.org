@@ -193,20 +193,20 @@ Use Array, not Hash
 ** TODO why it's necessary to write .Array ?
 194 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
 ** TODO doesn't work, why ?
-312 # $_.iter ne $iter
+294 # $_.iter ne $iter
 ** TODO to improve
-385 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
+367 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
 ** TODO to remove, improve grammar/AST
-522 sub demo_procedural_read($name) {
+504 sub demo_procedural_read($name) {
 ** DONE global choice, put in task, inherit for child
 CLOSED: [2020-06-20 sam 13:36]
 343 && $last.properties{'presentation'} eq 'False' {
 ** TODO rajouter un "delete"
-757 "_Ok", GTK_RESPONSE_OK,    
+739 "_Ok", GTK_RESPONSE_OK,    
 ** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-420 #:parent($!top-window),   
+402 #:parent($!top-window),   
 ** TODO destroy ?
-436 $dialog.gtk-widget-hide;
+418 $dialog.gtk-widget-hide;
 ** DONE BUG Cannot look up attributes in a AppSignalHandlers type object
 CLOSED: [2020-06-20 sam 13:36]
 562 #:parent($!top-window),   
@@ -223,16 +223,16 @@ CLOSED: [2020-06-20 sam 13:36]
 CLOSED: [2020-06-20 sam 13:36]
 966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
 ** TODO use undefined ?
-868 $gfs.courant.om.properties=();
+850 $gfs.courant.om.properties=();
 ** DONE insert not append the new file
 CLOSED: [2020-06-24 mer 07:52]
 815 self.file-new-tab;
 ** TODO try to pass ialog as parameter
-1180 $dialog .= new(            
+1164 $dialog .= new(            
 ** TODO doesn't work il multi-tab. Very strange.
-1181 #            :title("Manage task"),
+1165 #            :title("Manage task"),
 ** TODO global choice, put in task, inherit for child
-551 && $1.Str eq 'False' {
+533 && $1.Str eq 'False' {
 ** DONE use anonyme function to merge with #A (and other)
 CLOSED: [2020-06-24 mer 07:52]
 256 return True if $.priority && $.priority eq "#B";
@@ -241,14 +241,14 @@ CLOSED: [2020-06-24 mer 07:52]
 ** TODO append boundary check
 99 my token wday   {<alpha>+}                    
 ** TODO not very good, but work
-702 $ori ~~ s/^.**14/$ds/;
+684 $ori ~~ s/^.**14/$ds/;
 ** TODO Add a Cancel and return true/false
-448 );
+430 );
 ** DONE remove when level 3
 CLOSED: [2020-06-28 dim 08:57]
 990 $dialog.gtk_widget_destroy;
 ** TODO put in GtkFiles
-833 method file-new-tab ( --> Int ) {
+815 method file-new-tab ( --> Int ) {
 ** DONE [#A] add .org if not .*
 CLOSED: [2020-06-28 dim 08:57]
 430 $!om.header = $dialog.get-filename;
@@ -258,16 +258,25 @@ CLOSED: [2020-06-28 dim 08:57]
 ** DONE insert not append the new file
 CLOSED: [2020-06-28 dim 08:57]
 831 self.file-new-tab;
-** TODO [#A] rewrite with regex
-431 my @path=split(/\//,$!om.header);
+** TODO rewrite with regex
+413 my @path=split(/\//,$!om.header);
 ** TODO remove when reselect the good branch.
-997 $dialog.gtk_widget_destroy;
-** TODO [#A] use anonyme function to merge with #A (and other)
+979 $dialog.gtk_widget_destroy;
+** DONE [#A] use anonyme function to merge with #A (and other)
+CLOSED: [2020-06-30 mar 07:20]
 257 return True if $.priority && $.priority eq "#B";
-** TODO insert not append the new file 
+** DONE insert not append the new file
+CLOSED: [2020-06-30 mar 07:20]
 830 self.file-new-tab;
-** TODO merge with unfold-branch :refactoring:
+** DONE merge with unfold-branch :refactoring:
+CLOSED: [2020-06-30 mar 07:20]
 1168 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
+** TODO insert not append the new file 
+812 self.file-new-tab;
+** TODO merge with unfold-branch :refactoring:
+1152 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
+** TODO [#A] parse header for priority #A et tag :tag:
+1085 
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]

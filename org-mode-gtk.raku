@@ -244,29 +244,11 @@ class GtkTask is Task {
             }
         }
     }
-    method is-child-prior-A() {
-        return True if $.priority && $.priority eq "#A"; 
+    method is-child-prior($prior) {
+        return True if $.priority && $.priority eq $prior; 
         if $.tasks {
             for $.tasks.Array {
-                return True if $_.is-child-prior-A();
-            }
-        }
-        return False;
-    }
-    method is-child-prior-B() {
-        return True if $.priority && $.priority eq "#B"; # TODO [#A] use anonyme function to merge with #A (and other)
-        if $.tasks {
-            for $.tasks.Array {
-                return True if $_.is-child-prior-B();
-            }
-        }
-        return False;
-    }
-    method is-child-prior-C() {
-        return True if $.priority && $.priority eq "#C";
-        if $.tasks {
-            for $.tasks.Array {
-                return True if $_.is-child-prior-C();
+                return True if $_.is-child-prior($prior);
             }
         }
         return False;
@@ -340,9 +322,9 @@ class GtkFile {
         my Gnome::Gtk3::TreeIter $iter_task;
         if $task.level==$level || (                                 # display always the base level 
             !($task.todo && $task.todo eq 'DONE' && $no-done)       # by default, donn't display DONE
-            && (!$prior-A || $task.is-child-prior-A) 
-            && (!$prior-B || $task.is-child-prior-B || $task.is-child-prior-A) 
-            && (!$prior-C || $task.is-child-prior-C || $task.is-child-prior-B || $task.is-child-prior-A) 
+            && (!$prior-A || $task.is-child-prior("#A")) 
+            && (!$prior-B || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
+            && (!$prior-C || $task.is-child-prior("#C") || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
@@ -428,7 +410,7 @@ class GtkFile {
         my $response = $dialog.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_ACCEPT {
             $!om.header = $dialog.get-filename;
-            my @path=split(/\//,$!om.header); # TODO [#A] rewrite with regex
+            my @path=split(/\//,$!om.header); # TODO rewrite with regex
             my $name=pop(@path);
             $!om.header~=".org" if !($name ~~ /\./);
             $.save if $!om.header;
