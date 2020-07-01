@@ -285,7 +285,7 @@ CLOSED: [2020-06-30 mar 07:20]
 ** DONE mettre debug à 0 avant le push
    sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
 * vim
-** TODO how colorize raku file
+** TODO how colorize raku file and keep folding code
 https://www.perl.com/article/194/2015/9/22/Activating-Perl-6-syntax-highlighting-in-Vim/
 ** TODO how select a word "raku"
 yw select only "begin" for variable "begin-end"

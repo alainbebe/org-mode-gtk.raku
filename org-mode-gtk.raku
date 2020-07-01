@@ -134,16 +134,17 @@ class DateOrg {
     }
 }
 class Task {
-    has Int      $.level      is rw;
-    has Str      $.todo       is rw;
-    has Str      $.priority   is rw;
-    has Str      $.header     is rw; #  is required
-    has DateOrg  $.scheduled  is rw;
-    has DateOrg  $.deadline   is rw;
-    has Str      @.tags       is rw;
-    has Str      @.text       is rw;
-    has          @.properties is rw; # array, not hash to keep order # array, not hash to keep order # array, not hash to keep order
-    has Task     @.tasks      is rw;
+    has Int      $.level       is rw;
+    has Str      $.todo        is rw;
+    has Str      $.priority    is rw;
+    has Str      $.header      is rw; #  is required
+    has DateOrg  $.scheduled   is rw;
+    has DateOrg  $.deadline    is rw;
+    has Str      @.tags        is rw;
+    has Str      @.text        is rw;
+    has          @.properties  is rw; # array, not hash to keep order # array, not hash to keep order # array, not hash to keep order
+    has Task     @.tasks       is rw;
+    has Task     $.darth-vader is rw; # Task, I am your father
 
     method display-header {
         my $display;
@@ -310,8 +311,7 @@ class GtkFile {
     method delete-branch($iter) {
         $.change=1;
         my $task=$.search-task-from($.om,$iter);
-        my GtkTask $task-parent=$.parent($task);
-        $task-parent.tasks = grep { !$.is-my-iter($_,$iter) }, $task-parent.tasks;
+        $task.darth-vader.tasks = grep { !$.is-my-iter($_,$iter) }, $task.darth-vader.tasks;
         $.ts.gtk-tree-store-remove($iter);
     }
     method expand-row($task,$child) {
@@ -349,25 +349,15 @@ class GtkFile {
             }
         }
     }
-    method parent($task) {
-        my @path= $.ts.get-path($task.iter).get-indices.Array;
-        my @path-parent=@path;
-        pop(@path-parent);
-        return self.om if !@path-parent;   # level 0
-        my $iter-parent=get-iter-from-path(@path-parent);
-        $.search-task-from($.om,$iter-parent).WHAT;
-        return $.search-task-from($.om,$iter-parent);
-    }
     method swap($task1,$task2) {
-        my $t_parent=$.parent($task1);
         my $line1=$.search-indice($task1);
         my $line2=$.search-indice($task2);
-        $t_parent.tasks[$line1,$line2] = $t_parent.tasks[$line2,$line1];
+        $task1.darth-vader.tasks[$line1,$line2] = $task1.darth-vader.tasks[$line2,$line1];
     }
     method search-indice($task) { # it's the indice on my tree, not Gtk::Tree # TODO to improve
         my $i=-1;
-        if $.parent($task).tasks {
-            for $.parent($task).tasks.Array {
+        if $task.darth-vader.tasks {
+            for $task.darth-vader.tasks.Array {
                 $i++;
                 return $i if $.is-my-iter($_,$task.iter);
             }
@@ -375,7 +365,7 @@ class GtkFile {
         return -1;
     }
     method default {
-        my GtkTask $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1));
+        my GtkTask $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1),:darth-vader($!om));
         $.create_task($task);
         $!om.tasks.push($task);
     }
@@ -509,7 +499,7 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     for $name.IO.lines {
         if $_ ~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:((\S*?)\:)+))? \s* $/ { # header 
             my $level=$0.elems;
-            my GtkTask $task.=new(:header($3.Str),:level($level));
+            my GtkTask $task.=new(:header($3.Str),:level($level),:darth-vader(@last[$level-1]));
             $task.todo    =$1[0].Str if $1[0];
             $task.priority=$2[0].Str if $2[0];
             $task.tags=split(/\:/,$4[0])[1..^*-1] if $4[0];
@@ -595,15 +585,15 @@ my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::TextView $tev_edit_text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
 
-sub  add2-branch($iter-parent) {
+sub  add2-branch($iter) {
     if $e_add2.get-text {
         $gfs.courant.change=1;
-        my $task-parent=$gfs.courant.search-task-from($gfs.courant.om,$iter-parent);
-        my GtkTask $task.=new(:header($e_add2.get-text),:todo("TODO"),:level($task-parent.level+1));
+        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        my GtkTask $child.=new(:header($e_add2.get-text),:todo("TODO"),:level($task.level+1),:darth-vader($task));
         $e_add2.set-text("");
-        $gfs.courant.create_task($task,$iter-parent);
-        push($task-parent.tasks,$task);
-        $gfs.courant.expand-row($task-parent,0);
+        $gfs.courant.create_task($child,$iter);
+        push($task.tasks,$child);
+        $gfs.courant.expand-row($task,0);
     }
 }
 sub update-text($iter,$new-text) {
@@ -921,7 +911,7 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $gfs.courant.change=1;
-            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gfs.courant.display-branch-task.level+1));
+            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gfs.courant.display-branch-task.level+1),:darth-vader($gfs.courant.display-branch-task));
             $e_add.set-text("");
             $gfs.courant.create_task($task);
             $gfs.courant.display-branch-task.tasks.push($task);
@@ -944,7 +934,7 @@ class AppSignalHandlers {
         my @path= $gfs.courant.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
         my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-        my @path-parent=@path;
+        my @path-parent=@path; # it's not the parent (darth-vader) but the futur parent
         @path-parent[*-1]--;
         my $iter-parent=get-iter-from-path(@path-parent);
         my $task-parent=$gfs.courant.search-task-from($gfs.courant.om,$iter-parent);
@@ -952,6 +942,7 @@ class AppSignalHandlers {
         $task.level-move(1);
         push($task-parent.tasks,$task); 
         $gfs.courant.create_task($task,$iter-parent);
+        $task.darth-vader=$task-parent;
         $gfs.courant.expand-row($task-parent,0);
         $dialog.gtk_widget_destroy; # remove when level 3
         1
@@ -959,22 +950,21 @@ class AppSignalHandlers {
     method move-left-button-click ( :$iter ) {
         my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
         return if $task.level <= 1; # level 0 and 1 don't go to left
-        my $task-parent=$gfs.courant.parent($task);
-        my @path-parent= $gfs.courant.ts.get-path($task-parent.iter).get-indices.Array;
-        my $task-grand-parent=$gfs.courant.parent($task-parent);
         $task.level-move(-1);
         $gfs.courant.delete-branch($iter); 
         my @tasks;
-        for $task-grand-parent.tasks.Array {
-            if $_ eq $task-parent {
+        for $task.darth-vader.darth-vader.tasks.Array {
+            if $_ eq $task.darth-vader {
                 push(@tasks,$_);
                 push(@tasks,$task);
             } else {
                 push(@tasks,$_);
             } 
         }
-        $task-grand-parent.tasks=@tasks;
-        $gfs.courant.create_task($task,$task-grand-parent.iter,@path-parent[*-1]+1);
+        $task.darth-vader.darth-vader.tasks=@tasks;
+        my @path-parent= $gfs.courant.ts.get-path($task.darth-vader.iter).get-indices.Array;
+        $gfs.courant.create_task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1);
+        $task.darth-vader=$task.darth-vader.darth-vader;
         $gfs.courant.expand-row($task,0);
         $dialog.gtk_widget_destroy; # TODO remove when reselect the good branch.
         1
@@ -1103,7 +1093,7 @@ class AppSignalHandlers {
                     if $comment {
                         $gfs.courant.change=1;
                         say "$code - $comment";
-                        my GtkTask $task-todo.=new(:header($comment[1]),:todo('TODO'),:level($task.level+1));
+                        my GtkTask $task-todo.=new(:header($comment[1]),:todo('TODO'),:level($task.level+1),:darth-vader($task));
                         push($task-todo.text,$comment[0] ~ " " ~ $code);
                         $gfs.courant.create_task($task-todo,$iter);
                         $task.tasks.push($task-todo);
