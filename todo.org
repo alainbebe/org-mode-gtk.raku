@@ -97,7 +97,8 @@ display also header without #A but have a children with #A
 ** TODO Create Tab to edit 2 or more files
 *** DONE [#A] put $change in GtkFile
 CLOSED: [2020-06-14 dim 09:21]
-*** TODO [#A] put "Presentation" i GtkFile
+*** DONE [#A] put "Presentation" i GtkFile
+CLOSED: [2020-07-12 dim 10:46]
 *** TODO use filename for label of tab
 *** TODO Improve Menu
 open in new tab
@@ -231,7 +232,8 @@ CLOSED: [2020-06-24 mer 07:52]
 1164 $dialog .= new(            
 ** TODO doesn't work il multi-tab. Very strange.
 1165 #            :title("Manage task"),
-** TODO global choice, put in task, inherit for child
+** DONE global choice, put in task, inherit for child
+CLOSED: [2020-07-07 mar 06:36]
 533 && $1.Str eq 'False' {
 ** DONE use anonyme function to merge with #A (and other)
 CLOSED: [2020-06-24 mer 07:52]
@@ -271,7 +273,7 @@ CLOSED: [2020-06-30 mar 07:20]
 ** DONE merge with unfold-branch :refactoring:
 CLOSED: [2020-06-30 mar 07:20]
 1168 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
-** TODO insert not append the new file 
+** TODO insert not append the new file
 812 self.file-new-tab;
 ** TODO merge with unfold-branch :refactoring:
 1152 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);

@@ -41,7 +41,6 @@ use Data::Dump;
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
-my $presentation=True;  # presentation in mode TODO or Textual
 my $no-done=True;       # display with no DONE
 my $prior-A=False;      # display #A          
 my $prior-B=False;      # display #B          
@@ -109,7 +108,7 @@ my token dateorg { <year>"-"<month>"-"<day>
                 (" "<delay>)?
 } 
 
-#----------------------- class Task & OrgMode
+#----------------------- class  Task & OrgMode
 #use lib ".";
 #use Task;
 
@@ -142,14 +141,27 @@ class Task {
     has DateOrg  $.deadline    is rw;
     has Str      @.tags        is rw;
     has Str      @.text        is rw;
-    has          @.properties  is rw; # array, not hash to keep order # array, not hash to keep order # array, not hash to keep order
+    has          @.properties  is rw; # array, not hash to keep order 
     has Task     @.tasks       is rw;
     has Task     $.darth-vader is rw; # Task, I am your father
 
+    method herite-properties($key) {
+        if (@.properties) {
+            my %properties=split(" ",@.properties); # TODO [#A] Why split ?
+#            say %properties;
+            return %properties{$key} if %properties{$key};
+        } 
+        return $.darth-vader.herite-properties($key) if $.darth-vader;
+        return "DEFAULT";
+    }
     method display-header {
         my $display;
         my $header=to-markup($.header);
-        if $presentation {
+        if $.herite-properties('presentation') eq 'TEXT' {
+            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
+            else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
+        } else { # DEFAULT TODO
             if (!$.todo)             {$display~=' '}
             elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
             elsif ($.todo eq "DONE") {$display~='<span foreground="green"> DONE</span>'}
@@ -167,11 +179,6 @@ class Task {
             if $.tags {
                 $display~=' <span foreground="grey">'~$.tags~'</span>';
             }
-
-        } else {
-            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
-            else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
         }
         return $display;
     }
@@ -377,7 +384,8 @@ class GtkFile {
     }
     my $lvl=0;
     method inspect($task) {
-        say "ind : ",$.iter-get-indices($task), " lvl ",$lvl," ",$task.header, " level ",$task.level;
+#        say "ind : ",$.iter-get-indices($task), " lvl ",$lvl," ",$task.header, " level ",$task.level;
+        say $task.herite-properties('presentation');
         if $task.tasks {
             for $task.tasks.Array {
                 $lvl++;
@@ -519,10 +527,6 @@ sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
                 if $read-property {
                     /":"(.*?)":"" "+(.*)/;
                     $last.properties.push(($0.Str,$1.Str));
-                    if $0.Str eq 'presentation' 
-                        && $1.Str eq 'False' { # TODO global choice, put in task, inherit for child
-                            $presentation=False
-                    };
                 } else {
                     push($last.text,$_); # text ou instruction précédente mal formatée
                 }
@@ -838,7 +842,6 @@ class AppSignalHandlers {
             $gfs.courant.om.tasks=[]; 
             $gfs.courant.om.text=[]; 
             $gfs.courant.om.properties=(); # TODO use undefined ?
-            $presentation=True;
             $gfs.courant.om.header = $dialog.get-filename;
             $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gfs.courant.om.header).Array.pop) if $gfs.courant.om.header;
             open-file($gfs.courant.om.header) if $gfs.courant.om.header;
@@ -857,8 +860,14 @@ class AppSignalHandlers {
     method debug-inspect( ) {
         $gfs.inspect();
     }
-    method option-presentation( ) {
-        $presentation=!$presentation;
+    method option-presentation( ) { # TODO do this by task and not only for the entire tree
+        $gfs.courant.change=1;
+        if $gfs.courant.om.herite-properties('presentation') eq 'DEFAULT' || 
+               $gfs.courant.om.herite-properties('presentation') eq 'TODO'  {
+            $gfs.courant.om.properties.push(('presentation','TEXT'));
+        } else {
+            $gfs.courant.om.properties= map {$_[0] eq 'presentation' ?? ('presentation','TODO') !! $_}, $gfs.courant.om.properties;
+        };
         $gfs.courant.reconstruct_tree();
         1
     }
@@ -1332,6 +1341,7 @@ sub MAIN($arg = '') {
     } else {
         $gfs.courant.default;
     }
+#    $gfs.inspect();
     $gfs.courant.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $nb.register-signal( $ash, 'switch-page', 'switch-page');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
