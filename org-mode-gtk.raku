@@ -417,7 +417,7 @@ class GtkFile {
         1
     }
     method save ($name?) {
-        $!change=0;
+        $!change=0 if $name && $name ne "test.org";
         spurt $name ?? $name !! $!om.header, $!om.to_text;
     }
     method try-save {
