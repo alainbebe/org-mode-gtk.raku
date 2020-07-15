@@ -939,6 +939,14 @@ class AppSignalHandlers {
         update-text($iter,$new-text);
         1
     }
+    method edit-preface {
+        $gfs.courant.change=1;
+        my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
+        my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
+        my $new-text=$text-buffer.get-text( $start, $end, 0);
+        $gfs.courant.om.text=$new-text.split(/\n/);
+        1
+    }
     method move-right-button-click ( :$iter ) {
         my @path= $gfs.courant.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
@@ -1269,6 +1277,37 @@ class AppSignalHandlers {
         }
         1
     }
+    method option-preface {
+        # Dialog to manage preface
+        $dialog .= new(             # TODO try to pass dialog as parameter
+#            :title("Manage task"), # TODO doesn't work if multi-tab. Very strange.
+#            :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( "Cancel", GTK_RESPONSE_NONE)
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+
+        $tev_edit_text .= new;
+        $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
+        if $gfs.courant.om.text {
+            my $text=$gfs.courant.om.text.join("\n");
+            $text-buffer.set-text($text);
+        }
+        my Gnome::Gtk3::ScrolledWindow $swt .= new();
+        $swt.gtk-container-add($tev_edit_text);
+        $content-area.gtk_container_add($swt);
+        $content-area.gtk_container_add($.create-button('Update Preface','edit-preface',''));
+        if $gfs.courant.om.text {
+            my $text=$gfs.courant.om.text.join("\n");
+            $text ~~ /(http:..\S*)/;
+            $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
+        }
+        # Show the dialog.
+        $dialog.show-all;
+        $dialog.gtk-dialog-run;
+        $dialog.gtk_widget_destroy;
+        1
+    }
 } # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
@@ -1292,6 +1331,7 @@ sub make-menubar-list-file( ) {
 }
 sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"P_reface",$ash,'option-preface');
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"_No DONE",$ash,'option-no-done');
     create-sub-menu($menu,"#_A",$ash,"option-prior-A");

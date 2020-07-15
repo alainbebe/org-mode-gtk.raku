@@ -80,7 +80,8 @@ CLOSED: [2020-06-01 lun 08:06]
 I think it's not possible, 
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
-** TODO display/edit Preface
+** DONE display/edit Preface
+CLOSED: [2020-07-15 mer 10:16]
 ** DONE Scroll for Manage Task if "text" is long
 CLOSED: [2020-06-23 mar 18:55]
 ** DONE [#A] Work with only one sub-branch
@@ -130,6 +131,7 @@ CLOSED: [2020-06-27 sam 09:17]
 Option/fold all
 ** DONE [#A] When Add-sub task unflod task, not sub-task
 CLOSED: [2020-06-27 sam 09:31]
+** TODO Edit Properties
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
