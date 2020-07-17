@@ -9,7 +9,17 @@ grammar OrgMode {
     rule  TOP       { ^ <tasks> $ }
     rule  tasks     {  <task>+ } 
     token task      { <content> <tasks>? {$level=$level.substr(0,*-1)}}
-    token content   { ^^ ($level "*"+)" "{$level=$0} .+? <?before ^^"*" || $ >  }   
+    token content   { ^^ ($level "*"+)" " {$level=$0} 
+                        <todo>?
+                        <priority>?
+                        <header>
+                    }   
+    token header    { .+? <dp-tags>? <text>  <?before ^^"*" || $ > }
+    token todo      { ["TODO"|"DONE"]" " }
+    token priority  { "[#" (A || B || C) "] " }
+    token dp-tags   { " :" <tag>+ } # match mais pas optimal, de plus je ne récupère pas les valeurs
+    token tag       { .*?":" }
+    token text      { \n.+? }
 }
 
 class OM-actions {
@@ -21,12 +31,43 @@ class OM-actions {
     }
     method task($/) {
         my %task;
-        %task{"task"}=$<content>.made;
+        %task=$<content>.made;
         %task{"sub-task"}=$<tasks>.made if $<tasks>.made;
         make %task;
     }
     method content($/) {
-        make $/.Str ;
+        my %task;
+        %task=$<header>.made;  # il y a tjs un header
+say "tsak ",%task;
+        %task{"todo"}    =$<todo>.made     if $<todo>.made;
+        %task{"priority"}=$<priority>.made if $<priority>.made;
+        make %task;
+    }
+    method header($/) {
+        my %task;
+        %task{"header"}  = $/.Str;
+    say "dp ts",$<dp-tags>».made ;
+        %task{"tags"}  = $<dp-tags>.made if $<dp-tags>.made ;
+        make %task;
+    }
+    method todo($/) {
+        make $/.Str;
+    }
+    method priority($/) {
+        make $0.Str;
+    }
+    method dp-tags($/) {
+        say "dp ",$<tag>».made ;
+        say "dp ",$<tag>».made.Str ;
+        make "ici"; #$<tag>».made.Str;
+    }
+    method tag($/) {
+        say chop($/.Str);
+        make chop($/.Str);
+    }
+    method text($/) {
+        say $/.Str;
+        make $/.Str;
     }
 }
 
@@ -69,6 +110,19 @@ my $file =
 ** sub-header 2"
 ;
 
+$file =
+"* DONE juste un header 1
+
+* TODO header 1
+
+* header 1
+
+* [#B] header 1
+
+* [#B] header 1 :assai:essai:
+texte"
+;
+ 
 say "\n" x 10;
 sub parse_file($file) {
     say $file;
