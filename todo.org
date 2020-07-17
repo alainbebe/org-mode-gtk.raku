@@ -179,6 +179,7 @@ better is
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
 ** TODO Create Undo/Redo
+https://en.m.wikipedia.org/wiki/Undo
 ** TODO Create copy/paste
 ** TODO [#A] Warning if Save as on an existent file
 ** TODO Add white line as Orgzly
