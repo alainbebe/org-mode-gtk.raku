@@ -24,7 +24,7 @@ text
 *** niveau 3
 *** niveau 3 aussi
 * TODO org-mode-gtk.raku
-SCHEDULED: <2020-05-13 Wen>
+SCHEDULED: <2020-06-30 Thu>
 :PROPERTIES:
 :dode:     ff
 :code:     on

@@ -35,6 +35,9 @@ use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gtk3::Notebook;
 use NativeCall;
+use lib "lib";
+use DateOrg;
+use Task;
 
 use Data::Dump;
 
@@ -50,197 +53,8 @@ my $i=0;                # for creation of level1 in tree
 # notebook with tab
 my Gnome::Gtk3::Notebook $nb .= new();
 
-my $format-org-date = sub (DateTime $self) { 
-    my $dow;
-    given $self.day-of-week {
-        when 1 { $dow='Mon'}
-        when 2 { $dow='Tue'}
-        when 3 { $dow='Wen'}
-        when 4 { $dow='Thu'}
-        when 5 { $dow='Fri'}
-        when 6 { $dow='Sat'}
-        when 7 { $dow='Son'}
-    }
-    if ($self.hour==0 && $self.minute==0) {
-        sprintf '%04d-%02d-%02d %s', 
-            $self.year, $self.month, $self.day, $dow;
-    } else {
-        sprintf '%04d-%02d-%02d %s %02d:%02d', 
-            $self.year, $self.month, $self.day, $dow, $self.hour,$self.minute;
-    }
-}
-my $format-org-time = sub (DateTime $self) { 
-    sprintf '%02d:%02d', 
-            $self.hour,$self.minute;
-}
-my $d-now = DateTime.now(
-    formatter => $format-org-date
-);
-my $now = DateTime.now(
-    formatter => {
-        my $dow;
-        given .day-of-week {
-            when 1 { $dow='lun'}
-            when 2 { $dow='mar'}
-            when 3 { $dow='mer'}
-            when 4 { $dow='jeu'}
-            when 5 { $dow='ven'}
-            when 6 { $dow='sam'}
-            when 7 { $dow='dim'}
-        }
-        sprintf '%04d-%02d-%02d %s %02d:%02d', 
-        .year, .month, .day, $dow, .hour, .minute
-    }
-);
-my token year   {\d\d\d\d}
-my token month  {\d\d}
-my token day    {\d\d}
-my token wday   {<alpha>+}                     # TODO append boundary check
-my token hour   {\d\d}
-my token minute {\d\d}
-my token time   {<hour>":"<minute>}
-my token repeat {(\.?\+\+?)(\d+)(\w+)}         # +, ++, .+
-my token delay  {(\-\-?)(\d+)(\w+)}            # -, --
-my token dateorg { <year>"-"<month>"-"<day>
-                (" "<wday>)?                   # TODO change ( by [ ?
-                (" "<time>("-"<time>)?)? 
-                (" "<repeat>)?
-                (" "<delay>)?
-} 
-
 #----------------------- class  Task & OrgMode
-#use lib ".";
-#use Task;
 
-sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
-    $text ~~ s:g/"&"/&amp;/;
-    $text ~~ s:g/"<"/&lt;/;
-    $text ~~ s:g/">"/&gt;/;
-    return $text;
-}
-class DateOrg {
-    has DateTime $.begin    is rw;
-    has DateTime $.end      is rw;
-    has Str      $.repeater is rw;
-    has Str      $.delay    is rw;
-    
-    method str {
-        my Str $result= $.begin.Str;
-        $result      ~= "-" ~$.end if $.end;
-        $result      ~= " " ~$.repeater if $.repeater;
-        $result      ~= " " ~$.delay    if $.delay;
-        return $result;
-    }
-}
-class Task {
-    has Int      $.level       is rw;
-    has Str      $.todo        is rw;
-    has Str      $.priority    is rw;
-    has Str      $.header      is rw; #  is required
-    has DateOrg  $.scheduled   is rw;
-    has DateOrg  $.deadline    is rw;
-    has Str      @.tags        is rw;
-    has Str      @.text        is rw;
-    has          @.properties  is rw; # array, not hash to keep order 
-    has Task     @.tasks       is rw;
-    has Task     $.darth-vader is rw; # Task, I am your father
-
-    method herite-properties($key) {
-        if (@.properties) {
-            my %properties=split(" ",@.properties); # TODO [#A] Why split ?
-#            say %properties;
-            return %properties{$key} if %properties{$key};
-        } 
-        return $.darth-vader.herite-properties($key) if $.darth-vader;
-        return "DEFAULT";
-    }
-    method display-header {
-        my $display;
-        my $header=to-markup($.header);
-        if $.herite-properties('presentation') eq 'TEXT' {
-            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
-            else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
-        } else { # DEFAULT TODO
-            if (!$.todo)             {$display~=' '}
-            elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
-            elsif ($.todo eq "DONE") {$display~='<span foreground="green"> DONE</span>'}
-
-            if $.priority {
-                if    $.priority ~~ /A/ {$display~=' <span foreground="fuchsia">'~$.priority~'</span>'}
-                elsif $.priority ~~ /B/ {$display~=' <span foreground="grey">'~$.priority~'</span>'}
-                elsif $.priority ~~ /C/ {$display~=' <span foreground="lime">'~$.priority~'</span>'}
-            }
-
-            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$header~'</span>'}
-            else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
-
-            if $.tags {
-                $display~=' <span foreground="grey">'~$.tags~'</span>';
-            }
-        }
-        return $display;
-    }
-    method level-move($change) {
-        $.level+=$change;
-        if $.tasks {
-            for $.tasks.Array {
-                $_.level-move($change);
-            }
-        }
-    }
-    #my $j=0;
-    method to_text() {
-        #say $j++,"-" x $.level," ",$.header," ";
-        my $orgmode="";
-        if $.level>0 {  # skip for the primary task $om
-            $orgmode~="*" x $.level~" ";
-            $orgmode~=$.todo~" " if $.todo;
-            $orgmode~="\["~$.priority~"\] " if $.priority;
-            $orgmode~=$.header;
-            $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags; # TODO why it's necessary to write .Array ?
-            $orgmode~="\n";
-        }
-        if ($.scheduled) {
-            $orgmode~="SCHEDULED: <"~$.scheduled.str~">\n";
-        }
-        if ($.deadline) {
-            $orgmode~="DEADLINE: <"~$.deadline.str~">\n";
-        }
-        if ($.properties) {
-            $orgmode~=":PROPERTIES:\n";
-            for $.properties.Array { 
-                my ($k,$v) = $_;
-                my $len=$k.chars;
-                my $white="";
-                if $len < 8 { $white=" " x (8-$len)} # based on Orgzly alignment
-                $orgmode~=":$k:$white $v\n"; 
-            }
-            $orgmode~=":END:\n";
-        }
-        if ($.text) {
-            for $.text.Array {
-                $orgmode~=$_~"\n";
-            }
-        }
-        if $.tasks {
-            for $.tasks.Array {
-                $orgmode~=$_.to_text;
-            }
-        }
-        #$j--;
-        return $orgmode;
-    }
-    method scheduled-today {
-        say "ind : ",$.header, $.scheduled if $.scheduled && $.scheduled.begin eq $d-now;
-        if $.tasks {
-            for $.tasks.Array {
-                $_.scheduled-today();
-            }
-        }
-    }
-}
 class GtkTask is Task {
     has Gnome::Gtk3::TreeIter $.iter is rw;
 
@@ -418,7 +232,7 @@ class GtkFile {
     }
     method save ($name?) {
         $!change=0 if $name && $name ne "test.org";
-        spurt $name ?? $name !! $!om.header, $!om.to_text;
+        spurt $name ?? $name !! $!om.header, $!om.to-text;
     }
     method try-save {
         if $!change && (!$!om.header || $!om.header ne "demo.org") {
@@ -462,50 +276,13 @@ class GtkFiles {
 
 my GtkFiles $gfs.=new;
 
-sub date-from-dateorg($do) {
-    my DateOrg $dateorg;
-    if $do[1]{'time'}{'hour'} {
-        $dateorg=DateOrg.new(
-             begin => DateTime.new(
-                year   => $do{'year'},
-                month  => $do{'month'},
-                day    => $do{'day'},
-                hour   => $do[1]{'time'}{'hour'},
-                minute => $do[1]{'time'}{'minute'},
-                formatter => $format-org-date
-            )            
-        );
-    } else {
-        $dateorg=DateOrg.new(
-             begin => DateTime.new(
-                year   => $do{'year'},
-                month  => $do{'month'},
-                day    => $do{'day'},
-                formatter => $format-org-date
-            )            
-        );
-    }
-    if $do[1][0]{'time'}{'hour'} {
-        $dateorg.end=DateTime.new(
-            year   => $do{'year'},
-            month  => $do{'month'},
-            day    => $do{'day'},
-            hour   => $do[1][0]{'time'}{'hour'},
-            minute => $do[1][0]{'time'}{'minute'},
-            formatter => $format-org-time
-        );
-    }
-    $dateorg.repeater=$do[2]{'repeat'}.Str if $do[2]{'repeat'};
-    $dateorg.delay   =$do[3]{'delay'}.Str if $do[3]{'delay'};
-    return $dateorg;
-}
 sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
     $gfs.courant.om.header=$name; # use "header" on level "0" for save the filename
     my @last=[$gfs.courant.om]; # list of last task by level
     my $last=$gfs.courant.om;   # last task for 'text'
     my $read-property=False;
     for $name.IO.lines {
-        if $_ ~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[(\#[A|B|C])\]" ")? (.*?) (" "(\:((\S*?)\:)+))? \s* $/ { # header 
+        if $_ ~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[\#([A|B|C])\]" ")? (.*?) (" "(\:((\S*?)\:)+))? \s* $/ { # header 
             my $level=$0.elems;
             my GtkTask $task.=new(:header($3.Str),:level($level),:darth-vader(@last[$level-1]));
             $task.todo    =$1[0].Str if $1[0];
@@ -666,14 +443,14 @@ class AppSignalHandlers {
          $widget.get-active.Bool ;
     }
     method today (:$edit) {
-        my $ds=$d-now.Str.substr(0,14);
+        my $ds=&d-now().Str.substr(0,14);
         my $ori=$edit.get-text;
         $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
         $edit.set-text($ori); 
         1
     }
     method tomorrow (:$edit) {
-        my $ds=$d-now.later(days => 1).Str.substr(0,14);
+        my $ds=&d-now().later(days => 1).Str.substr(0,14);
         my $ori=$edit.get-text;
         $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
         $edit.set-text($ori); 
@@ -738,7 +515,7 @@ class AppSignalHandlers {
 
         # entry
         my Gnome::Gtk3::Entry $e_edit-d .= new();
-        $e_edit-d.set-text($date??$date.str!!$d-now.Str);
+        $e_edit-d.set-text($date??$date.str!!&d-now());
         $content-area.gtk_container_add($e_edit-d);
 
         # 3 button
@@ -1047,9 +824,9 @@ class AppSignalHandlers {
             my $text=$text-buffer.get-text( $start, $end, 0);
             if $todo eq 'DONE' {
                 if $text.encode.elems>0 {
-                    update-text($iter,"CLOSED: [$now]\n"~$text);
+                    update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
                 } else {
-                    update-text($iter,"CLOSED: [$now]");
+                    update-text($iter,"CLOSED: [" ~ &now() ~ "]");
                 }
             } elsif $text~~/^\s*CLOSED/ {
                 $text~~s/^\s*CLOSED.*?\]\n?//;
@@ -1095,13 +872,13 @@ class AppSignalHandlers {
                                     $gfs.courant.change=1;
                                     $_.todo="DONE";
                                     $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
-                                    update-text($_.iter,"CLOSED: [$now]\n"~$_.text);
+                                    update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
                                 } 
                             } else {                                # Todo delete
                                 $gfs.courant.change=1;
                                 $_.todo="DONE";
                                 $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
-                                update-text($_.iter,"CLOSED: [$now]\n"~$_.text);
+                                update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
                             }
                         }
                     }

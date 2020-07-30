@@ -3,4 +3,4 @@
 test.org
 test/*
 .precomp/*
-lib/
+lib/.precomp

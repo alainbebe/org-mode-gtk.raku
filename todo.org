@@ -138,7 +138,6 @@ CLOSED: [2020-04-21 mar  18:35]
 ** DONE Create Class Orgmode
 CLOSED: [2020-04-21 mar  19:29]
 ** TODO create a task.pm
-
 ** DONE TODO -&gt; DONE add line with date
 ** DONE Read filename on the command line
 ** DONE DONE to TODO, remove date but exist a blank line if no text
