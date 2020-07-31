@@ -1,4 +1,3 @@
-#use lib “.”;
 use DateOrg;
 
 sub to-markup ($text is rw) is export {    # TODO create a class inheriting of string ?

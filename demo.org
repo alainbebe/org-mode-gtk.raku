@@ -1,8 +1,8 @@
 preface
-* DOES task :essai suite:
+* DOES task :essai:suite:
 detail
 detail suite
-** [#B] sub task1                                                     :es sai:
+** [#B] sub task1                                                     :essai:
 ** DONE [#B] sub task2                                                :suite:
 *** Level 3
 * TODO [#D] another task

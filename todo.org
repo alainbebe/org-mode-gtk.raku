@@ -18,7 +18,9 @@ Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
 ** DONE Emacs windows write "lun." , orgzly "Mon"
 CLOSED: [2020-05-28 jeu 07:51]
 aligné sur Orgzly, en anglais
-* GTK bug
+* Bug
+** TODO [#A] Save File ne fonctionne plus
+** TODO [#A] ajout d'un tache ne fonctionne plus
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
 ** DONE Resolve problem "é" in text

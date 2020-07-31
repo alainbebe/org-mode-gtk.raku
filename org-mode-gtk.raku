@@ -35,47 +35,24 @@ use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gtk3::Notebook;
 use NativeCall;
-use lib "lib";
-use DateOrg;
-use Task;
 
 use Data::Dump;
 
-my $debug=1;            # to debug =1
-my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
-my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
-my $no-done=True;       # display with no DONE
-my $prior-A=False;      # display #A          
-my $prior-B=False;      # display #B          
-my $prior-C=False;      # display #C          
-my $i=0;                # for creation of level1 in tree
+use lib "lib";
+use DateOrg;
+use Task;
+use GtkTask;
+use GramOrgMode;
 
 # notebook with tab
 my Gnome::Gtk3::Notebook $nb .= new();
 
+my $debug=1;            # to debug =1
+my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
+my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
+
+
 #----------------------- class  Task & OrgMode
-
-class GtkTask is Task {
-    has Gnome::Gtk3::TreeIter $.iter is rw;
-
-    method delete-iter() {
-        $.iter .=new;
-        if $.tasks {
-            for $.tasks.Array {
-                $_.delete-iter();
-            }
-        }
-    }
-    method is-child-prior($prior) {
-        return True if $.priority && $.priority eq $prior; 
-        if $.tasks {
-            for $.tasks.Array {
-                return True if $_.is-child-prior($prior);
-            }
-        }
-        return False;
-    }
-}
 class GtkFile {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
@@ -84,6 +61,11 @@ class GtkFile {
     has Gnome::Gtk3::Label          $.tab-label     ; #.= new(:text("Tab 1"));
     has Gnome::Gtk3::ScrolledWindow $sw             ; #.= new();
     has Int                         $.change        is rw =0;           # for ask question to save when quit
+    has                             $.no-done       is rw =True;       # display with no DONE
+    has                             $.prior-A       is rw =False;      # display #A          
+    has                             $.prior-B       is rw =False;      # display #B          
+    has                             $.prior-C       is rw =False;      # display #C          
+    has                             $.i             is rw =0;          # for creation of level1 in tree # TODO [#A] rename
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -97,7 +79,7 @@ class GtkFile {
         $!sw                  .= new();
         $!sw.gtk-container-add($!tv);
         $!tab-label           .= new(:text("Tab 1"));
-        $nb.append-page($!sw,$!tab-label);
+        $nb.append-page($!sw,$!tab-label); # TODO [#B] to move
 
         my Gnome::Gtk3::TreeViewColumn $tvc .= new();
         my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -142,15 +124,15 @@ class GtkFile {
         my $level=$.display-branch-task.level;
         my Gnome::Gtk3::TreeIter $iter_task;
         if $task.level==$level || (                                 # display always the base level 
-            !($task.todo && $task.todo eq 'DONE' && $no-done)       # by default, donn't display DONE
-            && (!$prior-A || $task.is-child-prior("#A")) 
-            && (!$prior-B || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
-            && (!$prior-C || $task.is-child-prior("#C") || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
+            !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
+            && (!$.prior-A || $task.is-child-prior("#A")) 
+            && (!$.prior-B || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
+            && (!$.prior-C || $task.is-child-prior("#C") || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
                 if ($task.level==$level+1) {
-                    my Gnome::Gtk3::TreePath $tp .= new(:string($i++.Str));
+                    my Gnome::Gtk3::TreePath $tp .= new(:string($.i++.Str));
                     $parent-iter = $.ts.get-iter($tp);
                 } else {
                     $parent-iter = $iter;
@@ -191,7 +173,7 @@ class GtkFile {
         $!om.tasks.push($task);
     }
     method reconstruct_tree { # not good practice, not abuse 
-        $i=0;
+        $.i=0; # TODO [#B] to remove ?
         $.ts.clear();
         $!om.delete-iter();
         $.create_task($!om);
@@ -276,43 +258,6 @@ class GtkFiles {
 
 my GtkFiles $gfs.=new;
 
-sub demo_procedural_read($name) { # TODO to remove, improve grammar/AST
-    $gfs.courant.om.header=$name; # use "header" on level "0" for save the filename
-    my @last=[$gfs.courant.om]; # list of last task by level
-    my $last=$gfs.courant.om;   # last task for 'text'
-    my $read-property=False;
-    for $name.IO.lines {
-        if $_ ~~ /^("*")+" " ((["TODO"|"DONE"])" ")? (\[\#([A|B|C])\]" ")? (.*?) (" "(\:((\S*?)\:)+))? \s* $/ { # header 
-            my $level=$0.elems;
-            my GtkTask $task.=new(:header($3.Str),:level($level),:darth-vader(@last[$level-1]));
-            $task.todo    =$1[0].Str if $1[0];
-            $task.priority=$2[0].Str if $2[0];
-            $task.tags=split(/\:/,$4[0])[1..^*-1] if $4[0];
-            push(@last[$level-1].tasks,$task);
-            @last[$level]=$task;
-            $last=$task;
-        } else {
-            if  /^"SCHEDULED: <" <dateorg> ">"$/ {
-                $last.scheduled=date-from-dateorg($/{'dateorg'});
-            } elsif  /^"DEADLINE: <" <dateorg> ">"$/ {
-                $last.deadline=date-from-dateorg($/{'dateorg'});
-            } elsif  /^":PROPERTIES:"$/ {
-                $read-property = True;
-            } elsif /^":END:"$/ {
-                $read-property = False;
-            } else {
-                if $read-property {
-                    /":"(.*?)":"" "+(.*)/;
-                    $last.properties.push(($0.Str,$1.Str));
-                } else {
-                    push($last.text,$_); # text ou instruction précédente mal formatée
-                }
-            }
-        }
-    }
-#        say $om.tasks;
-#        say "after : \n", Dump $om.tasks;
-}
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::TreeIter $iter;
@@ -649,32 +594,32 @@ class AppSignalHandlers {
         1
     }
     method option-no-done( ) {
-        $no-done=!$no-done;
+        $gfs.courant.no-done=!$gfs.courant.no-done;
         $gfs.courant.reconstruct_tree();
         1
     }
     method option-prior-A( ) {
-        $prior-A=!$prior-A;
-        $prior-B=False;
-        $prior-C=False;
+        $gfs.courant.prior-A=!$gfs.courant.prior-A;
+        $gfs.courant.prior-B=False;
+        $gfs.courant.prior-C=False;
         $gfs.courant.reconstruct_tree();
-        $prior-A??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gfs.courant.prior-A??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-prior-B( ) {
-        $prior-B=!$prior-B;
-        $prior-A=False;
-        $prior-C=False;
+        $gfs.courant.prior-B=!$gfs.courant.prior-B;
+        $gfs.courant.prior-A=False;
+        $gfs.courant.prior-C=False;
         $gfs.courant.reconstruct_tree();
-        $prior-B??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gfs.courant.prior-B??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-prior-C( ) {
-        $prior-C=!$prior-C;
-        $prior-A=False;
-        $prior-B=False;
+        $gfs.courant.prior-C=!$gfs.courant.prior-C;
+        $gfs.courant.prior-A=False;
+        $gfs.courant.prior-B=False;
         $gfs.courant.reconstruct_tree();
-        $prior-C??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gfs.courant.prior-C??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
         1
     }
     method option-rebase( ) {
@@ -917,7 +862,7 @@ class AppSignalHandlers {
     }
     method display-branch ( :$iter --> Int ) {
         $gfs.courant.display-branch-task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-        $i=0;
+        $gfs.courant.i=0;
         $gfs.courant.ts.clear();
         $gfs.courant.om.delete-iter();
         $gfs.courant.create_task($gfs.courant.display-branch-task);
@@ -1143,7 +1088,11 @@ sub verifiy-read($name) {
 }
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
-    demo_procedural_read($name);
+    my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante fait foirer la grammaire (content ne match pas) . Bizarre.
+    $gfs.courant.om=OrgMode.parse($file,:actions(OM-actions)).made;
+#    say Dump $gfs.courant.om;
+#    say $gfs.courant.om.to-text;
+#exit;
     $gfs.courant.om.scheduled-today();
     verifiy-read($name);
     $gfs.courant.create_task($gfs.courant.om);

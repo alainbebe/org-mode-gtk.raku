@@ -1,6 +1,7 @@
 use Grammar::Tracer;
 use DateOrg;
-use Task;
+use GtkTask;
+use Data::Dump;
 
 grammar Content {
     token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n? <deadline>? <scheduled>? <properties>? <text> $ }
@@ -20,7 +21,7 @@ sub split-properties($properties) {
 }
 class Content-actions {
     method TOP($/) {
-        my Task $task.=new(:header($<header>.made),:level($<level>.made));
+        my GtkTask $task.=new(:header($<header>.made),:level($<level>.made));
         $task.todo       =$<todo>.made.Str if $<todo>;
         $task.priority   =$<priority>.made.Str if $<priority>;
         $task.tags       =split(/\:/,$<tags>.Str)[1..^*-1] if $<tags>;
@@ -80,7 +81,7 @@ sub analyse-content($content) {
 }
 class OM-actions {
     method TOP($/) {
-        my Task $task.=new(:header("filename"),:level(0));
+        my GtkTask $task.=new(:header("filename"),:level(0));
         $task.properties.push($<properties>.made) if $<properties>;
         $task.text = $<preface>.made if $<preface> && $<preface>.made.chars>0;
         $task.tasks=$<tasks>.made if $<tasks>;
