@@ -204,7 +204,7 @@ class GtkFile {
         my $response = $dialog.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_ACCEPT {
             $!om.header = $dialog.get-filename;
-            my @path=split(/\//,$!om.header); # TODO rewrite with regex
+            my @path=split(/\//,$!om.header); # TODO [#C] rewrite with module File::Utils
             my $name=pop(@path);
             $!om.header~=".org" if !($name ~~ /\./);
             $.save if $!om.header;
@@ -213,7 +213,7 @@ class GtkFile {
         1
     }
     method save ($name?) {
-        $!change=0 if $name && $name ne "test.org";
+        $!change=0 if !$name;
         spurt $name ?? $name !! $!om.header, $!om.to-text;
     }
     method try-save {
@@ -1090,9 +1090,10 @@ sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante fait foirer la grammaire (content ne match pas) . Bizarre.
     $gfs.courant.om=OrgMode.parse($file,:actions(OM-actions)).made;
+    $gfs.courant.display-branch-task=$gfs.courant.om;   # TODO [#B] to refactor
+    $gfs.courant.om.header=$name;   # TODO [#B] to refactor
 #    say Dump $gfs.courant.om;
 #    say $gfs.courant.om.to-text;
-#exit;
     $gfs.courant.om.scheduled-today();
     verifiy-read($name);
     $gfs.courant.create_task($gfs.courant.om);

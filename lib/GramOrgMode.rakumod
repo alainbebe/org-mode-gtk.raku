@@ -81,7 +81,7 @@ sub analyse-content($content) {
 }
 class OM-actions {
     method TOP($/) {
-        my GtkTask $task.=new(:header("filename"),:level(0));
+        my GtkTask $task.=new(:level(0));
         $task.properties.push($<properties>.made) if $<properties>;
         $task.text = $<preface>.made if $<preface> && $<preface>.made.chars>0;
         $task.tasks=$<tasks>.made if $<tasks>;
