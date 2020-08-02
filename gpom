@@ -1,3 +1,4 @@
+prove6
 sed -i 's/debug=1/debug=0/' org-mode-gtk.raku
 git push origin master
 sed -i 's/debug=0/debug=1/' org-mode-gtk.raku
