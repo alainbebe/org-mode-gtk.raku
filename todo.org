@@ -136,12 +136,14 @@ Option/fold all
 ** DONE [#A] When Add-sub task unflod task, not sub-task
 CLOSED: [2020-06-27 sam 09:31]
 ** TODO Edit Properties
+** TODO Add Brother task
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
 ** DONE Create Class Orgmode
 CLOSED: [2020-04-21 mar  19:29]
-** TODO create a task.pm
+** DONE create a task.pm
+CLOSED: [2020-08-09 dim 09:23]
 ** DONE TODO -&gt; DONE add line with date
 ** DONE Read filename on the command line
 ** DONE DONE to TODO, remove date but exist a blank line if no text
@@ -194,6 +196,7 @@ CLOSED: [2020-05-18 lun 07:20]
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
 ** TODO [#A] Create a auto-save
+** TODO Create a GtkFile.pm
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
 116 sub to-markup ($text is rw) {   

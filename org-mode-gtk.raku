@@ -34,6 +34,7 @@ use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gtk3::Notebook;
+use Gnome::Gdk3::Events;
 use NativeCall;
 
 use Data::Dump;
@@ -48,7 +49,7 @@ use GramOrgMode;
 my Gnome::Gtk3::Notebook $nb .= new();
 
 my $debug=1;            # to debug =1
-my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
+my $toggle_rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 
 
@@ -281,6 +282,7 @@ sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file()));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
@@ -349,6 +351,9 @@ sub brother($iter,$inc) {
     my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
     return  $gfs.courant.ts.get-iter($tp);
 }
+my Gnome::Gtk3::TreeIter $iterForKeyEvent;
+my Task $selected-task;
+
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
@@ -579,6 +584,17 @@ class AppSignalHandlers {
         $gfs.try-save();
         $m.gtk-main-quit;
     }
+    method edit-todo-done {
+        if $selected-task {
+            if $selected-task.todo eq "TODO" {
+                self.todo-shortcut(:iter($selected-task.iter),:todo("DONE"));
+            } elsif $selected-task.todo eq "DONE" {
+                self.todo-shortcut(:iter($selected-task.iter),:todo(""))}
+            else                                {
+                self.todo-shortcut(:iter($selected-task.iter),:todo("TODO"));
+            }
+        }
+    }
     method debug-inspect( ) {
         $gfs.inspect();
     }
@@ -759,14 +775,12 @@ class AppSignalHandlers {
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
         my GtkTask $task;
-        if ($toggle_rb) {  # see definition 
+        if $toggle_rb {  # see definition 
             $gfs.courant.change=1;
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             $task.todo=$todo;
             $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
-            my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
-            my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-            my $text=$text-buffer.get-text( $start, $end, 0);
+            my $text=$task.text.join("\n");
             if $todo eq 'DONE' {
                 if $text.encode.elems>0 {
                     update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
@@ -783,6 +797,28 @@ class AppSignalHandlers {
             }
         }
         $toggle_rb=!$toggle_rb;
+        1
+    }
+    method todo-shortcut ( :$iter,:$todo --> Int ) {
+        $gfs.courant.change=1;
+        my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $task.todo=$todo;
+        $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+        my $text=$task.text.join("\n");
+        if $todo eq 'DONE' {
+            if $text.encode.elems>0 {
+                update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
+            } else {
+                update-text($iter,"CLOSED: [" ~ &now() ~ "]");
+            }
+        } elsif $text~~/^\s*CLOSED/ {
+            $text~~s/^\s*CLOSED.*?\]\n?//;
+            update-text($iter,$text);
+        }
+        if $task.text { # update display text
+            my $text=$task.text.join("\n");
+            $text-buffer.set-text($text);
+        }
         1
     }
     method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
@@ -885,13 +921,16 @@ class AppSignalHandlers {
         $gfs.idTab=$id;
         1
     }
+    my @ctrl-keys;
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $gfs.courant.ts.tree-model-get-iter($tree-path);
+        $selected-task=$gfs.courant.search-task-from($gfs.courant.om,$iter); # TODO [#A] to memorize the current task
+        note 'task selected : ',$selected-task.header ;
 
         # Dialog to manage task
-        $dialog .= new(             # TODO try to pass ialog as parameter
-#            :title("Manage task"), # TODO doesn't work il multi-tab. Very strange.
+        $dialog .= new(             # TODO try to pass dialog as parameter
+#            :title("Manage task"), # TODO doesn't work if multi-tab. Very strange.
 #            :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
@@ -1030,6 +1069,30 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
+    method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
+        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
+        if $event-key.type ~~ GDK_KEY_PRESS {
+            if $event-key.state == 4 { # ctrl push
+                #note "Key ",Buf.new($event-key.keyval).decode;
+                @ctrl-keys.push(Buf.new($event-key.keyval).decode);
+                note 'ctrl ',$iterForKeyEvent;
+                given join('',@ctrl-keys) {
+                    when  ""  {}
+                    when  "c" {say "c"}
+                    when  "x" {say "x"}
+                    when "cc" {@ctrl-keys=''; say "cc"}
+                    when "cd" {@ctrl-keys=''; say "deadline"}
+                    when "cs" {@ctrl-keys=''; say "scheduled"}
+                    when "ct" {@ctrl-keys=''; self.edit-todo-done;}
+                    when "xs" {@ctrl-keys=''; self.file-save}
+#                    when "xs" {@ctrl-keys='';say "save";$gfs.courant.delete-branch($clicked-task.iter); }
+                    when "xc" {@ctrl-keys=''; self.file-quit}
+                    default   {@ctrl-keys=''; say "not use"}
+                }
+            }
+        }
+        1
+    }
 } # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:$top-window);
 $b_add.register-signal( $ash, 'add-button-click', 'clicked');
@@ -1039,7 +1102,7 @@ sub create-sub-menu($menu,$name,$ash,$method) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, $method, 'activate');
 } 
-sub make-menubar-list-file( ) {
+sub make-menubar-list-file() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"New _in a new tab ...",$ash,'file-new-tab');
@@ -1051,6 +1114,11 @@ sub make-menubar-list-file( ) {
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
+sub make-menubar-list-edit() {
+    my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"TODO/DONE/-",$ash,'edit-todo-done');
+    $menu
+}
 sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"P_reface",$ash,'option-preface');
@@ -1060,6 +1128,7 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
+    create-sub-menu($menu,"_Mode GUI/ShortCut",$ash,'option-mode');
     $menu
 }
 sub make-menubar-list-view() {
@@ -1112,6 +1181,7 @@ sub MAIN($arg = '') {
     $gfs.courant.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $nb.register-signal( $ash, 'switch-page', 'switch-page');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
+    $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
     $top-window.show-all;
     $m.gtk-main;
 }

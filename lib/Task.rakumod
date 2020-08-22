@@ -8,7 +8,7 @@ sub to-markup ($text is rw) is export {    # TODO create a class inheriting of s
 }
 class Task {
     has Int      $.level       is rw;
-    has Str      $.todo        is rw;
+    has Str      $.todo        is rw ="";
     has Str      $.priority    is rw;
     has Str      $.header      is rw; #  is required
     has DateOrg  $.scheduled   is rw;
