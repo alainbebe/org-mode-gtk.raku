@@ -44,6 +44,7 @@ use DateOrg;
 use Task;
 use GtkTask;
 use GramOrgMode;
+use File;
 
 # notebook with tab
 my Gnome::Gtk3::Notebook $nb .= new();
@@ -54,18 +55,13 @@ my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take o
 
 
 #----------------------- class  Task & OrgMode
-class GtkFile {
+class GtkFile is File {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
     has                             $.display-branch-task is rw; # La tache qui sert de base à l'arborescence
     has Gnome::Gtk3::Label          $.tab-label     ; #.= new(:text("Tab 1"));
     has Gnome::Gtk3::ScrolledWindow $sw             ; #.= new();
-    has Int                         $.change        is rw =0;           # for ask question to save when quit
-    has                             $.no-done       is rw =True;       # display with no DONE
-    has                             $.prior-A       is rw =False;      # display #A          
-    has                             $.prior-B       is rw =False;      # display #B          
-    has                             $.prior-C       is rw =False;      # display #C          
     has                             $.i             is rw =0;          # for creation of level1 in tree # TODO [#A] rename
 
     submethod BUILD {
@@ -214,11 +210,11 @@ class GtkFile {
         1
     }
     method save ($name?) {
-        $!change=0 if !$name;
+        $.change=0 if !$name;
         spurt $name ?? $name !! $!om.header, $!om.to-text;
     }
     method try-save {
-        if $!change && (!$!om.header || $!om.header ne "demo.org") {
+        if $.change && (!$!om.header || $!om.header ne "demo.org") {
             my Gnome::Gtk3::MessageDialog $md .=new(
                                 :message('Voulez-vous sauver votre fichier ?'),
                                 :buttons(GTK_BUTTONS_YES_NO)
