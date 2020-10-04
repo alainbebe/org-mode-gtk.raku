@@ -49,8 +49,8 @@ use File;
 # notebook with tab
 my Gnome::Gtk3::Notebook $nb .= new();
 
-my $debug=1;            # to debug =1
-my $toggle_rb=False;    # when click on a radio-buttun we have 2 signals. Take only the second
+my $debug=0;            # to debug =1
+my $toggle_rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 
 
@@ -278,6 +278,7 @@ sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file()));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
@@ -347,13 +348,7 @@ sub brother($iter,$inc) {
     return  $gfs.courant.ts.get-iter($tp);
 }
 my Gnome::Gtk3::TreeIter $iterForKeyEvent;
-my Task $clicked-task;
-
-sub del-button-click ( Gnome::Gtk3::TreeIter $iter ) {
-note "iter ",$iter;
-    $gfs.courant.delete-branch($iter);
-#    $dialog.gtk_widget_destroy;
-}
+my Task $selected-task;
 
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -585,6 +580,17 @@ class AppSignalHandlers {
         $gfs.try-save();
         $m.gtk-main-quit;
     }
+    method edit-todo-done {
+        if $selected-task {
+            if $selected-task.todo eq "TODO" {
+                self.todo-shortcut(:iter($selected-task.iter),:todo("DONE"));
+            } elsif $selected-task.todo eq "DONE" {
+                self.todo-shortcut(:iter($selected-task.iter),:todo(""))}
+            else                                {
+                self.todo-shortcut(:iter($selected-task.iter),:todo("TODO"));
+            }
+        }
+    }
     method debug-inspect( ) {
         $gfs.inspect();
     }
@@ -765,14 +771,12 @@ class AppSignalHandlers {
     }
     method todo-button-click ( :$iter,:$todo --> Int ) {
         my GtkTask $task;
-        if ($toggle_rb) {  # see definition 
+        if $toggle_rb {  # see definition 
             $gfs.courant.change=1;
             my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
             $task.todo=$todo;
             $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
-            my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
-            my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-            my $text=$text-buffer.get-text( $start, $end, 0);
+            my $text=$task.text.join("\n");
             if $todo eq 'DONE' {
                 if $text.encode.elems>0 {
                     update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
@@ -789,6 +793,28 @@ class AppSignalHandlers {
             }
         }
         $toggle_rb=!$toggle_rb;
+        1
+    }
+    method todo-shortcut ( :$iter,:$todo --> Int ) {
+        $gfs.courant.change=1;
+        my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $task.todo=$todo;
+        $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+        my $text=$task.text.join("\n");
+        if $todo eq 'DONE' {
+            if $text.encode.elems>0 {
+                update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
+            } else {
+                update-text($iter,"CLOSED: [" ~ &now() ~ "]");
+            }
+        } elsif $text~~/^\s*CLOSED/ {
+            $text~~s/^\s*CLOSED.*?\]\n?//;
+            update-text($iter,$text);
+        }
+        if $task.text { # update display text
+            my $text=$task.text.join("\n");
+            $text-buffer.set-text($text);
+        }
         1
     }
     method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
@@ -891,122 +917,121 @@ class AppSignalHandlers {
         $gfs.idTab=$id;
         1
     }
+    my @ctrl-keys;
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $gfs.courant.ts.tree-model-get-iter($tree-path);
-#        my Gnome::Gtk3::TreeIter $iterForKeyEvent = get-iter-from-path($path);
-        $clicked-task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-note 'ct ',$clicked-task.header ;
-note "tv-but ",$iterForKeyEvent;
-#
-#        # Dialog to manage task
-#        $dialog .= new(             # TODO try to pass ialog as parameter
-##            :title("Manage task"), # TODO doesn't work il multi-tab. Very strange.
-##            :parent($!top-window),
-#            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
-#            :button-spec( "Cancel", GTK_RESPONSE_NONE)
-#        );
-#        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
-#        my Gnome::Gtk3::Grid $g .= new();
-#        $content-area.gtk_container_add($g);
-#
-#        # to edit task
-#        if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
-#            my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-#
-#            $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
-#            $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
-#            $g.gtk-grid-attach($.create-button('v','move-up-down-button-click',$iter,1),     1, 1, 2, 1);
-#            $g.gtk-grid-attach($.create-button('>','move-right-button-click',$iter),         3, 0, 1, 2);
-#
-#            $g.gtk-grid-attach($.create-button('Scheduling','scheduled',$iter,1),            0, 2, 2, 1);
-#            $g.gtk-grid-attach($.create-button('Deadline','deadline',$iter,1),               2, 2, 2, 1);
-#
-#            # To edit task
-#            $e_edit  .= new();
-#            $e_edit.set-text($task.header);
-#            $g.gtk-grid-attach($e_edit,                                                       0, 3, 2, 1);
-#            $g.gtk-grid-attach($.create-button('Update task','edit-button-click',$iter),      0, 4, 2, 1);
-#            
-#            # To edit tags
-#            $e_edit_tags  .= new();
-#            $e_edit_tags.set-text(join(" ",$task.tags));
-#            $g.gtk-grid-attach($e_edit_tags,                                                  2, 3, 2, 1);
-#            $g.gtk-grid-attach($.create-button('Update tags','edit-tags-button-click',$iter), 2, 4, 2, 1);
-#            
-#            # To edit text
-#            $tev_edit_text .= new;
-#            $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
-#            if $task.text {
-#                my $text=$task.text.join("\n");
-#                $text-buffer.set-text($text);
-#            }
-#            my Gnome::Gtk3::ScrolledWindow $swt .= new();
-#            $swt.gtk-container-add($tev_edit_text);
-#            $content-area.gtk_container_add($swt);
-#            $content-area.gtk_container_add($.create-button('Update text','edit-text-button-click',$iter));
-#            if $task.text {
-#                my $text=$task.text.join("\n");
-#                $text ~~ /(http:..\S*)/;
-#                $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
-#            }
-#            
-#            # To manage priority A,B,C.
-#            my Gnome::Gtk3::Grid $g_prio .= new;
-#            $content-area.gtk_container_add($g_prio);
-#            my Gnome::Gtk3::RadioButton $rb_pr1 .= new(:label('-'));
-#            my Gnome::Gtk3::RadioButton $rb_pr2 .= new( :group-from($rb_pr1), :label('A'));
-#            my Gnome::Gtk3::RadioButton $rb_pr3 .= new( :group-from($rb_pr1), :label('B'));
-#            my Gnome::Gtk3::RadioButton $rb_pr4 .= new( :group-from($rb_pr1), :label('C'));
-#            if    !$task.priority          { $rb_pr1.set-active(1);}
-#            elsif $task.priority eq '#A' { $rb_pr2.set-active(1);}
-#            elsif $task.priority eq '#B' { $rb_pr3.set-active(1);} 
-#            elsif $task.priority eq '#C' { $rb_pr4.set-active(1);} 
-#            $g_prio.gtk-grid-attach( $rb_pr1, 0, 0, 1, 1);
-#            $g_prio.gtk-grid-attach( $rb_pr2, 1, 0, 1, 1);
-#            $g_prio.gtk-grid-attach( $rb_pr3, 2, 0, 1, 1);
-#            $g_prio.gtk-grid-attach( $rb_pr4, 3, 0, 1, 1);
-#            $rb_pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior(""));
-#            $rb_pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("A"));
-#            $rb_pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("B"));
-#            $rb_pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("C"));
-#
-#            # To manage TODO/DONE
-#            my Gnome::Gtk3::Grid $g_todo .= new;
-#            $content-area.gtk_container_add($g_todo);
-#            my Gnome::Gtk3::RadioButton $rb_td1 .= new(:label('-'));
-#            my Gnome::Gtk3::RadioButton $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
-#            my Gnome::Gtk3::RadioButton $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
-#            if    !$task.todo          { $rb_td1.set-active(1);}
-#            elsif $task.todo eq 'TODO' { $rb_td2.set-active(1);}
-#            elsif $task.todo eq 'DONE' { $rb_td3.set-active(1);} 
-#            $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
-#            $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
-#            $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
-#            $rb_td1.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
-#            $rb_td2.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
-#            $rb_td3.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
-#
-#            # To add a sub-task
-#            $e_add2  .= new();
-#            $content-area.gtk_container_add($e_add2);
-#            $content-area.gtk_container_add($.create-button('Add sub-task','add2-button-click',$iter));
-#            
-#            $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
-#            $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
-#            $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
-#            $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
-#            $content-area.gtk_container_add($.create-button('Fold branch','fold-branch',$iter));
-#            $content-area.gtk_container_add($.create-button('Unfold branch','unfold-branch',$iter));
-#            $content-area.gtk_container_add($.create-button('Unfold branch and child','unfold-branch-child',$iter));
-#
-#            # Show the dialog.
-#            $dialog.show-all;
-#            $dialog.gtk-dialog-run;
-#            $dialog.gtk_widget_destroy;
-#        } else {  # text
-#            # manage via dialog task
-#        }
+        $selected-task=$gfs.courant.search-task-from($gfs.courant.om,$iter); # TODO [#A] to memorize the current task
+        note 'task selected : ',$selected-task.header ;
+
+        # Dialog to manage task
+        $dialog .= new(             # TODO try to pass dialog as parameter
+#            :title("Manage task"), # TODO doesn't work if multi-tab. Very strange.
+#            :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( "Cancel", GTK_RESPONSE_NONE)
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        my Gnome::Gtk3::Grid $g .= new();
+        $content-area.gtk_container_add($g);
+
+        # to edit task
+        if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
+            my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+
+            $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
+            $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
+            $g.gtk-grid-attach($.create-button('v','move-up-down-button-click',$iter,1),     1, 1, 2, 1);
+            $g.gtk-grid-attach($.create-button('>','move-right-button-click',$iter),         3, 0, 1, 2);
+
+            $g.gtk-grid-attach($.create-button('Scheduling','scheduled',$iter,1),            0, 2, 2, 1);
+            $g.gtk-grid-attach($.create-button('Deadline','deadline',$iter,1),               2, 2, 2, 1);
+
+            # To edit task
+            $e_edit  .= new();
+            $e_edit.set-text($task.header);
+            $g.gtk-grid-attach($e_edit,                                                       0, 3, 2, 1);
+            $g.gtk-grid-attach($.create-button('Update task','edit-button-click',$iter),      0, 4, 2, 1);
+            
+            # To edit tags
+            $e_edit_tags  .= new();
+            $e_edit_tags.set-text(join(" ",$task.tags));
+            $g.gtk-grid-attach($e_edit_tags,                                                  2, 3, 2, 1);
+            $g.gtk-grid-attach($.create-button('Update tags','edit-tags-button-click',$iter), 2, 4, 2, 1);
+            
+            # To edit text
+            $tev_edit_text .= new;
+            $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
+            if $task.text {
+                my $text=$task.text.join("\n");
+                $text-buffer.set-text($text);
+            }
+            my Gnome::Gtk3::ScrolledWindow $swt .= new();
+            $swt.gtk-container-add($tev_edit_text);
+            $content-area.gtk_container_add($swt);
+            $content-area.gtk_container_add($.create-button('Update text','edit-text-button-click',$iter));
+            if $task.text {
+                my $text=$task.text.join("\n");
+                $text ~~ /(http:..\S*)/;
+                $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
+            }
+            
+            # To manage priority A,B,C.
+            my Gnome::Gtk3::Grid $g_prio .= new;
+            $content-area.gtk_container_add($g_prio);
+            my Gnome::Gtk3::RadioButton $rb_pr1 .= new(:label('-'));
+            my Gnome::Gtk3::RadioButton $rb_pr2 .= new( :group-from($rb_pr1), :label('A'));
+            my Gnome::Gtk3::RadioButton $rb_pr3 .= new( :group-from($rb_pr1), :label('B'));
+            my Gnome::Gtk3::RadioButton $rb_pr4 .= new( :group-from($rb_pr1), :label('C'));
+            if    !$task.priority          { $rb_pr1.set-active(1);}
+            elsif $task.priority eq '#A' { $rb_pr2.set-active(1);}
+            elsif $task.priority eq '#B' { $rb_pr3.set-active(1);} 
+            elsif $task.priority eq '#C' { $rb_pr4.set-active(1);} 
+            $g_prio.gtk-grid-attach( $rb_pr1, 0, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr2, 1, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr3, 2, 0, 1, 1);
+            $g_prio.gtk-grid-attach( $rb_pr4, 3, 0, 1, 1);
+            $rb_pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior(""));
+            $rb_pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("A"));
+            $rb_pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("B"));
+            $rb_pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($iter),:prior("C"));
+
+            # To manage TODO/DONE
+            my Gnome::Gtk3::Grid $g_todo .= new;
+            $content-area.gtk_container_add($g_todo);
+            my Gnome::Gtk3::RadioButton $rb_td1 .= new(:label('-'));
+            my Gnome::Gtk3::RadioButton $rb_td2 .= new( :group-from($rb_td1), :label('TODO'));
+            my Gnome::Gtk3::RadioButton $rb_td3 .= new( :group-from($rb_td1), :label('DONE'));
+            if    !$task.todo          { $rb_td1.set-active(1);}
+            elsif $task.todo eq 'TODO' { $rb_td2.set-active(1);}
+            elsif $task.todo eq 'DONE' { $rb_td3.set-active(1);} 
+            $g_todo.gtk-grid-attach( $rb_td1, 0, 0, 1, 1);
+            $g_todo.gtk-grid-attach( $rb_td2, 1, 0, 1, 1);
+            $g_todo.gtk-grid-attach( $rb_td3, 2, 0, 1, 1);
+            $rb_td1.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo(""));
+            $rb_td2.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("TODO"));
+            $rb_td3.register-signal(self, 'todo-button-click', 'clicked',:iter($iter),:todo("DONE"));
+
+            # To add a sub-task
+            $e_add2  .= new();
+            $content-area.gtk_container_add($e_add2);
+            $content-area.gtk_container_add($.create-button('Add sub-task','add2-button-click',$iter));
+            
+            $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
+            $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
+            $content-area.gtk_container_add($.create-button('Fold branch','fold-branch',$iter));
+            $content-area.gtk_container_add($.create-button('Unfold branch','unfold-branch',$iter));
+            $content-area.gtk_container_add($.create-button('Unfold branch and child','unfold-branch-child',$iter));
+
+            # Show the dialog.
+            $dialog.show-all;
+            $dialog.gtk-dialog-run;
+            $dialog.gtk_widget_destroy;
+        } else {  # text
+            # manage via dialog task
+        }
         1
     }
     method option-preface {
@@ -1040,24 +1065,25 @@ note "tv-but ",$iterForKeyEvent;
         $dialog.gtk_widget_destroy;
         1
     }
-    my @ctrl-keys;
     method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
+        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
         if $event-key.type ~~ GDK_KEY_PRESS {
-            if $event-key.state == 4 {
+            if $event-key.state == 4 { # ctrl push
                 #note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
-note 'ctrl ',$iterForKeyEvent;
+                note 'ctrl ',$iterForKeyEvent;
                 given join('',@ctrl-keys) {
                     when  ""  {}
                     when  "c" {say "c"}
                     when  "x" {say "x"}
-                    when "cc" {@ctrl-keys='';say "cc"}
-                    when "cd" {@ctrl-keys='';say "deadline"}
-                    when "cs" {@ctrl-keys='';say "scheduled"}
-                    when "ct" {@ctrl-keys='';say "change-todo"}
-                    when "xs" {@ctrl-keys='';say "save";del-button-click($clicked-task.iter) }
-                    when "xc" {@ctrl-keys='';say "quit"}
-                    default   {@ctrl-keys='';say "not use"}
+                    when "cc" {@ctrl-keys=''; say "cc"}
+                    when "cd" {@ctrl-keys=''; say "deadline"}
+                    when "cs" {@ctrl-keys=''; say "scheduled"}
+                    when "ct" {@ctrl-keys=''; self.edit-todo-done;}
+                    when "xs" {@ctrl-keys=''; self.file-save}
+#                    when "xs" {@ctrl-keys='';say "save";$gfs.courant.delete-branch($clicked-task.iter); }
+                    when "xc" {@ctrl-keys=''; self.file-quit}
+                    default   {@ctrl-keys=''; say "not use"}
                 }
             }
         }
@@ -1072,7 +1098,7 @@ sub create-sub-menu($menu,$name,$ash,$method) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, $method, 'activate');
 } 
-sub make-menubar-list-file( ) {
+sub make-menubar-list-file() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"New _in a new tab ...",$ash,'file-new-tab');
@@ -1084,6 +1110,11 @@ sub make-menubar-list-file( ) {
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
+sub make-menubar-list-edit() {
+    my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"TODO/DONE/-",$ash,'edit-todo-done');
+    $menu
+}
 sub make-menubar-list-option() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"P_reface",$ash,'option-preface');
@@ -1093,6 +1124,7 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
+    create-sub-menu($menu,"_Mode GUI/ShortCut",$ash,'option-mode');
     $menu
 }
 sub make-menubar-list-view() {
