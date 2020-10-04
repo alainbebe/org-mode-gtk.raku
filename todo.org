@@ -139,6 +139,10 @@ CLOSED: [2020-06-27 sam 09:31]
 ** TODO Add Brother task
 ** TODO F11 maximize windows
 Me or Gnome::Gtk3
+** TODO [##A] Bug if view #A, and #A in DONE task
+xx TODO Create Tab to edit 2 or more files
+xxx DONE [#A] put $change in GtkFile
+** TODO [##A] Display message (saved file,...) when use shortcut
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

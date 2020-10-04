@@ -4,19 +4,23 @@ Goal is
 - use Org-mode https://orgmode.org/
 - use raku https://www.raku.org/
 - use grammar for parsing the file org-mode.
-(Grammar works but AST doesn't work, so I use demo_procedural_read)
 - use module Gnome::GTK3 for interactive interface https://github.com/MARTIMM/gnome-gtk3
-- create undo/redo
+- compatible with Orgzly http://www.orgzly.com/
 
-This version is unstable, read, add, write but very simple tasks 
-- * top level headline
-- ** second level
--    some text
-- ** other second level
--    more text
-- * another top level headline
+** V 0.1
+Coming soon
+- TODO/DONE
+- Priority A,B,C
+- Tag
+- Properties
+- Secheduled, Deadline
+
+** V 0.x 
+- Create undo/redo
+- Notebook
 
 ** Installation
+*** Linux
 - zef install Gnome::Gtk3
 - zef install Data::Dump
 - git clone https://github.com/alainbebe/org-mode-gtk.raku.git
