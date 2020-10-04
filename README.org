@@ -9,15 +9,17 @@ Goal is
 
 ** V 0.1
 Coming soon
-- TODO/DONE
-- Priority A,B,C
+- TODO/DONE (DONE hide by default)
+- Priority A,B,C (with simple find)
 - Tag
 - Properties
 - Secheduled, Deadline
+- debug mode menu : save test, inspect
 
 ** V 0.x 
 - Create undo/redo
 - Notebook
+- Search tool
 
 ** Installation
 *** Linux
