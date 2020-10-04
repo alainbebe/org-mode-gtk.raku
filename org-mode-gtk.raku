@@ -773,64 +773,6 @@ class AppSignalHandlers {
         }
         1
     }
-    method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
-        # TODO desable change in GTK to these tasks
-        if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not now() editable 
-            my $task=$gf.search-task-from($gf.om,$iter);
-            my $i=0;
-            if $task.header.IO.e {
-                my %todos;
-                for $task.header.IO.lines {
-                    $i++;
-                    if !($_ ~~ /NOTODO/) && $_ ~~ /^(.*?)" # TODO "(.*)$/ {     # NOTODO
-                        my $comment=$1.Str;
-                        $0 ~~ /^" "*(.*)/;                            # enlève les blancs
-                        my $code=$0.Str;
-                        %todos{$code}=("$i",$comment);
-                    }
-                }
-                if $task.tasks {
-                    for $task.tasks.Array {
-                        if $_.todo eq "TODO" {
-                            my $comment=$_.header;
-                            my $code=$_.text;
-                            $code ~~ s/^\d+" "//;                            # enlève les numeros
-                            if %todos{$code} {
-                                if %todos{$code}[1] eq $comment {   # Todo existe déja
-                                    $gf.change=1;
-                                    update-text($_.iter,%todos{$code}[0] ~ " " ~ $code); # pour la mise à jour des numéros de ligne
-                                    # TODO [#A] parse header for priority #A et tag :tag:
-                                    %todos{$code}=0;
-                                } else {                            # new Todo
-                                    $gf.change=1;
-                                    $_.todo="DONE";
-                                    $gf.ts.set_value( $_.iter, 0,$_.display-header);
-                                    update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
-                                } 
-                            } else {                                # Todo delete
-                                $gf.change=1;
-                                $_.todo="DONE";
-                                $gf.ts.set_value( $_.iter, 0,$_.display-header);
-                                update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
-                            }
-                        }
-                    }
-                }
-                for %todos.kv -> $code,$comment {
-                    if $comment {
-                        $gf.change=1;
-                        say "$code - $comment";
-                        my GtkTask $task-todo.=new(:header($comment[1]),:todo('TODO'),:level($task.level+1),:darth-vader($task));
-                        push($task-todo.text,$comment[0] ~ " " ~ $code);
-                        $gf.create-task($task-todo,$iter);
-                        $task.tasks.push($task-todo);
-                    }
-                }
-            }
-        $dialog.gtk_widget_destroy;
-        1
-        }
-    }
     method del-button-click ( :$iter --> Int ) {
         $gf.delete-branch($iter);
         $dialog.gtk_widget_destroy;
@@ -869,8 +811,8 @@ class AppSignalHandlers {
 
         # Dialog to manage task
         $dialog .= new(             # TODO try to pass dialog as parameter
-#            :title("Manage task"), # TODO doesn't work if multi-tab. Very strange.
-#            :parent($!top-window),
+            :title("Manage task"),  # TODO doesn't work if multi-tab. Very strange. Fix in 0.x
+            :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
         );
@@ -962,7 +904,6 @@ class AppSignalHandlers {
             
             $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
-            $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Fold branch','fold-branch',$iter));
             $content-area.gtk_container_add($.create-button('Unfold branch','unfold-branch',$iter));
             $content-area.gtk_container_add($.create-button('Unfold branch and child','unfold-branch-child',$iter));
@@ -978,8 +919,8 @@ class AppSignalHandlers {
     }
     method option-preface {
         # Dialog to manage preface
-        $dialog .= new(             # TODO try to pass dialog as parameter
-#            :title("Manage task"), # TODO doesn't work if multi-tab. Very strange.
+        $dialog .= new(               # TODO try to pass dialog as parameter
+#            :title("Manage preface"), # TODO doesn't work if multi-tab. Very strange.
 #            :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)

@@ -18,8 +18,9 @@ Coming soon
 
 ** V 0.x 
 - Create undo/redo
+- Cut/Copy/Paste
 - Notebook
-- Search tool
+- Search tool as Orgzly
 
 ** Installation
 *** Linux

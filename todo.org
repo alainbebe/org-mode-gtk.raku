@@ -12,7 +12,7 @@ CLOSED: [2020-05-15 ven 17:59]
 CLOSED: [2020-05-03 dim  07:51]
 ** TODO Improve Scheduled et Deadline
 repeat, delay, hms
-*** TODO Manage "Closed"
+*** TODO Manage "Closed" :0.1:
 CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
 ** DONE Emacs windows write "lun." , orgzly "Mon"
@@ -43,7 +43,7 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** TODO make a User Manuel
+** TODO make a User Manuel :0.1:
 ** DONE Add new file menu
 CLOSED: [2020-05-05 mar  07:24]
 ** DONE Append ScrolBar for long Todo
@@ -63,18 +63,20 @@ Improve this swap if task is hide
 ** TODO Sort Priorities
 ** DONE Create a different display for README style or TODO style
 ** TODO [#B] Use GdkEventKey for keyboard
-*** TODO Short-Cut  "Ctrl-s" forsave
+*** DONE Short-Cut  "Ctrl-s" forsave
+CLOSED: [2020-10-05 lun 07:13]
 *** TODO link F11 to maximize the window
+Me or Gnome::Gtk3
 *** TODO Shift-left unfold only current selection, not child
 or capture keyboard and redifine de Shift-right
-*** TODO Create one (or 2) bar menu
+*** TODO Create one (or 2) bar menu :0.2:
 ** DONE Accent é create problem in edit "text"
 CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
-** TODO [#B] Possibility to do all action with menu
+** TODO [#B] Possibility to do all action with menu :0.1:
 *** TODO Find Iter of select row, to use with menu
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
@@ -121,7 +123,7 @@ CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
-** TODO Add Cancel when warning for save file
+** TODO Add Cancel when warning for save file :0.1:
 ** DONE [#A] When display only #A, unfold all
 CLOSED: [2020-06-27 sam 09:42]
 Réflechir à comment afficherles arbres claisemés
@@ -129,7 +131,7 @@ Réflechir à comment afficherles arbres claisemés
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
-** TODO Refactoring new file with GtkFile = .new
+** TODO Refactoring new file with GtkFile = .new :0.1:
 ** DONE [#A] Fold All
 CLOSED: [2020-06-27 sam 09:17]
 Option/fold all
@@ -137,12 +139,14 @@ Option/fold all
 CLOSED: [2020-06-27 sam 09:31]
 ** TODO Edit Properties
 ** TODO Add Brother task
-** TODO F11 maximize windows
-Me or Gnome::Gtk3
 ** TODO [##A] Bug if view #A, and #A in DONE task
 xx TODO Create Tab to edit 2 or more files
 xxx DONE [#A] put $change in GtkFile
 ** TODO [##A] Display message (saved file,...) when use shortcut
+** TODO Put shortcut on right of menu entries :0.1:
+** TODO Indentation des tag
+*** TODO to display (add column to tree ?)
+*** TODO When save. Parameter as Orgzly
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -192,7 +196,7 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Create Undo/Redo
 https://en.m.wikipedia.org/wiki/Undo
 ** TODO Create copy/paste
-** TODO [#A] Warning if Save as on an existent file
+** TODO [#A] Warning if Save as on an existent file :0.1:
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
@@ -203,97 +207,6 @@ CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
 ** TODO Create a auto-save
 ** TODO Create a GtkFile.pm
-* org-mode-gtk.raku
-** TODO create a class inheriting of string ?
-116 sub to-markup ($text is rw) {   
-** TODO why it's necessary to write .Array ?
-194 $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags;
-** TODO doesn't work, why ?
-294 # $_.iter ne $iter
-** TODO to improve
-367 method search-indice($task) { # it's the indice on my tree, not Gtk::Tree
-** TODO to remove, improve grammar/AST
-504 sub demo_procedural_read($name) {
-** DONE global choice, put in task, inherit for child
-CLOSED: [2020-06-20 sam 13:36]
-343 && $last.properties{'presentation'} eq 'False' {
-** TODO rajouter un "delete"
-739 "_Ok", GTK_RESPONSE_OK,    
-** TODO BUG Cannot look up attributes in a AppSignalHandlers type object
-402 #:parent($!top-window),   
-** TODO destroy ?
-418 $dialog.gtk-widget-hide;
-** DONE BUG Cannot look up attributes in a AppSignalHandlers type object
-CLOSED: [2020-06-20 sam 13:36]
-562 #:parent($!top-window),   
-** DONE use undefined ?
-CLOSED: [2020-06-20 sam 13:36]
-575 $om.properties={};
-** DONE create a sub with these 3 lines but I have a problem with parameters
-CLOSED: [2020-06-20 sam 13:36]
-766 my GtkTask $task-todo.=new(:header($1.Str),:todo('TODO'),:level($task.level+1));
-** DONE global variable is necessary ?
-CLOSED: [2020-06-20 sam 13:36]
-809 $dialog .= new(  
-** DONE  improve code
-CLOSED: [2020-06-20 sam 13:36]
-966 $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$filename).Array.pop) if $filename;
-** TODO use undefined ?
-850 $gfs.courant.om.properties=();
-** DONE insert not append the new file
-CLOSED: [2020-06-24 mer 07:52]
-815 self.file-new-tab;
-** TODO try to pass ialog as parameter
-1164 $dialog .= new(            
-** TODO doesn't work il multi-tab. Very strange.
-1165 #            :title("Manage task"),
-** DONE global choice, put in task, inherit for child
-CLOSED: [2020-07-07 mar 06:36]
-533 && $1.Str eq 'False' {
-** DONE use anonyme function to merge with #A (and other)
-CLOSED: [2020-06-24 mer 07:52]
-256 return True if $.priority && $.priority eq "#B";
-** TODO change ( by [ ?
-106 (" "<wday>)?                  
-** TODO append boundary check
-99 my token wday   {<alpha>+}                    
-** TODO not very good, but work
-684 $ori ~~ s/^.**14/$ds/;
-** TODO Add a Cancel and return true/false
-430 );
-** DONE remove when level 3
-CLOSED: [2020-06-28 dim 08:57]
-990 $dialog.gtk_widget_destroy;
-** TODO put in GtkFiles
-815 method file-new-tab ( --> Int ) {
-** DONE [#A] add .org if not .*
-CLOSED: [2020-06-28 dim 08:57]
-430 $!om.header = $dialog.get-filename;
-** DONE #A use anonyme function to merge with #A (and other)
-CLOSED: [2020-06-28 dim 08:57]
-257 return True if $.priority && $.priority eq "#B";
-** DONE insert not append the new file
-CLOSED: [2020-06-28 dim 08:57]
-831 self.file-new-tab;
-** TODO rewrite with regex
-413 my @path=split(/\//,$!om.header);
-** TODO remove when reselect the good branch.
-979 $dialog.gtk_widget_destroy;
-** DONE [#A] use anonyme function to merge with #A (and other)
-CLOSED: [2020-06-30 mar 07:20]
-257 return True if $.priority && $.priority eq "#B";
-** DONE insert not append the new file
-CLOSED: [2020-06-30 mar 07:20]
-830 self.file-new-tab;
-** DONE merge with unfold-branch :refactoring:
-CLOSED: [2020-06-30 mar 07:20]
-1168 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
-** TODO insert not append the new file
-812 self.file-new-tab;
-** TODO merge with unfold-branch :refactoring:
-1152 $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1);
-** TODO [#A] parse header for priority #A et tag :tag:
-1085 
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
