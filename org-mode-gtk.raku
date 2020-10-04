@@ -55,7 +55,6 @@ class GtkFile {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
-    has                             $.display-branch-task is rw; # La tache qui sert de base à l'arborescence
     has Gnome::Gtk3::ScrolledWindow $sw             ; #.= new();
     has                             $.i             is rw =0;          # for creation of level1 in tree # TODO [#A] rename
     has Int                         $.change        is rw =0;           # for ask question to save when quit
@@ -66,7 +65,6 @@ class GtkFile {
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
-        $!display-branch-task = $!om;
         $!ts                  .= new(:field-types(G_TYPE_STRING));
         $!tv                  .= new(:model($!ts));
         $!tv.set-hexpand(1);
@@ -117,17 +115,16 @@ class GtkFile {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
     method create_task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
-        my $level=$.display-branch-task.level;
         my Gnome::Gtk3::TreeIter $iter_task;
-        if $task.level==$level || (                                 # display always the base level 
+        if $task.level==0 || (                                 # display always the base level
             !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
-            && (!$.prior-A || $task.is-child-prior("A")) 
-            && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A")) 
-            && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A")) 
-        ) {
+            && (!$.prior-A || $task.is-child-prior("A"))
+            && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A"))
+            && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
+        ) { 
             my Gnome::Gtk3::TreeIter $parent-iter;
-            if ($task.level>$level) {
-                if ($task.level==$level+1) {
+            if ($task.level>0) {
+                if ($task.level==1) { 
                     my Gnome::Gtk3::TreePath $tp .= new(:string($.i++.Str));
                     $parent-iter = $.ts.get-iter($tp);
                 } else {
@@ -136,7 +133,7 @@ class GtkFile {
                 $iter_task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header);
                 if $task.text {
                     for $task.text.Array {
-                        my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter_task, -1, 0, to-markup($_)) 
+                        my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter_task, -1, 0, to-markup($_))
                     }
                 }
                 $task.iter=$iter_task;
@@ -597,11 +594,6 @@ class AppSignalHandlers {
         $gf.prior-C??$gf.tv.expand-all!!$gf.tv.collapse-all;
         1
     }
-    method option-rebase( ) {
-        $gf.display-branch-task=$gf.om;
-        $gf.reconstruct_tree();
-        1
-    }
     method view-fold-all {
         $gf.tv.collapse-all;
         1
@@ -617,10 +609,10 @@ class AppSignalHandlers {
     method add-button-click ( ) {
         if $e_add.get-text {
             $gf.change=1;
-            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gf.display-branch-task.level+1),:darth-vader($gf.display-branch-task));
+            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level(1),:darth-vader($gf.om));
             $e_add.set-text("");
             $gf.create_task($task);
-            $gf.display-branch-task.tasks.push($task);
+            $gf.om.tasks.push($task);
         }
         1
     }
@@ -855,15 +847,6 @@ class AppSignalHandlers {
         }
         1
     }
-    method display-branch ( :$iter --> Int ) {
-        $gf.display-branch-task=$gf.search-task-from($gf.om,$iter);
-        $gf.i=0;
-        $gf.ts.clear();
-        $gf.om.delete-iter();
-        $gf.create_task($gf.display-branch-task);
-        $dialog.gtk_widget_destroy;
-        1
-    }
     method fold-branch (:$iter) {
         $gf.tv.collapse-row($gf.ts.get-path($iter));
         1
@@ -978,7 +961,6 @@ class AppSignalHandlers {
             
             $content-area.gtk_container_add($.create-button('Delete task (and sub-tasks)','del-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Delete sub-tasks','del-children-button-click',$iter));
-            $content-area.gtk_container_add($.create-button('Display just this branch','display-branch',$iter));
             $content-area.gtk_container_add($.create-button('Populate with TODO from file','pop-button-click',$iter));
             $content-area.gtk_container_add($.create-button('Fold branch','fold-branch',$iter));
             $content-area.gtk_container_add($.create-button('Unfold branch','unfold-branch',$iter));
@@ -1080,7 +1062,6 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"#_A",$ash,"option-prior-A");
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
-    create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
     $menu
 }
 sub make-menubar-list-view() {
@@ -1111,7 +1092,6 @@ sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante fait foirer la grammaire (content ne match pas) . Bizarre.
     $gf.om=OrgMode.parse($file,:actions(OM-actions)).made;
-    $gf.display-branch-task=$gf.om;   # TODO [#B] to refactor
     $gf.om.header=$name;   # TODO [#B] to refactor
 #    say Dump $gf.om;
 #    say $gf.om.to-text;
