@@ -33,7 +33,6 @@ use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
-use Gnome::Gtk3::Notebook;
 use Gnome::Gdk3::Events;
 use NativeCall;
 
@@ -44,25 +43,26 @@ use DateOrg;
 use Task;
 use GtkTask;
 use GramOrgMode;
-use File;
-
-# notebook with tab
-my Gnome::Gtk3::Notebook $nb .= new();
 
 my $debug=1;            # to debug =1
 my $toggle_rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 
+my Gnome::Gtk3::Grid $g .= new();
 
 #----------------------- class  Task & OrgMode
-class GtkFile is File {
+class GtkFile {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
     has                             $.display-branch-task is rw; # La tache qui sert de base à l'arborescence
-    has Gnome::Gtk3::Label          $.tab-label     ; #.= new(:text("Tab 1"));
     has Gnome::Gtk3::ScrolledWindow $sw             ; #.= new();
     has                             $.i             is rw =0;          # for creation of level1 in tree # TODO [#A] rename
+    has Int                         $.change        is rw =0;           # for ask question to save when quit
+    has                             $.no-done       is rw =True;       # display with no DONE
+    has                             $.prior-A       is rw =False;      # display #A          
+    has                             $.prior-B       is rw =False;      # display #B          
+    has                             $.prior-C       is rw =False;      # display #C          
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -75,8 +75,7 @@ class GtkFile is File {
         $!tv.set-activate-on-single-click(1);
         $!sw                  .= new();
         $!sw.gtk-container-add($!tv);
-        $!tab-label           .= new(:text("Tab 1"));
-        $nb.append-page($!sw,$!tab-label); # TODO [#B] to move
+        $g.gtk-grid-attach( $sw, 0, 1, 4, 1);
 
         my Gnome::Gtk3::TreeViewColumn $tvc .= new();
         my Gnome::Gtk3::CellRendererText $crt1 .= new();
@@ -226,34 +225,8 @@ class GtkFile is File {
         }
     }
 }
-class GtkFiles {
-    has GtkFile     @.gf is rw; 
-    has             $.idTab is rw =0;
 
-    method courant {
-        return @!gf[$.idTab];
-    }
-    method try-save {
-        $_.try-save for @.gf;
-    }
-    method remove-tab {
-        $.courant.try-save;
-        $nb.remove-page($!idTab);
-        @.gf=grep {!($_ === self.courant)}, @.gf;
-    }
-    method file-new-tab {
-        my GtkFile $omf .=new; 
-        $.gf.push($omf);
-        $.idTab=$.gf.elems-1;
-        $nb.set-current-page($.idTab);
-    }
-    method inspect {
-        say "Inspect :";
-        $_.inspect($_.om) for @.gf;
-    }
-}
-
-my GtkFiles $gfs.=new;
+my GtkFile $gf.=new;
 
 #--------------------------- part GTK--------------------------------
 my Gnome::Gtk3::Main $m .= new;
@@ -267,7 +240,6 @@ my Gnome::Gtk3::Window $top-window .= new();
 $top-window.set-title('Org-Mode with GTK and raku');
 $top-window.set-default-size( 640, 480);
 
-my Gnome::Gtk3::Grid $g .= new();
 $top-window.gtk-container-add($g);
 sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
     my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
@@ -283,8 +255,6 @@ $menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-opt
 $menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view()));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug())) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help()));
-
-$g.gtk-grid-attach( $nb, 0, 1, 4, 1);
 
 my Gnome::Gtk3::Entry $e_add  .= new();
 my Gnome::Gtk3::Button $b_add  .= new(:label('Add task'));
@@ -311,41 +281,41 @@ my Gnome::Gtk3::TextBuffer $text-buffer;
 
 sub  add2-branch($iter) {
     if $e_add2.get-text {
-        $gfs.courant.change=1;
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $gf.change=1;
+        my $task=$gf.search-task-from($gf.om,$iter);
         my GtkTask $child.=new(:header($e_add2.get-text),:todo("TODO"),:level($task.level+1),:darth-vader($task));
         $e_add2.set-text("");
-        $gfs.courant.create_task($child,$iter);
+        $gf.create_task($child,$iter);
         push($task.tasks,$child);
-        $gfs.courant.expand-row($task,0);
+        $gf.expand-row($task,0);
     }
 }
 sub update-text($iter,$new-text) {
-    my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+    my $task=$gf.search-task-from($gf.om,$iter);
     $task.text=$new-text.split(/\n/);
-    my $iter_child=$gfs.courant.ts.iter-children($iter);
+    my $iter_child=$gf.ts.iter-children($iter);
     # remove all lines "text"
-    while $iter_child.is-valid && !$gfs.courant.search-task-from($gfs.courant.om,$iter_child) { # if no task associate to a task, it's a "text"
-        $gfs.courant.ts.gtk-tree-store-remove($iter_child);
-        $iter_child=$gfs.courant.ts.iter-children($iter);
+    while $iter_child.is-valid && !$gf.search-task-from($gf.om,$iter_child) { # if no task associate to a task, it's a "text"
+        $gf.ts.gtk-tree-store-remove($iter_child);
+        $iter_child=$gf.ts.iter-children($iter);
     }
     if $task.text && $task.text.chars>0 {
         for $task.text.Array.reverse {
-            my Gnome::Gtk3::TreeIter $iter_t2 = $gfs.courant.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
+            my Gnome::Gtk3::TreeIter $iter_t2 = $gf.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
         }
-        $gfs.courant.expand-row($task,0);
+        $gf.expand-row($task,0);
     }
 }
 sub get-iter-from-path(@path) {
     my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
-    return $gfs.courant.ts.get-iter($tp);
+    return $gf.ts.get-iter($tp);
 }
 sub brother($iter,$inc) {
-    my @path2= $gfs.courant.ts.get-path($iter).get-indices.Array;
+    my @path2= $gf.ts.get-path($iter).get-indices.Array;
     @path2[*-1]=@path2[*-1].Int;
     @path2[*-1]+=$inc;
     my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
-    return  $gfs.courant.ts.get-iter($tp);
+    return  $gf.ts.get-iter($tp);
 }
 my Gnome::Gtk3::TreeIter $iterForKeyEvent;
 my Task $selected-task;
@@ -355,7 +325,7 @@ class AppSignalHandlers {
     submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
 
     method exit-gui ( --> Int ) {
-        $gfs.courant.try-save();
+        $gf.try-save();
         $m.gtk-main-quit;
         1
     }
@@ -525,32 +495,17 @@ class AppSignalHandlers {
         return $date;
     }
     method file-new ( --> Int ) {
-        $gfs.remove-tab;
-        self.file-new-tab; # TODO insert not append the new file 
+        $gf.ts.clear();
+        $gf.om.tasks=[]; 
+        $gf.om.text=[]; 
+        $gf.om.properties=(); # TODO use undefined ?
+        $gf.om.header = "";
+        $top-window.set-title('Org-Mode with GTK and raku');
+        $gf.default;
         1
-    }
-    method file-new-tab ( --> Int ) { # TODO put in GtkFiles
-        $gfs.file-new-tab;
-        $gfs.courant.tv.register-signal( self, 'tv-button-click', 'row-activated');
-        $gfs.courant.default;
-        $top-window.show-all;
-        $nb.set-current-page($gfs.idTab);
-        1
-    }
-    method file-save( ) {
-        $gfs.courant.om.header ?? $gfs.courant.save !! $gfs.courant.file-save-as();
-    }
-    method file-save-as( ) {
-        $gfs.courant.file-save-as;
-        1
-    }
-    method file-save-test( ) {
-        $gfs.courant.save("test.org");
-        run 'cat','test.org';
-        say "\n"; # yes, 2 lines.
     }
     method file-open ( --> Int ) {
-        $gfs.courant.try-save();
+        $gf.try-save();
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
             :title("Open File"), 
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
@@ -561,23 +516,31 @@ class AppSignalHandlers {
         );
         my $response = $dialog.gtk-dialog-run;
         if $response ~~ GTK_RESPONSE_ACCEPT {
-            $gfs.courant.ts.clear();
-            $gfs.courant.om.tasks=[]; 
-            $gfs.courant.om.text=[]; 
-            $gfs.courant.om.properties=(); # TODO use undefined ?
-            $gfs.courant.om.header = $dialog.get-filename;
-            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gfs.courant.om.header).Array.pop) if $gfs.courant.om.header;
-            open-file($gfs.courant.om.header) if $gfs.courant.om.header;
+            $gf.ts.clear();
+            $gf.om.tasks=[]; 
+            $gf.om.text=[]; 
+            $gf.om.properties=(); # TODO use undefined ?
+            $gf.om.header = $dialog.get-filename;
+            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gf.om.header).Array.pop) if $gf.om.header;
+            open-file($gf.om.header) if $gf.om.header;
         }
         $dialog.gtk-widget-hide;
         1
     }
-    method file-close-tab {
-        $gfs.remove-tab;
+    method file-save( ) {
+        $gf.om.header ?? $gf.save !! $gf.file-save-as();
+    }
+    method file-save-as( ) {
+        $gf.file-save-as; # TODO [#A] change title of windows
         1
     }
+    method file-save-test( ) {
+        $gf.save("test.org");
+        run 'cat','test.org';
+        say "\n"; # yes, 2 lines.
+    }
     method file-quit( ) {
-        $gfs.try-save();
+        $gf.try-save();
         $m.gtk-main-quit;
     }
     method edit-todo-done {
@@ -592,59 +555,59 @@ class AppSignalHandlers {
         }
     }
     method debug-inspect( ) {
-        $gfs.inspect();
+        $gf.inspect($gf.om);
     }
     method option-presentation( ) { # TODO do this by task and not only for the entire tree
-        $gfs.courant.change=1;
-        if $gfs.courant.om.herite-properties('presentation') eq 'DEFAULT' || 
-               $gfs.courant.om.herite-properties('presentation') eq 'TODO'  {
-            $gfs.courant.om.properties.push(('presentation','TEXT'));
+        $gf.change=1;
+        if $gf.om.herite-properties('presentation') eq 'DEFAULT' || 
+               $gf.om.herite-properties('presentation') eq 'TODO'  {
+            $gf.om.properties.push(('presentation','TEXT'));
         } else {
-            $gfs.courant.om.properties= map {$_[0] eq 'presentation' ?? ('presentation','TODO') !! $_}, $gfs.courant.om.properties;
+            $gf.om.properties= map {$_[0] eq 'presentation' ?? ('presentation','TODO') !! $_}, $gf.om.properties;
         };
-        $gfs.courant.reconstruct_tree();
+        $gf.reconstruct_tree();
         1
     }
     method option-no-done( ) {
-        $gfs.courant.no-done=!$gfs.courant.no-done;
-        $gfs.courant.reconstruct_tree();
+        $gf.no-done=!$gf.no-done;
+        $gf.reconstruct_tree();
         1
     }
     method option-prior-A( ) {
-        $gfs.courant.prior-A=!$gfs.courant.prior-A;
-        $gfs.courant.prior-B=False;
-        $gfs.courant.prior-C=False;
-        $gfs.courant.reconstruct_tree();
-        $gfs.courant.prior-A??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gf.prior-A=!$gf.prior-A;
+        $gf.prior-B=False;
+        $gf.prior-C=False;
+        $gf.reconstruct_tree();
+        $gf.prior-A??$gf.tv.expand-all!!$gf.tv.collapse-all;
         1
     }
     method option-prior-B( ) {
-        $gfs.courant.prior-B=!$gfs.courant.prior-B;
-        $gfs.courant.prior-A=False;
-        $gfs.courant.prior-C=False;
-        $gfs.courant.reconstruct_tree();
-        $gfs.courant.prior-B??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gf.prior-B=!$gf.prior-B;
+        $gf.prior-A=False;
+        $gf.prior-C=False;
+        $gf.reconstruct_tree();
+        $gf.prior-B??$gf.tv.expand-all!!$gf.tv.collapse-all;
         1
     }
     method option-prior-C( ) {
-        $gfs.courant.prior-C=!$gfs.courant.prior-C;
-        $gfs.courant.prior-A=False;
-        $gfs.courant.prior-B=False;
-        $gfs.courant.reconstruct_tree();
-        $gfs.courant.prior-C??$gfs.courant.tv.expand-all!!$gfs.courant.tv.collapse-all;
+        $gf.prior-C=!$gf.prior-C;
+        $gf.prior-A=False;
+        $gf.prior-B=False;
+        $gf.reconstruct_tree();
+        $gf.prior-C??$gf.tv.expand-all!!$gf.tv.collapse-all;
         1
     }
     method option-rebase( ) {
-        $gfs.courant.display-branch-task=$gfs.courant.om;
-        $gfs.courant.reconstruct_tree();
+        $gf.display-branch-task=$gf.om;
+        $gf.reconstruct_tree();
         1
     }
     method view-fold-all {
-        $gfs.courant.tv.collapse-all;
+        $gf.tv.collapse-all;
         1
     }
     method view-unfold-all {
-        $gfs.courant.tv.expand-all;
+        $gf.tv.expand-all;
         1
     }
     method help-about( ) {
@@ -653,11 +616,11 @@ class AppSignalHandlers {
     }
     method add-button-click ( ) {
         if $e_add.get-text {
-            $gfs.courant.change=1;
-            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gfs.courant.display-branch-task.level+1),:darth-vader($gfs.courant.display-branch-task));
+            $gf.change=1;
+            my GtkTask $task.=new(:header($e_add.get-text),:todo('TODO'),:level($gf.display-branch-task.level+1),:darth-vader($gf.display-branch-task));
             $e_add.set-text("");
-            $gfs.courant.create_task($task);
-            $gfs.courant.display-branch-task.tasks.push($task);
+            $gf.create_task($task);
+            $gf.display-branch-task.tasks.push($task);
         }
         1
     }
@@ -666,7 +629,7 @@ class AppSignalHandlers {
         1
     }
     method edit-text-button-click ( :$iter ) {
-        $gfs.courant.change=1;
+        $gf.change=1;
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
         my $new-text=$text-buffer.get-text( $start, $end, 0);
@@ -674,35 +637,35 @@ class AppSignalHandlers {
         1
     }
     method edit-preface {
-        $gfs.courant.change=1;
+        $gf.change=1;
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
         my $new-text=$text-buffer.get-text( $start, $end, 0);
-        $gfs.courant.om.text=$new-text.split(/\n/);
+        $gf.om.text=$new-text.split(/\n/);
         1
     }
     method move-right-button-click ( :$iter ) {
-        my @path= $gfs.courant.ts.get-path($iter).get-indices.Array;
+        my @path= $gf.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        my $task=$gf.search-task-from($gf.om,$iter);
         my @path-parent=@path; # it's not the parent (darth-vader) but the futur parent
         @path-parent[*-1]--;
         my $iter-parent=get-iter-from-path(@path-parent);
-        my $task-parent=$gfs.courant.search-task-from($gfs.courant.om,$iter-parent);
-        $gfs.courant.delete-branch($iter); 
+        my $task-parent=$gf.search-task-from($gf.om,$iter-parent);
+        $gf.delete-branch($iter); 
         $task.level-move(1);
         push($task-parent.tasks,$task); 
-        $gfs.courant.create_task($task,$iter-parent);
+        $gf.create_task($task,$iter-parent);
         $task.darth-vader=$task-parent;
-        $gfs.courant.expand-row($task-parent,0);
+        $gf.expand-row($task-parent,0);
         $dialog.gtk_widget_destroy; # remove when level 3
         1
     }
     method move-left-button-click ( :$iter ) {
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        my $task=$gf.search-task-from($gf.om,$iter);
         return if $task.level <= 1; # level 0 and 1 don't go to left
         $task.level-move(-1);
-        $gfs.courant.delete-branch($iter); 
+        $gf.delete-branch($iter); 
         my @tasks;
         for $task.darth-vader.darth-vader.tasks.Array {
             if $_ eq $task.darth-vader {
@@ -713,58 +676,58 @@ class AppSignalHandlers {
             } 
         }
         $task.darth-vader.darth-vader.tasks=@tasks;
-        my @path-parent= $gfs.courant.ts.get-path($task.darth-vader.iter).get-indices.Array;
-        $gfs.courant.create_task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1);
+        my @path-parent= $gf.ts.get-path($task.darth-vader.iter).get-indices.Array;
+        $gf.create_task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1);
         $task.darth-vader=$task.darth-vader.darth-vader;
-        $gfs.courant.expand-row($task,0);
+        $gf.expand-row($task,0);
         $dialog.gtk_widget_destroy; # TODO remove when reselect the good branch.
         1
     }
     method move-up-down-button-click ( :$iter, :$inc  --> Int ) {
-        my @path= $gfs.courant.ts.get-path($iter).get-indices.Array;
+        my @path= $gf.ts.get-path($iter).get-indices.Array;
         if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
             my $iter2=brother($iter,$inc);
             if $iter2.is-valid {   # if not, it's the last child
-                $gfs.courant.change=1;
-                my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-                my $task2=$gfs.courant.search-task-from($gfs.courant.om,$iter2);
-                $gfs.courant.ts.swap($iter,$iter2);
-                $gfs.courant.swap($task,$task2);
+                $gf.change=1;
+                my $task=$gf.search-task-from($gf.om,$iter);
+                my $task2=$gf.search-task-from($gf.om,$iter2);
+                $gf.ts.swap($iter,$iter2);
+                $gf.swap($task,$task2);
             }
         }
         1
     }
     method scheduled ( :$iter ) {
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        my $task=$gf.search-task-from($gf.om,$iter);
         $task.scheduled=self.manage-date($task.scheduled);
         1
     }
     method deadline ( :$iter ) {
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        my $task=$gf.search-task-from($gf.om,$iter);
         $task.deadline=self.manage-date($task.deadline);
         1
     }
     method edit-button-click ( :$iter ) {
-        $gfs.courant.change=1;
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $gf.change=1;
+        my $task=$gf.search-task-from($gf.om,$iter);
         $task.header=$e_edit.get-text;
-        $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+        $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
         1
     }
     method edit-tags-button-click ( :$iter ) {
-        $gfs.courant.change=1;
-        my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $gf.change=1;
+        my $task=$gf.search-task-from($gf.om,$iter);
         $task.tags=split(/" "/,$e_edit_tags.get-text);
-        $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+        $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
         1
     }
     method prior-button-click ( :$iter,:$prior --> Int ) {
         my GtkTask $task;
         if ($toggle_rb_pr) {  # see definition 
-            $gfs.courant.change=1;
-            my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+            $gf.change=1;
+            my $task=$gf.search-task-from($gf.om,$iter);
             $task.priority=$prior??"#"~$prior!!"";
-            $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+            $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
         }
         $toggle_rb_pr=!$toggle_rb_pr;
         1
@@ -772,10 +735,10 @@ class AppSignalHandlers {
     method todo-button-click ( :$iter,:$todo --> Int ) {
         my GtkTask $task;
         if $toggle_rb {  # see definition 
-            $gfs.courant.change=1;
-            my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+            $gf.change=1;
+            my $task=$gf.search-task-from($gf.om,$iter);
             $task.todo=$todo;
-            $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+            $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
             my $text=$task.text.join("\n");
             if $todo eq 'DONE' {
                 if $text.encode.elems>0 {
@@ -796,10 +759,10 @@ class AppSignalHandlers {
         1
     }
     method todo-shortcut ( :$iter,:$todo --> Int ) {
-        $gfs.courant.change=1;
-        my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        $gf.change=1;
+        my GtkTask $task=$gf.search-task-from($gf.om,$iter);
         $task.todo=$todo;
-        $gfs.courant.ts.set_value( $iter, 0,$gfs.courant.search-task-from($gfs.courant.om,$iter).display-header);
+        $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
         my $text=$task.text.join("\n");
         if $todo eq 'DONE' {
             if $text.encode.elems>0 {
@@ -819,8 +782,8 @@ class AppSignalHandlers {
     }
     method pop-button-click ( :$iter --> Int ) { # populate a task with TODO comment
         # TODO desable change in GTK to these tasks
-        if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
-            my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not now editable 
+            my $task=$gf.search-task-from($gf.om,$iter);
             my $i=0;
             if $task.header.IO.e {
                 my %todos;
@@ -841,20 +804,20 @@ class AppSignalHandlers {
                             $code ~~ s/^\d+" "//;                            # enlève les numeros
                             if %todos{$code} {
                                 if %todos{$code}[1] eq $comment {   # Todo existe déja
-                                    $gfs.courant.change=1;
+                                    $gf.change=1;
                                     update-text($_.iter,%todos{$code}[0] ~ " " ~ $code); # pour la mise à jour des numéros de ligne
                                     # TODO [#A] parse header for priority #A et tag :tag:
                                     %todos{$code}=0;
                                 } else {                            # new Todo
-                                    $gfs.courant.change=1;
+                                    $gf.change=1;
                                     $_.todo="DONE";
-                                    $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
+                                    $gf.ts.set_value( $_.iter, 0,$_.display-header);
                                     update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
                                 } 
                             } else {                                # Todo delete
-                                $gfs.courant.change=1;
+                                $gf.change=1;
                                 $_.todo="DONE";
-                                $gfs.courant.ts.set_value( $_.iter, 0,$_.display-header);
+                                $gf.ts.set_value( $_.iter, 0,$_.display-header);
                                 update-text($_.iter,"CLOSED: [" ~ &now() ~ "]\n"~$_.text);
                             }
                         }
@@ -862,11 +825,11 @@ class AppSignalHandlers {
                 }
                 for %todos.kv -> $code,$comment {
                     if $comment {
-                        $gfs.courant.change=1;
+                        $gf.change=1;
                         say "$code - $comment";
                         my GtkTask $task-todo.=new(:header($comment[1]),:todo('TODO'),:level($task.level+1),:darth-vader($task));
                         push($task-todo.text,$comment[0] ~ " " ~ $code);
-                        $gfs.courant.create_task($task-todo,$iter);
+                        $gf.create_task($task-todo,$iter);
                         $task.tasks.push($task-todo);
                     }
                 }
@@ -876,16 +839,16 @@ class AppSignalHandlers {
         }
     }
     method del-button-click ( :$iter --> Int ) {
-        $gfs.courant.delete-branch($iter);
+        $gf.delete-branch($iter);
         $dialog.gtk_widget_destroy;
         1
     }
     method del-children-button-click ( :$iter --> Int ) {
-        if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
-            my $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not now editable 
+            my $task=$gf.search-task-from($gf.om,$iter);
             if $task.tasks {
                 for $task.tasks.Array {
-                    $gfs.courant.ts.gtk-tree-store-remove($_.iter) if $_.iter;
+                    $gf.ts.gtk-tree-store-remove($_.iter) if $_.iter;
                 }
                 $task.tasks = [];
             }
@@ -893,35 +856,31 @@ class AppSignalHandlers {
         1
     }
     method display-branch ( :$iter --> Int ) {
-        $gfs.courant.display-branch-task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
-        $gfs.courant.i=0;
-        $gfs.courant.ts.clear();
-        $gfs.courant.om.delete-iter();
-        $gfs.courant.create_task($gfs.courant.display-branch-task);
+        $gf.display-branch-task=$gf.search-task-from($gf.om,$iter);
+        $gf.i=0;
+        $gf.ts.clear();
+        $gf.om.delete-iter();
+        $gf.create_task($gf.display-branch-task);
         $dialog.gtk_widget_destroy;
         1
     }
     method fold-branch (:$iter) {
-        $gfs.courant.tv.collapse-row($gfs.courant.ts.get-path($iter));
+        $gf.tv.collapse-row($gf.ts.get-path($iter));
         1
     }
     method unfold-branch (:$iter ) {
-        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),0);
+        $gf.tv.expand-row($gf.ts.get-path($iter),0);
         1
     }
     method unfold-branch-child (:$iter ) {
-        $gfs.courant.tv.expand-row($gfs.courant.ts.get-path($iter),1); # TODO merge with unfold-branch :refactoring:
-        1
-    }
-    method switch-page ( N-GObject $page, Int $id ) {
-        $gfs.idTab=$id;
+        $gf.tv.expand-row($gf.ts.get-path($iter),1); # TODO merge with unfold-branch :refactoring:
         1
     }
     my @ctrl-keys;
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
-        my Gnome::Gtk3::TreeIter $iter = $gfs.courant.ts.tree-model-get-iter($tree-path);
-        $selected-task=$gfs.courant.search-task-from($gfs.courant.om,$iter); # TODO [#A] to memorize the current task
+        my Gnome::Gtk3::TreeIter $iter = $gf.ts.tree-model-get-iter($tree-path);
+        $selected-task=$gf.search-task-from($gf.om,$iter); # TODO [#A] to memorize the current task
         note 'task selected : ',$selected-task.header ;
 
         # Dialog to manage task
@@ -936,8 +895,8 @@ class AppSignalHandlers {
         $content-area.gtk_container_add($g);
 
         # to edit task
-        if $gfs.courant.search-task-from($gfs.courant.om,$iter) {      # if not, it's a text not now editable 
-            my GtkTask $task=$gfs.courant.search-task-from($gfs.courant.om,$iter);
+        if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not now editable 
+            my GtkTask $task=$gf.search-task-from($gf.om,$iter);
 
             $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
             $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
@@ -1046,16 +1005,16 @@ class AppSignalHandlers {
 
         $tev_edit_text .= new;
         $text-buffer .= new(:native-object($tev_edit_text.get-buffer));
-        if $gfs.courant.om.text {
-            my $text=$gfs.courant.om.text.join("\n");
+        if $gf.om.text {
+            my $text=$gf.om.text.join("\n");
             $text-buffer.set-text($text);
         }
         my Gnome::Gtk3::ScrolledWindow $swt .= new();
         $swt.gtk-container-add($tev_edit_text);
         $content-area.gtk_container_add($swt);
         $content-area.gtk_container_add($.create-button('Update Preface','edit-preface',''));
-        if $gfs.courant.om.text {
-            my $text=$gfs.courant.om.text.join("\n");
+        if $gf.om.text {
+            my $text=$gf.om.text.join("\n");
             $text ~~ /(http:..\S*)/;
             $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
         }
@@ -1081,7 +1040,7 @@ class AppSignalHandlers {
                     when "cs" {@ctrl-keys=''; say "scheduled"}
                     when "ct" {@ctrl-keys=''; self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; self.file-save}
-#                    when "xs" {@ctrl-keys='';say "save";$gfs.courant.delete-branch($clicked-task.iter); }
+#                    when "xs" {@ctrl-keys='';say "save";$gf.delete-branch($clicked-task.iter); }
                     when "xc" {@ctrl-keys=''; self.file-quit}
                     default   {@ctrl-keys=''; say "not use"}
                 }
@@ -1101,12 +1060,10 @@ sub create-sub-menu($menu,$name,$ash,$method) {
 sub make-menubar-list-file() {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
-    create-sub-menu($menu,"New _in a new tab ...",$ash,'file-new-tab');
+    create-sub-menu($menu,"_Open File ...",$ash,'file-open');
     create-sub-menu($menu,"_Save",$ash,'file-save');
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
-    create-sub-menu($menu,"_Open File ...",$ash,'file-open');
-    create-sub-menu($menu,"Save to _test",$ash,'file-save-test');
-    create-sub-menu($menu,"_Close Tab",$ash,'file-close-tab');
+    create-sub-menu($menu,"Save to _test",$ash,'file-save-test') if $debug;
     create-sub-menu($menu,"_Quit",$ash,'file-quit');
     $menu
 }
@@ -1124,7 +1081,6 @@ sub make-menubar-list-option() {
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Top of tree",$ash,'option-rebase');
-    create-sub-menu($menu,"_Mode GUI/ShortCut",$ash,'option-mode');
     $menu
 }
 sub make-menubar-list-view() {
@@ -1145,7 +1101,7 @@ sub make-menubar-list-help ( ) {
 }
 #-----------------------------------sub-------------------------------
 sub verifiy-read($name) {
-    $gfs.courant.save("test.org");
+    $gf.save("test.org");
     my $proc =     run 'diff','-Z',"$name",'test.org';
     say "Input file and save file are different. Problem with syntax or bug.
         You can view the file, but it's may be wrong.
@@ -1154,28 +1110,26 @@ sub verifiy-read($name) {
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
     my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante fait foirer la grammaire (content ne match pas) . Bizarre.
-    $gfs.courant.om=OrgMode.parse($file,:actions(OM-actions)).made;
-    $gfs.courant.display-branch-task=$gfs.courant.om;   # TODO [#B] to refactor
-    $gfs.courant.om.header=$name;   # TODO [#B] to refactor
-#    say Dump $gfs.courant.om;
-#    say $gfs.courant.om.to-text;
-    $gfs.courant.om.scheduled-today();
+    $gf.om=OrgMode.parse($file,:actions(OM-actions)).made;
+    $gf.display-branch-task=$gf.om;   # TODO [#B] to refactor
+    $gf.om.header=$name;   # TODO [#B] to refactor
+#    say Dump $gf.om;
+#    say $gf.om.to-text;
+    $gf.om.scheduled-today();
     verifiy-read($name);
-    $gfs.courant.create_task($gfs.courant.om);
+    $gf.create_task($gf.om);
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
     $top-window.show-all;
     my $filename=$arg;
-    $gfs.file-new-tab;
     if $filename {
         open-file($filename);
     } else {
-        $gfs.courant.default;
+        $gf.default;
     }
-#    $gfs.inspect();
-    $gfs.courant.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
-    $nb.register-signal( $ash, 'switch-page', 'switch-page');
+#    $gf.inspect($gf.om); # TODO [#A] create a method without param
+    $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
     $top-window.show-all;
