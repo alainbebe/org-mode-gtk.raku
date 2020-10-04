@@ -49,7 +49,7 @@ use File;
 # notebook with tab
 my Gnome::Gtk3::Notebook $nb .= new();
 
-my $debug=0;            # to debug =1
+my $debug=1;            # to debug =1
 my $toggle_rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle_rb_pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 
@@ -122,9 +122,9 @@ class GtkFile is File {
         my Gnome::Gtk3::TreeIter $iter_task;
         if $task.level==$level || (                                 # display always the base level 
             !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
-            && (!$.prior-A || $task.is-child-prior("#A")) 
-            && (!$.prior-B || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
-            && (!$.prior-C || $task.is-child-prior("#C") || $task.is-child-prior("#B") || $task.is-child-prior("#A")) 
+            && (!$.prior-A || $task.is-child-prior("A")) 
+            && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A")) 
+            && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A")) 
         ) {
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>$level) {
@@ -177,8 +177,8 @@ class GtkFile is File {
     }
     my $lvl=0;
     method inspect($task) {
-#        say "ind : ",$.iter-get-indices($task), " lvl ",$lvl," ",$task.header, " level ",$task.level;
-        say $task.herite-properties('presentation');
+        say "ind : ",$.iter-get-indices($task), " lvl:",$lvl," ",$task.header, " lvl:",$task.level, " pr:",$task.priority;
+#        say $task.herite-properties('presentation');
         if $task.tasks {
             for $task.tasks.Array {
                 $lvl++;

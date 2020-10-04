@@ -137,6 +137,8 @@ Option/fold all
 CLOSED: [2020-06-27 sam 09:31]
 ** TODO Edit Properties
 ** TODO Add Brother task
+** TODO F11 maximize windows
+Me or Gnome::Gtk3
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -195,7 +197,7 @@ CLOSED: [2020-05-18 lun 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
-** TODO [#A] Create a auto-save
+** TODO Create a auto-save
 ** TODO Create a GtkFile.pm
 * org-mode-gtk.raku
 ** TODO create a class inheriting of string ?
