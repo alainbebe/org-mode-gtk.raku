@@ -104,14 +104,6 @@ class Task {
         #$j--;
         return $orgmode;
     }
-    method scheduled-today {
-        say "ind : ",$.header, $.scheduled if $.scheduled && $.scheduled.begin eq &d-now(); # TODO doesn't work because fomrat is date-time, not date
-        if $.tasks {
-            for $.tasks.Array {
-                $_.scheduled-today();
-            }
-        }
-    }
     method inspect($task) {
         my $prefix=" " x $task.level*2;
         say $prefix,"level       ",$task.level;

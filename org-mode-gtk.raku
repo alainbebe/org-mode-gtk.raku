@@ -811,7 +811,7 @@ class AppSignalHandlers {
 
         # Dialog to manage task
         $dialog .= new(             # TODO try to pass dialog as parameter
-            :title("Manage task"),  # TODO doesn't work if multi-tab. Very strange. Fix in 0.x
+            :title("Manage task"),  # TODO doesn't work if multi-tab. Very strange. Fix in :0.x:
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
@@ -920,7 +920,7 @@ class AppSignalHandlers {
     method option-preface {
         # Dialog to manage preface
         $dialog .= new(               # TODO try to pass dialog as parameter
-#            :title("Manage preface"), # TODO doesn't work if multi-tab. Very strange.
+#            :title("Manage preface"), # TODO doesn't work. Try to fix :0.1:
 #            :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
@@ -1037,7 +1037,6 @@ sub open-file($name) {
     $gf.om.header=$name;   # TODO [#B] to refactor
 #    say Dump $gf.om;
 #    say $gf.om.to-text;
-    $gf.om.scheduled-today;
     verifiy-read($name);
     $gf.create-task($gf.om);
 }
