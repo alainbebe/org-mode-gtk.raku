@@ -974,7 +974,6 @@ class AppSignalHandlers {
     }
 } # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:$top-window);
-$b-add.register-signal( $ash, 'add-button-click', 'clicked');
 sub create-sub-menu($menu,$name,$ash,$method) {
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
     $menu-item.set-use-underline(1);
@@ -1027,8 +1026,8 @@ sub verifiy-read($name) {
     $gf.save("test.org");
     my $proc =     run 'diff','-Z',"$name",'test.org';
     say "Input file and save file are different. Problem with syntax or bug.
-        You can view the file, but it's may be wrong.
-        Don't save." if $proc.exitcode; 
+        You can view and edit the file, but it's may be wrong.
+        Don't save if not sure." if $proc.exitcode; 
 }
 sub open-file($name) {
     spurt $name~".bak",slurp $name; # fast backup
@@ -1037,12 +1036,11 @@ sub open-file($name) {
     $gf.om.header=$name;   # TODO [#B] to refactor
 #    say Dump $gf.om;
 #    say $gf.om.to-text;
-    verifiy-read($name);
+    verifiy-read($name) if $debug;
     $gf.create-task($gf.om);
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
-    $top-window.show-all;
     my $filename=$arg;
     if $filename {
         open-file($filename);
@@ -1050,6 +1048,7 @@ sub MAIN($arg = '') {
         $gf.default;
     }
 #    $gf.inspect($gf.om); # TODO [#A] create a method without param
+    $b-add.register-signal( $ash, 'add-button-click', 'clicked');
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
