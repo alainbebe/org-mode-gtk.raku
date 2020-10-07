@@ -1,0 +1,4 @@
+git log
+git diff
+vim org-mode-gtk.raku
+git diff

@@ -265,20 +265,6 @@ $top-window.set-title('Org-Mode with GTK and raku');
 $top-window.set-default-size( 640, 480);
 
 $top-window.gtk-container-add($g);
-sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
-    my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
-    $but-file-menu.set-use-underline(1);
-    $but-file-menu.set-submenu($sub-menu);
-    return $but-file-menu;
-}
-my Gnome::Gtk3::MenuBar $menu-bar .= new;
-$g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
-$menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
 
 my Gnome::Gtk3::Entry $e-add  .= new;
 my Gnome::Gtk3::Button $b-add  .= new(:label('Add task'));
@@ -346,7 +332,7 @@ my Task $selected-task;
 
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
-    submethod BUILD ( Gnome::Gtk3::Window :$!top-window ) { }
+    submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }
 
     method exit-gui ( --> Int ) {
         $gf.try-save;
@@ -524,7 +510,7 @@ class AppSignalHandlers {
         $gf.om.text=[]; 
         $gf.om.properties=(); # TODO use undefined ?
         $gf.om.header = "";
-        $top-window.set-title('Org-Mode with GTK and raku');
+        $!top-window.set-title('Org-Mode with GTK and raku');
         $gf.default;
         1
     }
@@ -545,7 +531,7 @@ class AppSignalHandlers {
             $gf.om.text=[]; 
             $gf.om.properties=(); # TODO use undefined ?
             $gf.om.header = $dialog.get-filename;
-            $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gf.om.header).Array.pop) if $gf.om.header;
+            $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gf.om.header).Array.pop) if $gf.om.header;
             self.open-file($gf.om.header) if $gf.om.header;
         }
         $dialog.gtk-widget-hide;
@@ -946,9 +932,9 @@ class AppSignalHandlers {
     }
     method option-preface {
         # Dialog to manage preface
-        $dialog .= new(               # TODO try to pass dialog as parameter
-#            :title("Manage preface"), # TODO doesn't work. Try to fix :0.1:
-#            :parent($!top-window),
+        my Gnome::Gtk3::Dialog $dialog .= new(
+            :title("Manage preface"),
+            :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
         );
@@ -969,7 +955,6 @@ class AppSignalHandlers {
             $text ~~ /(http:..\S*)/;
             $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
         }
-        # Show the dialog.
         $dialog.show-all;
         $dialog.gtk-dialog-run;
         $dialog.gtk_widget_destroy;
@@ -979,7 +964,7 @@ class AppSignalHandlers {
         note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
         if $event-key.type ~~ GDK_KEY_PRESS {
             if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
-                $is-maximized ?? $top-window.unmaximize !! $top-window.maximize;
+                $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
                 $is-maximized=!$is-maximized; 
             }
             if $event-key.state == 4 { # ctrl push
@@ -1004,7 +989,24 @@ class AppSignalHandlers {
         1
     }
 } # end Class AppSiganlHandlers
-my AppSignalHandlers $ash .= new(:$top-window);
+my AppSignalHandlers $ash .= new(:top-window($top-window));
+
+sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
+    my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
+    $but-file-menu.set-use-underline(1);
+    $but-file-menu.set-submenu($sub-menu);
+    return $but-file-menu;
+}
+
+my Gnome::Gtk3::MenuBar $menu-bar .= new;
+$g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
+$menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
+
 sub create-sub-menu($menu,$name,$ash,$method) {
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
     $menu-item.set-use-underline(1);
@@ -1063,3 +1065,4 @@ sub MAIN($arg = '') {
     $top-window.show-all;
     $m.gtk-main;
 }
+
