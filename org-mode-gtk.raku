@@ -34,6 +34,7 @@ use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TreeSelection;
 use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gdk3::Events;
+use Gnome::Gdk3::Keysyms;
 use NativeCall;
 
 use Data::Dump;
@@ -47,6 +48,7 @@ use GramOrgMode;
 my $debug=1;            # to debug =1
 my $toggle-rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
 my $toggle-rb-pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
+my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 
 my Gnome::Gtk3::Grid $g .= new;
 
@@ -976,6 +978,10 @@ class AppSignalHandlers {
     method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
         note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
         if $event-key.type ~~ GDK_KEY_PRESS {
+            if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
+                $is-maximized ?? $top-window.unmaximize !! $top-window.maximize;
+                $is-maximized=!$is-maximized; 
+            }
             if $event-key.state == 4 { # ctrl push
                 #note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
