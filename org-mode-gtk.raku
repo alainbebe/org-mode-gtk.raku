@@ -183,6 +183,31 @@ class GtkFile {
             }
         }
     }
+    method verifiy-read($name) {
+        self.save("test.org");
+        my $proc =     run 'diff','-Z',"$name",'test.org';
+        say "Input file and save file are different. Problem with syntax or bug.
+            You can view and edit the file, but it's may be wrong.
+            Don't save if not sure." if $proc.exitcode; 
+    }
+    method open-file-with-name($name) {
+        spurt $name~".bak",slurp $name; # fast backup
+        my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante 
+                                # fait foirer la grammaire (content ne match pas) . Bizarre.
+        self.om=OrgMode.parse($file,:actions(OM-actions)).made;
+        self.om.header=$name;   # TODO [#B] to refactor
+    #    say Dump self.om;
+    #    say self.om.to-text;
+        self.verifiy-read($name) if $debug;
+        self.create-task(self.om);
+    }
+    method open-file($filename) {
+        if $filename {
+            self.open-file-with-name($filename);
+        } else {
+            self.default;
+        }
+    }
     method file-save-as {
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
             :title("Open File"), 
@@ -519,7 +544,7 @@ class AppSignalHandlers {
             $gf.om.properties=(); # TODO use undefined ?
             $gf.om.header = $dialog.get-filename;
             $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gf.om.header).Array.pop) if $gf.om.header;
-            open-file($gf.om.header) if $gf.om.header;
+            self.open-file($gf.om.header) if $gf.om.header;
         }
         $dialog.gtk-widget-hide;
         1
@@ -1021,32 +1046,9 @@ sub make-menubar-list-help  {
     create-sub-menu($menu,"_About",$ash,'help-about');
     $menu
 }
-#-----------------------------------sub-------------------------------
-sub verifiy-read($name) {
-    $gf.save("test.org");
-    my $proc =     run 'diff','-Z',"$name",'test.org';
-    say "Input file and save file are different. Problem with syntax or bug.
-        You can view and edit the file, but it's may be wrong.
-        Don't save if not sure." if $proc.exitcode; 
-}
-sub open-file($name) {
-    spurt $name~".bak",slurp $name; # fast backup
-    my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante fait foirer la grammaire (content ne match pas) . Bizarre.
-    $gf.om=OrgMode.parse($file,:actions(OM-actions)).made;
-    $gf.om.header=$name;   # TODO [#B] to refactor
-#    say Dump $gf.om;
-#    say $gf.om.to-text;
-    verifiy-read($name) if $debug;
-    $gf.create-task($gf.om);
-}
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
-    my $filename=$arg;
-    if $filename {
-        open-file($filename);
-    } else {
-        $gf.default;
-    }
+    $gf.open-file($arg);
 #    $gf.inspect($gf.om); # TODO [#A] create a method without param
     $b-add.register-signal( $ash, 'add-button-click', 'clicked');
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
