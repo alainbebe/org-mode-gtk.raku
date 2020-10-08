@@ -206,7 +206,8 @@ CLOSED: [2020-05-18 lun 07:20]
 CLOSED: [2020-05-23 sam 09:10]
 Use Array, not Hash
 ** TODO Create a auto-save
-** TODO Create a GtkFile.pm
+** DONE Create a GtkFile.pm
+CLOSED: [2020-10-08 jeu 08:06]
 * git
 ** DONE diff ne pas afficher les blancs
    CLOSED: [2020-04-10 ven 12:19]
