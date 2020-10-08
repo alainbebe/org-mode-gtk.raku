@@ -210,10 +210,10 @@ class GtkFile {
             self.default;
         }
     }
-    method file-save-as {
+    method file-save-as($top-window) {
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
-            :title("Open File"), 
-            #:parent($!top-window),    # TODO BUG Cannot look up attributes in a AppSignalHandlers type object
+            :title("Choose File"), 
+            :parent($top-window),
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
 #                "_Ok", GTK_RESPONSE_OK,
@@ -236,16 +236,21 @@ class GtkFile {
         $.change=0 if !$name;
         spurt $name ?? $name !! $!om.header, $!om.to-text;
     }
-    method try-save {
+    method try-save($top-window) {
         if $.change && (!$!om.header || $!om.header ne "demo.org") {
             my Gnome::Gtk3::MessageDialog $md .=new(
                                 :message('Voulez-vous sauver votre fichier ?'),
-                                :buttons(GTK_BUTTONS_YES_NO)
-            ); # TODO Add a Cancel and return true/false
-            if $md.run==-8 {
-                $!om.header ?? $.save !! $.file-save-as;
+                                :buttons(GTK_BUTTONS_NONE)
+            ); # TODO Add a Cancel and return true/false. Try for :0.1:
+            $md.add-button("_Yes", GTK_RESPONSE_YES); # TODO use add_buttons. Uncomment =head2 [[gtk_] dialog_] add_buttons Dialog.pm
+            $md.add-button("_No", GTK_RESPONSE_NO);
+            $md.add-button("_Cancel", GTK_RESPONSE_CANCEL);
+            my $button=$md.run;
+            if $button==GTK_RESPONSE_YES {
+                $!om.header ?? $.save !! $.file-save-as($top-window);
             }
             $md.destroy;
+            return $button; # TODO return file-save-as button is "cancel". try for :0.1:
         }
     }
 }
@@ -335,8 +340,8 @@ class AppSignalHandlers {
     submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }
 
     method exit-gui ( --> Int ) {
-        $gf.try-save;
-        $m.gtk-main-quit;
+        my $button=$gf.try-save($!top-window);
+        $m.gtk-main-quit if $button != GTK_RESPONSE_CANCEL;
         1
     }
     multi method create-button($label,$method,$iter?,$inc?) {
@@ -515,7 +520,7 @@ class AppSignalHandlers {
         1
     }
     method file-open ( --> Int ) {
-        $gf.try-save;
+        $gf.try-save($!top-window); # TODO check return button cancel :0.1:
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
             :title("Open File"), 
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
@@ -538,20 +543,16 @@ class AppSignalHandlers {
         1
     }
     method file-save {
-        $gf.om.header ?? $gf.save !! $gf.file-save-as;
+        $gf.om.header ?? $gf.save !! $gf.file-save-as($!top-window);
     }
     method file-save-as {
-        $gf.file-save-as; # TODO [#A] change title of windows
+        $gf.file-save-as($!top-window); # TODO [#A] change title of windows
         1
     }
     method file-save-test {
         $gf.save("test.org");
         run 'cat','test.org';
         say "\n"; # yes, 2 lines.
-    }
-    method file-quit {
-        $gf.try-save;
-        $m.gtk-main-quit;
     }
     method edit-todo-done {
         if $selected-task {
@@ -981,7 +982,7 @@ class AppSignalHandlers {
                     when "ct" {@ctrl-keys=''; self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; self.file-save}
 #                    when "xs" {@ctrl-keys='';say "save";$gf.delete-branch($clicked-task.iter); }
-                    when "xc" {@ctrl-keys=''; self.file-quit}
+                    when "xc" {@ctrl-keys=''; self.exit-gui}
                     default   {@ctrl-keys=''; say "not use"}
                 }
             }
@@ -1020,7 +1021,7 @@ sub make-menubar-list-file {
     create-sub-menu($menu,"_Save",$ash,'file-save');
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test') if $debug;
-    create-sub-menu($menu,"_Quit",$ash,'file-quit');
+    create-sub-menu($menu,"_Quit",$ash,'exit-gui');
     $menu
 }
 sub make-menubar-list-edit {
