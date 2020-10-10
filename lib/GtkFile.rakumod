@@ -225,6 +225,33 @@ class GtkFile {
             return $button; # TODO return file-save-as button is "cancel". try for :0.1:
         }
     }
+    method update-text($iter,$new-text) {
+        my $task=$.search-task-from($.om,$iter);
+        $task.text=$new-text.split(/\n/);
+        my $iter_child=$.ts.iter-children($iter);
+        # remove all lines "text"
+        while $iter_child.is-valid && !$.search-task-from($.om,$iter_child) { # if no task associate to a task, it's a "text"
+            $.ts.gtk-tree-store-remove($iter_child);
+            $iter_child=$.ts.iter-children($iter);
+        }
+        if $task.text && $task.text.chars>0 {
+            for $task.text.Array.reverse {
+                my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
+            }
+            $.expand-row($task,0);
+        }
+    }
+    method get-iter-from-path(@path) {
+        my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
+        return $.ts.get-iter($tp);
+    }
+    method brother($iter,$inc) {
+        my @path2= $.ts.get-path($iter).get-indices.Array;
+        @path2[*-1]=@path2[*-1].Int;
+        @path2[*-1]+=$inc;
+        my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
+        return  $.ts.get-iter($tp);
+    }
 }
 
 

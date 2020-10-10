@@ -44,31 +44,26 @@ use DateOrg;
 use Task;
 use GtkTask;
 use GramOrgMode;
+use GtkFile;
 
+# global variable : to remove ?
 my $debug=1;            # to debug =1
-my $toggle-rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second
+my $toggle-rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signals. Take only the second :0.1:
 my $toggle-rb-pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
-
-my Gnome::Gtk3::Grid $g .= new;
-
-use GtkFile;
-my GtkFile $gf.=new;
-$g.gtk-grid-attach( $gf.sw, 0, 1, 4, 1);
-
-#--------------------------- part GTK--------------------------------
-my Gnome::Gtk3::Main $m .= new;
 my Gnome::Gtk3::TreeIter $iter;
 
-my Gnome::GObject::Type $type .= new;
-my int32 $menu-shell-gtype = $type.g_type_from_name('GtkMenuShell');
+my Gnome::Gtk3::Main $m .= new;
 
-# main window
 my Gnome::Gtk3::Window $top-window .= new;
 $top-window.set-title('Org-Mode with GTK and raku');
 $top-window.set-default-size( 640, 480);
 
+my Gnome::Gtk3::Grid $g .= new;
 $top-window.gtk-container-add($g);
+
+my GtkFile $gf.=new;
+$g.gtk-grid-attach( $gf.sw, 0, 1, 4, 1);
 
 my Gnome::Gtk3::Entry $e-add  .= new;
 my Gnome::Gtk3::Button $b-add  .= new(:label('Add task'));
@@ -85,6 +80,7 @@ $about.set-website("http://www.barbason.be");
 $about.set-website-label("http://www.barbason.be");
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
+# Global Gtk variable : to remove ?
 my Gnome::Gtk3::Entry $e-add2;
 my Gnome::Gtk3::Entry $e-edit;
 my Gnome::Gtk3::Entry $e-edit-tags;
@@ -93,45 +89,6 @@ my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::TextView $tev-edit-text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
 
-sub  add2-branch($iter) {
-    if $e-add2.get-text {
-        $gf.change=1;
-        my $task=$gf.search-task-from($gf.om,$iter);
-        my GtkTask $child.=new(:header($e-add2.get-text),:todo("TODO"),:level($task.level+1),:darth-vader($task));
-        $e-add2.set-text("");
-        $gf.create-task($child,$iter);
-        push($task.tasks,$child);
-        $gf.expand-row($task,0);
-    }
-}
-sub update-text($iter,$new-text) {
-    my $task=$gf.search-task-from($gf.om,$iter);
-    $task.text=$new-text.split(/\n/);
-    my $iter_child=$gf.ts.iter-children($iter);
-    # remove all lines "text"
-    while $iter_child.is-valid && !$gf.search-task-from($gf.om,$iter_child) { # if no task associate to a task, it's a "text"
-        $gf.ts.gtk-tree-store-remove($iter_child);
-        $iter_child=$gf.ts.iter-children($iter);
-    }
-    if $task.text && $task.text.chars>0 {
-        for $task.text.Array.reverse {
-            my Gnome::Gtk3::TreeIter $iter_t2 = $gf.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
-        }
-        $gf.expand-row($task,0);
-    }
-}
-sub get-iter-from-path(@path) {
-    my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
-    return $gf.ts.get-iter($tp);
-}
-sub brother($iter,$inc) {
-    my @path2= $gf.ts.get-path($iter).get-indices.Array;
-    @path2[*-1]=@path2[*-1].Int;
-    @path2[*-1]+=$inc;
-    my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
-    return  $gf.ts.get-iter($tp);
-}
-my Gnome::Gtk3::TreeIter $iterForKeyEvent;
 my Task $selected-task;
 
 class AppSignalHandlers {
@@ -430,7 +387,15 @@ class AppSignalHandlers {
         1
     }
     method add2-button-click ( :$iter --> Int ) {
-        add2-branch($iter);
+        if $e-add2.get-text {
+            $gf.change=1;
+            my $task=$gf.search-task-from($gf.om,$iter);
+            my GtkTask $child.=new(:header($e-add2.get-text),:todo("TODO"),:level($task.level+1),:darth-vader($task));
+            $e-add2.set-text("");
+            $gf.create-task($child,$iter);
+            push($task.tasks,$child);
+            $gf.expand-row($task,0);
+        }
         1
     }
     method edit-text-button-click ( :$iter ) {
@@ -438,7 +403,7 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
         my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
         my $new-text=$text-buffer.get-text( $start, $end, 0);
-        update-text($iter,$new-text);
+        $gf.update-text($iter,$new-text);
         1
     }
     method edit-preface {
@@ -455,7 +420,7 @@ class AppSignalHandlers {
         my $task=$gf.search-task-from($gf.om,$iter);
         my @path-parent=@path; # it's not the parent (darth-vader) but the futur parent
         @path-parent[*-1]--;
-        my $iter-parent=get-iter-from-path(@path-parent);
+        my $iter-parent=$gf.get-iter-from-path(@path-parent);
         my $task-parent=$gf.search-task-from($gf.om,$iter-parent);
         $gf.delete-branch($iter); 
         $task.level-move(1);
@@ -491,7 +456,7 @@ class AppSignalHandlers {
     method move-up-down-button-click ( :$iter, :$inc  --> Int ) {
         my @path= $gf.ts.get-path($iter).get-indices.Array;
         if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
-            my $iter2=brother($iter,$inc);
+            my $iter2=$gf.brother($iter,$inc);
             if $iter2.is-valid {   # if not, it's the last child
                 $gf.change=1;
                 my $task=$gf.search-task-from($gf.om,$iter);
@@ -547,13 +512,13 @@ class AppSignalHandlers {
             my $text=$task.text.join("\n");
             if $todo eq 'DONE' {
                 if $text.encode.elems>0 {
-                    update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
+                    $gf.update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
                 } else {
-                    update-text($iter,"CLOSED: [" ~ &now() ~ "]");
+                    $gf.update-text($iter,"CLOSED: [" ~ &now() ~ "]");
                 }
             } elsif $text~~/^\s*CLOSED/ {
                 $text~~s/^\s*CLOSED.*?\]\n?//;
-                update-text($iter,$text);
+                $gf.update-text($iter,$text);
             }
             if $task.text { # update display text
                 my $text=$task.text.join("\n");
@@ -571,14 +536,14 @@ class AppSignalHandlers {
         my $text=$task.text.join("\n");
         if $todo eq 'DONE' {
             if $text.encode.elems>0 {
-                update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
+                $gf.update-text($iter,"CLOSED: [" ~ &now() ~ "]\n"~$text);
             } else {
                 note $iter,&now();
-                update-text($iter,"CLOSED: [" ~ &now() ~ "]");
+                $gf.update-text($iter,"CLOSED: [" ~ &now() ~ "]");
             }
         } elsif $text~~/^\s*CLOSED/ {
             $text~~s/^\s*CLOSED.*?\]\n?//;
-            update-text($iter,$text);
+            $gf.update-text($iter,$text);
         }
         if $task.text { # update display text
             my $text=$task.text.join("\n");
@@ -770,7 +735,6 @@ class AppSignalHandlers {
             if $event-key.state == 4 { # ctrl push
                 #note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
-                note 'ctrl ',$iterForKeyEvent;
                 given join('',@ctrl-keys) {
                     when  ""  {}
                     when  "c" {say "c"}
@@ -791,13 +755,6 @@ class AppSignalHandlers {
 } # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:top-window($top-window));
 
-sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
-    my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
-    $but-file-menu.set-use-underline(1);
-    $but-file-menu.set-submenu($sub-menu);
-    return $but-file-menu;
-}
-
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
@@ -807,6 +764,12 @@ $menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view)
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
 
+sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
+    my Gnome::Gtk3::MenuItem $but-file-menu .= new(:label($title));
+    $but-file-menu.set-use-underline(1);
+    $but-file-menu.set-submenu($sub-menu);
+    return $but-file-menu;
+}
 sub create-sub-menu($menu,$name,$ash,$method) {
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
     $menu-item.set-use-underline(1);
