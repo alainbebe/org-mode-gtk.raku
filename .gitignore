@@ -2,5 +2,6 @@
 *.bak
 test.org
 test/*
+failed/*
 .precomp/*
 lib/.precomp

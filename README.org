@@ -24,6 +24,7 @@ Coming soon
 
 ** Installation
 *** Linux
+- Debian (and may be other) : apt install libgtk-3-dev 
 - zef install Gnome::Gtk3
 - zef install Data::Dump
 - git clone https://github.com/alainbebe/org-mode-gtk.raku.git

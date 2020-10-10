@@ -152,9 +152,23 @@ class GtkFile {
     }
     method open-file-with-name($name) {
         spurt $name~".bak",slurp $name; # fast backup
-        my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante 
-                                # fait foirer la grammaire (content ne match pas) . Bizarre.
-        self.om=OrgMode.parse($file,:actions(OM-actions)).made;
+#        my $i=1;                                                   # TODO finalize to :0.2:
+#        repeat {
+#            my $proc=run 'head',"--lines=$i","$name",:out;
+#            note $i++;
+#            my $file=$proc.out.slurp(:close);
+            my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante 
+                                    # fait foirer la grammaire (content ne match pas) . Bizarre.
+            self.om=OrgMode.parse($file,:actions(OM-actions)).made;
+            if !self.om {
+                my Gnome::Gtk3::MessageDialog $md .=new(
+                                    :message('This file is not recognized as a org file by org-mode-gtk.raku'),
+                                    :buttons(GTK_BUTTONS_OK)
+                );
+                $md.run;
+                exit;
+            }
+#        } while self.om;
         self.om.header=$name;   # TODO [#B] to refactor
     #    say Dump self.om;
     #    say self.om.to-text;
