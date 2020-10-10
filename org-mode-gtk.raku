@@ -739,12 +739,12 @@ class AppSignalHandlers {
                     when  ""  {}
                     when  "c" {say "c"}
                     when  "x" {say "x"}
-                    when "cc" {@ctrl-keys=''; say "cc"}
-                    when "cd" {@ctrl-keys=''; say "deadline"}
-                    when "cs" {@ctrl-keys=''; say "scheduled"}
+#                    when "cc" {@ctrl-keys=''; say "cc"}
+#                    when "cd" {@ctrl-keys=''; say "deadline"}
+#                    when "cs" {@ctrl-keys=''; say "scheduled"}
+#                    when "k" {@ctrl-keys=''; $gf.delete-branch($clicked-task.iter); }
                     when "ct" {@ctrl-keys=''; self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; self.file-save}
-#                    when "xs" {@ctrl-keys='';say "save";$gf.delete-branch($clicked-task.iter); }
                     when "xc" {@ctrl-keys=''; self.exit-gui}
                     default   {@ctrl-keys=''; say "not use"}
                 }
@@ -759,7 +759,8 @@ my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Option',make-menubar-list-option));
+$menu-bar.gtk-menu-shell-append(create-main-menu('O_ption',make-menubar-list-option));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Org',make-menubar-list-org));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
@@ -780,15 +781,14 @@ sub make-menubar-list-file {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"_Open File ...",$ash,'file-open');
-    create-sub-menu($menu,"_Save",$ash,'file-save');
+    create-sub-menu($menu,"_Save         C-x C-s",$ash,'file-save');
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test') if $debug;
-    create-sub-menu($menu,"_Quit",$ash,'exit-gui');
+    create-sub-menu($menu,"_Quit         C-x C-c",$ash,'exit-gui');
     $menu
 }
 sub make-menubar-list-edit {
     my Gnome::Gtk3::Menu $menu .= new;
-    create-sub-menu($menu,"TODO/DONE/-",$ash,'edit-todo-done');
     $menu
 }
 sub make-menubar-list-option {
@@ -799,6 +799,11 @@ sub make-menubar-list-option {
     create-sub-menu($menu,"#_A",$ash,"option-prior-A");
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
+    $menu
+}
+sub make-menubar-list-org {
+    my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$ash,'edit-todo-done');
     $menu
 }
 sub make-menubar-list-view {
