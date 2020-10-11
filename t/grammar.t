@@ -3,7 +3,7 @@ use lib “lib”;
 use GramOrgMode;
 
 use Test;
-plan 42;
+plan 45;
 
 my $file = 
 "* header";
@@ -64,6 +64,14 @@ ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].text             eq "
 $file = 
 "* header
 DEADLINE: <2020-05-09 Sat>
+little text";
+ok OrgMode.parse($file), 'parses';
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].deadline.str     eq "2020-05-09 Sat" , "deadline";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].text             eq "little text"    , "little text";
+
+$file = 
+"* header
+  DEADLINE: <2020-05-09 Sat>
 little text";
 ok OrgMode.parse($file), 'parses';
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].deadline.str     eq "2020-05-09 Sat" , "deadline";

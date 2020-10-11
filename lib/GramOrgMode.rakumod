@@ -10,8 +10,8 @@ grammar Content {
     token priority   { "[#" <( [A|B|C] )> "] " }
     token header     { .*? <?before " :"\S || $$ > };   # TODO fail if "* blabla :e ",  
     token tags       {  " :"(\S+?":")+ }
-    token deadline   { "DEADLINE: <" <dateorg> ">" \n? }
-    token scheduled  { " "? "SCHEDULED: <" <dateorg> ">\n" }
+    token deadline   { " "* "DEADLINE: <" <dateorg> ">"\n? } # TODO capture space before to repsect when save :0.x:
+    token scheduled  { " "* "SCHEDULED: <" <dateorg> ">\n" }
     token properties { ^^ ":PROPERTIES:\n" (.*?\n) ":END:\n" }
     token text       { .* };
 }
