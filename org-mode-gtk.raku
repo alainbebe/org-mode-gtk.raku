@@ -52,6 +52,7 @@ my $toggle-rb=False;    # TODO [#A] when click on a radio-buttun we have 2 signa
 my $toggle-rb-pr=False; # when click on a radio-buttun we have 2 signals. Take only the second
 my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 my Gnome::Gtk3::TreeIter $iter;
+my $is-return=False;    # memorize the return key
 
 my Gnome::Gtk3::Main $m .= new;
 
@@ -88,8 +89,7 @@ my Gnome::Gtk3::Entry $e-edit-text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::TextView $tev-edit-text;
 my Gnome::Gtk3::TextBuffer $text-buffer;
-
-my Task $selected-task;
+my GtkTask $selected-task;
 
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -414,7 +414,8 @@ class AppSignalHandlers {
         $gf.om.text=$new-text.split(/\n/);
         1
     }
-    method move-right-button-click ( :$iter ) {
+    method move-right-button-click {
+        my $iter=$selected-task.iter;
         my @path= $gf.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
         my $task=$gf.search-task-from($gf.om,$iter);
@@ -428,10 +429,13 @@ class AppSignalHandlers {
         $gf.create-task($task,$iter-parent);
         $task.darth-vader=$task-parent;
         $gf.expand-row($task-parent,0);
-        $dialog.gtk_widget_destroy; # remove when level 3
+        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
+        $tselect.select-iter($task.iter);
+        $selected-task=$task;
         1
     }
-    method move-left-button-click ( :$iter ) {
+    method move-left-button-click {
+        my $iter=$selected-task.iter;
         my $task=$gf.search-task-from($gf.om,$iter);
         return if $task.level <= 1; # level 0 and 1 don't go to left
         $task.level-move(-1);
@@ -450,10 +454,13 @@ class AppSignalHandlers {
         $gf.create-task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1);
         $task.darth-vader=$task.darth-vader.darth-vader;
         $gf.expand-row($task,0);
-        $dialog.gtk_widget_destroy; # TODO remove when reselect the good branch.
+        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
+        $tselect.select-iter($task.iter);
+        $selected-task=$task;
         1
     }
-    method move-up-down-button-click ( :$iter, :$inc  --> Int ) {
+    method move-up-down-button-click ( :$inc --> Int ) { # TODO I don't pass iter as parameter. To improve
+        my $iter=$selected-task.iter;
         my @path= $gf.ts.get-path($iter).get-indices.Array;
         if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
             my $iter2=$gf.brother($iter,$inc);
@@ -463,6 +470,8 @@ class AppSignalHandlers {
                 my $task2=$gf.search-task-from($gf.om,$iter2);
                 $gf.ts.swap($iter,$iter2);
                 $gf.swap($task,$task2);
+                my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
+                $tselect.select-iter($task.iter);
             }
         }
         1
@@ -585,7 +594,8 @@ class AppSignalHandlers {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $gf.ts.tree-model-get-iter($tree-path);
         $selected-task=$gf.search-task-from($gf.om,$iter); # TODO [#A] to memorize the current task
-        note 'task selected : ',$selected-task.header ;
+        note 'task selected : ',$selected-task.header if $debug;
+        return if $is-return;
 
         # Dialog to manage task
         $dialog .= new(             # TODO try to pass dialog as parameter
@@ -601,11 +611,6 @@ class AppSignalHandlers {
         # to edit task
         if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not now() editable 
             my GtkTask $task=$gf.search-task-from($gf.om,$iter);
-
-            $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
-            $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
-            $g.gtk-grid-attach($.create-button('v','move-up-down-button-click',$iter,1),     1, 1, 2, 1);
-            $g.gtk-grid-attach($.create-button('>','move-right-button-click',$iter),         3, 0, 1, 2);
 
             $g.gtk-grid-attach($.create-button('Scheduling','scheduled',$iter,1),            0, 2, 2, 1);
             $g.gtk-grid-attach($.create-button('Deadline','deadline',$iter,1),               2, 2, 2, 1);
@@ -695,6 +700,31 @@ class AppSignalHandlers {
         }
         1
     }
+    method move-header {
+        my Gnome::Gtk3::TreeIter $iter = $selected-task.iter;
+
+        # Dialog to manage task
+        my Gnome::Gtk3::Dialog $dialog .= new(
+            :title("Manage task"),
+            :parent($!top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( "Ok", GTK_RESPONSE_NONE)
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        my Gnome::Gtk3::Grid $g .= new;
+        $content-area.gtk_container_add($g);
+
+        $g.gtk-grid-attach($.create-button('<','move-left-button-click',$iter),          0, 0, 1, 2);
+        $g.gtk-grid-attach($.create-button('^','move-up-down-button-click',$iter,-1),    1, 0, 2, 1);
+        $g.gtk-grid-attach($.create-button('v','move-up-down-button-click',$iter,1),     1, 1, 2, 1);
+        $g.gtk-grid-attach($.create-button('>','move-right-button-click',$iter),         3, 0, 1, 2);
+
+        # Show the dialog.
+        $dialog.show-all;
+        $dialog.gtk-dialog-run;
+        $dialog.gtk_widget_destroy;
+        1
+    }
     method option-preface {
         # Dialog to manage preface
         my Gnome::Gtk3::Dialog $dialog .= new(
@@ -726,12 +756,14 @@ class AppSignalHandlers {
         1
     }
     method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
-        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
+        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
+        $is-return=$event-key.keyval.fmt('0x%08x')==0xff0d; 
         if $event-key.type ~~ GDK_KEY_PRESS {
             if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
                 $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
                 $is-maximized=!$is-maximized; 
             }
+            note "eks ",$event-key.state if $debug;
             if $event-key.state == 4 { # ctrl push
                 #note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
@@ -748,6 +780,18 @@ class AppSignalHandlers {
                     when "xc" {@ctrl-keys=''; self.exit-gui}
                     default   {@ctrl-keys=''; say "not use"}
                 }
+            }
+            if $event-key.state == 8 { # alt push # TODO write with "given"
+                self.move-up-down-button-click(:inc(-1)) 
+                    if $event-key.keyval.fmt('0x%08x') == 0xff52; # Alt-Up
+                self.move-up-down-button-click(:inc( 1)) 
+                    if $event-key.keyval.fmt('0x%08x') == 0xff54; # Alt-Down
+            }
+            if $event-key.state == 9 { # alt shift push
+                self.move-left-button-click() 
+                    if $event-key.keyval.fmt('0x%08x') == 0xff51; # Alt-Shift-left
+                self.move-right-button-click() 
+                    if $event-key.keyval.fmt('0x%08x') == 0xff53; # Alt-Shift-right
             }
         }
         1
@@ -777,6 +821,12 @@ sub create-sub-menu($menu,$name,$ash,$method) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, $method, 'activate');
 } 
+#sub create-sub-menu2($menu,$name,$ash,$method,$int) {
+#    my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
+#    $menu-item.set-use-underline(1);
+#    $menu.gtk-menu-shell-append($menu-item);
+#    $menu-item.register-signal( $ash, $method, 'activate', $int);
+#} 
 sub make-menubar-list-file {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_New",$ash,'file-new');
@@ -804,8 +854,32 @@ sub make-menubar-list-option {
 sub make-menubar-list-org {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$ash,'edit-todo-done');
+
+#    create-sub-menu2($menu,"Up          M-up",$ash,'move-up-down-button-click',-1); # TODO doesn't work. Why ?
+                                                            # Too many positionals passed; expected 4 arguments but got 5
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Move Subtree Up             M-up'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'move-up-down-button-click', 'activate',:inc(-1));
+
+    $menu-item .= new(:label('Move Subtree Down      M-down'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'move-up-down-button-click', 'activate',:inc(1));
+
+    $menu-item .= new(:label('Demote Subtree             M-S-right'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'move-right-button-click', 'activate');
+
+    $menu-item .= new(:label('Promote Subtree            M-S-left'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'move-left-button-click', 'activate');
+
+    create-sub-menu($menu,"Move Subtree ...",$ash,'move-header');
     $menu
-}
+}   
 sub make-menubar-list-view {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Fold All",$ash,'view-fold-all');
@@ -825,7 +899,7 @@ sub make-menubar-list-help  {
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
     $gf.open-file($arg);
-#    $gf.inspect($gf.om); # TODO [#A] create a method without param
+#    $gf.inspect($gf.om); # TODO create a method without param
     $b-add.register-signal( $ash, 'add-button-click', 'clicked');
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
