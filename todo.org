@@ -15,9 +15,12 @@ repeat, delay, hms
 *** TODO Manage "Closed" :0.1:
 CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
+*** TODO Orgzly mode vs emacs mode :0.1:
+https://github.com/orgzly/orgzly-android/issues/529
 ** DONE Emacs windows write "lun." , orgzly "Mon"
 CLOSED: [2020-05-28 jeu 07:51]
 aligné sur Orgzly, en anglais
+** TODO autcomplétion des tags
 * Bug
 ** DONE [#A] Save File ne fonctionne plus
    CLOSED: [2020-08-02 dim 11:20]
@@ -139,15 +142,18 @@ Option/fold all
 CLOSED: [2020-06-27 sam 09:31]
 ** TODO Edit Properties
 ** TODO Add Brother task
-** TODO [##A] Bug if view #A, and #A in DONE task
+** TODO [#A] Bug if view #A, and #A in DONE task
 xx TODO Create Tab to edit 2 or more files
 xxx DONE [#A] put $change in GtkFile
-** TODO [##A] Display message (saved file,...) when use shortcut
+** TODO [#A] Display message (saved file,...) when use shortcut
 ** DONE Put shortcut on right of menu entries :0.1:
    CLOSED: [2020-10-10 sam 13:53]
 ** TODO Indentation des tag
 *** TODO to display (add column to tree ?)
-*** TODO When save. Parameter as Orgzly
+*** TODO When save. Parameter as Orgzly or Emacs
+** TODO [#A] Move "Add sub-task" to menu "Edit" :0.1:
+créer une tache sans iter et la faire manager par method tv
+ en fait, extraire de tv button la partie sans iter
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

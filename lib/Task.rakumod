@@ -74,6 +74,7 @@ class Task {
             $orgmode~="\[#"~$.priority~"\] " if $.priority;
             $orgmode~=$.header;
             $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags; # TODO why it's necessary to write .Array ?
+                # align write 77 (default emacs) :0.1:
             $orgmode~="\n";
         }
         $orgmode~="DEADLINE: <"~$.deadline.str~">" if $.deadline; # DEADLINE preceed SCHEDULED. rule of Orgzly. todo : To verifie
