@@ -11,8 +11,9 @@ class Task {
     has Str      $.todo        is rw ="";
     has Str      $.priority    is rw;
     has Str      $.header      is rw; #  is required
-    has DateOrg  $.scheduled   is rw;
+    has DateOrg  $.closed      is rw;
     has DateOrg  $.deadline    is rw;
+    has DateOrg  $.scheduled   is rw;
     has Str      @.tags        is rw;
     has Str      @.text        is rw;
     has          @.properties  is rw; # array, not hash to keep order 
@@ -77,10 +78,12 @@ class Task {
                 # align write 77 (default emacs) :0.1:
             $orgmode~="\n";
         }
+        $orgmode~="CLOSED: ["~$.closed.str~"]" if $.closed;
+        $orgmode~=" " if $.deadline && $.closed;
         $orgmode~="DEADLINE: <"~$.deadline.str~">" if $.deadline; # DEADLINE preceed SCHEDULED. rule of Orgzly. todo : To verifie
-        $orgmode~=" " if $.deadline && $.scheduled;
+        $orgmode~=" " if ($.deadline || $.closed) && $.scheduled;
         $orgmode~="SCHEDULED: <"~$.scheduled.str~">" if $.scheduled;
-        $orgmode~="\n" if $.deadline || $.scheduled;
+        $orgmode~="\n" if $.closed || $.deadline || $.scheduled;
         if ($.properties) {
             $orgmode~=":PROPERTIES:\n";
             for $.properties.Array { 
@@ -112,7 +115,8 @@ class Task {
         say $prefix,"todo        ",$task.todo if $task.todo;
         say $prefix,"priority    ",$task.priority if $task.priority;
         say $prefix,"tags        ",$_ for $task.tags;
-        say $prefix,"deadline    ",$task.deadline if $task.deadline;
+        say $prefix,"closed      ",$task.closed    if $task.closed   ;
+        say $prefix,"deadline    ",$task.deadline  if $task.deadline ;
         say $prefix,"scheduled   ",$task.scheduled if $task.scheduled;
         say $prefix,"properties  ",$_ for $task.properties;
         say $prefix,"text        ",$_ for $task.text;

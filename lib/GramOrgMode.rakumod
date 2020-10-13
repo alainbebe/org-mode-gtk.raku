@@ -4,12 +4,13 @@ use GtkTask;
 use Data::Dump;
 
 grammar Content {
-    token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n? <deadline>? <scheduled>? <properties>? <text> $ }
+    token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n? <closed>? <deadline>? <scheduled>? <properties>? <text> $ }
     token level      { "*"+ )> " "};
     token todo       { ["TODO"|"DONE"] )> " " }
     token priority   { "[#" <( [A|B|C] )> "] " }
     token header     { .*? <?before " :"\S || $$ > };   # TODO fail if "* blabla :e ",  
     token tags       {  " :"(\S+?":")+ }
+    token closed     { " "* "CLOSED: [" <dateorg> "]"\n? } # TODO capture space before to repsect when save :0.x:
     token deadline   { " "* "DEADLINE: <" <dateorg> ">"\n? } # TODO capture space before to repsect when save :0.x:
     token scheduled  { " "* "SCHEDULED: <" <dateorg> ">\n" }
     token properties { ^^ ":PROPERTIES:\n" (.*?\n) ":END:\n" }
@@ -25,6 +26,7 @@ class Content-actions {
         $task.todo       =$<todo>.made.Str if $<todo>;
         $task.priority   =$<priority>.made.Str if $<priority>;
         $task.tags       =split(/\:/,$<tags>.Str)[1..^*-1] if $<tags>;
+        $task.closed     =date-from-dateorg($<closed>{'dateorg'}) if $<closed>;
         $task.deadline   =date-from-dateorg($<deadline>{'dateorg'}) if $<deadline>;
         $task.scheduled  =date-from-dateorg($<scheduled>{'dateorg'}) if $<scheduled>;
         $task.properties.push($<properties>.made) if $<properties>;
@@ -44,6 +46,9 @@ class Content-actions {
         make $/.Str;
     }
     method tags($/) {
+        make $/.Str;
+    }
+    method closed($/) {
         make $/.Str;
     }
     method deadline($/) {

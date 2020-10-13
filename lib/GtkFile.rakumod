@@ -226,6 +226,7 @@ class GtkFile {
         }
     }
     method update-text($iter,$new-text) {
+note $new-text;
         my $task=$.search-task-from($.om,$iter);
         $task.text=$new-text.split(/\n/);
         my $iter_child=$.ts.iter-children($iter);
@@ -235,7 +236,9 @@ class GtkFile {
             $iter_child=$.ts.iter-children($iter);
         }
         if $task.text && $task.text.chars>0 {
+note "debut";
             for $task.text.Array.reverse {
+note "boucle ",to-markup($_);
                 my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
             }
             $.expand-row($task,0);
