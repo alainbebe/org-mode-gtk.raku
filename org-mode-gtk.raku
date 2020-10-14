@@ -48,7 +48,6 @@ use GtkFile;
 
 # global variable : to remove ?
 my $debug=1;            # to debug =1
-my $toggle-rb-pr=False; # TODO when click on a radio-buttun we have 2 signals. Take only the second
 my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 my Gnome::Gtk3::TreeIter $iter;
 my $is-return=False;    # memorize the return key
@@ -479,17 +478,6 @@ class AppSignalHandlers {
         $e-edit-tags.set-text("");
         1
     }
-    method prior-button-click ( :$iter,:$prior --> Int ) {
-        my GtkTask $task;
-        if ($toggle-rb-pr) {  # see definition 
-            $gf.change=1;
-            my $task=$gf.search-task-from($gf.om,$iter);
-            $task.priority=$prior??"#"~$prior!!"";
-            $gf.ts.set_value( $iter, 0,$gf.search-task-from($gf.om,$iter).display-header);
-        }
-        $toggle-rb-pr=!$toggle-rb-pr;
-        1
-    }
     method todo-shortcut ( :$iter,:$todo --> Int ) {
         $gf.change=1;
         my GtkTask $task=$gf.search-task-from($gf.om,$iter);
@@ -586,10 +574,10 @@ class AppSignalHandlers {
         $g.gtk-grid-attach( $rb-pr3,                                                        1, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr4,                                                        2, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr1,                                                        3, 3, 1, 1);
-        $rb-pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior(""));
-        $rb-pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("A"));
-        $rb-pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("B"));
-        $rb-pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("C"));
+#        $rb-pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior(""));
+#        $rb-pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("A"));
+#        $rb-pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("B"));
+#        $rb-pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("C"));
 
         my $label='Scheduling';
         $label~=' : '~$task.scheduled.str if $task.scheduled;
@@ -662,13 +650,21 @@ class AppSignalHandlers {
                     $task.closed=DateOrg;
                 }
             }
+            my $prior="";
+            $prior="A" if $rb-pr2.get-active();
+            $prior="B" if $rb-pr3.get-active();
+            $prior="C" if $rb-pr4.get-active();
+            if $task.priority ne $prior {
+                $task.priority=$prior;
+                $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
+            }
             my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
             my $new-text=$text-buffer2.get-text( $start, $end, 0);
-#            if ($new-text ne $task.text.join("\n")) {
-#                $gf.change=1;
-#                $gf.update-text($task.iter,$new-text);
-#            }
+            if ($new-text ne $task.text.join("\n")) {
+                $gf.change=1;
+                $gf.update-text($task.iter,$new-text);
+            }
             $start = $prop-buffer.get-start-iter;
             $end = $prop-buffer.get-end-iter;
             $new-text=$prop-buffer.get-text( $start, $end, 0);
