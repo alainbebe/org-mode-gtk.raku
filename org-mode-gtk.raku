@@ -493,6 +493,26 @@ class AppSignalHandlers {
         }
         1
     }
+    method priority-up {
+        $gf.change=1;
+        given $selected-task.priority {
+            when  ""  {$selected-task.priority="C"}
+            when  "A"  {$selected-task.priority=""}
+            when  "B"  {$selected-task.priority="A"}
+            when  "C"  {$selected-task.priority="B"}
+        }
+        $gf.ts.set_value( $selected-task.iter, 0,$selected-task.display-header); # TODO create $gf.ts-set-header($task)
+    }
+    method priority-down {
+        $gf.change=1;
+        given $selected-task.priority {
+            when  ""  {$selected-task.priority="A"}
+            when  "A"  {$selected-task.priority="B"}
+            when  "B"  {$selected-task.priority="C"}
+            when  "C"  {$selected-task.priority=""}
+        }
+        $gf.ts.set_value( $selected-task.iter, 0,$selected-task.display-header); # TODO create $gf.ts-set-header($task)
+    }
     method del-button-click {
         $gf.change=1;
         $gf.delete-branch($selected-task.iter);
@@ -574,10 +594,6 @@ class AppSignalHandlers {
         $g.gtk-grid-attach( $rb-pr3,                                                        1, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr4,                                                        2, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr1,                                                        3, 3, 1, 1);
-#        $rb-pr1.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior(""));
-#        $rb-pr2.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("A"));
-#        $rb-pr3.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("B"));
-#        $rb-pr4.register-signal(self, 'prior-button-click', 'clicked',:iter($task.iter),:prior("C"));
 
         my $label='Scheduling';
         $label~=' : '~$task.scheduled.str if $task.scheduled;
@@ -757,6 +773,12 @@ class AppSignalHandlers {
                 $is-maximized=!$is-maximized; 
             }
             note "eks ",$event-key.state if $debug;
+            if $event-key.state == 1 { # shift push
+                given $event-key.keyval.fmt('0x%08x') {
+                    when 0xff52 {self.priority-up}
+                    when 0xff54 {self.priority-down}
+                }
+            }
             if $event-key.state == 4 { # ctrl push
                 #note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
@@ -877,6 +899,17 @@ sub make-menubar-list-org {
     $menu-item.register-signal( $ash, 'move-left-button-click', 'activate');
 
     create-sub-menu($menu,"Move Subtree ...",$ash,'move-header');
+
+    $menu-item .= new(:label('Priority Up                  S-up'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-up', 'activate');
+
+    $menu-item .= new(:label('Priority Down                S-down'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-down', 'activate');
+
     $menu
 }   
 sub make-menubar-list-view {
