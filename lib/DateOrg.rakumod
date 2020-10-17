@@ -18,12 +18,19 @@ my $format-org-date = sub (DateTime $self) {
     }
 }
 my $format-org-time = sub (DateTime $self) { 
-    sprintf '%02d:%02d', 
-            $self.hour,$self.minute;
+    if ($self.hour==0 && $self.minute==0) {
+        sprintf ''; 
+    } else {
+        sprintf '%02d:%02d', 
+                $self.hour,$self.minute;
+    }
 }
 my $d-now = DateTime.now(
     formatter => $format-org-date
 );
+sub dd-now is export { # only date
+    return $d-now.Str.substr(0,14);
+}
 sub d-now is export {
     return $d-now.Str;
 }
@@ -70,10 +77,28 @@ class DateOrg {
     
     method str {
         my Str $result= $.begin.Str;
-        $result      ~= "-" ~$.end if $.end;
+        $result      ~= "-" ~$.end.Str if $.end && $.end.Str;
         $result      ~= " " ~$.repeater if $.repeater;
         $result      ~= " " ~$.delay    if $.delay;
         return $result;
+    }
+    method repeater-type($type) {
+        $.repeater ~~ s/\.?\+\+?/$type/ if $.repeater;
+    }
+    method repeater-freq($type) {
+        $.repeater ~~ s/\d+/$type/ if $.repeater;
+    }
+    method repeater-period($type) {
+        $.repeater ~~ s/<alpha>/$type/ if $.repeater;
+    }
+    method delay-type($type) {
+        $.delay ~~ s/\-\-?/$type/ if $.delay;
+    }
+    method delay-freq($type) {
+        $.delay ~~ s/\d+/$type/ if $.delay;
+    }
+    method delay-period($type) {
+        $.delay ~~ s/<alpha>/$type/ if $.delay;
     }
 }
 

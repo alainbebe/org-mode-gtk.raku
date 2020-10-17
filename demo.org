@@ -19,5 +19,11 @@ other detail
 SCHEDULED: <2020-06-30 Tue>
 :PROPERTIES:
 :dode:     ff
-:code:     on
 :END:
+* TODO No Scheduling
+** Scheduled in 2019
+SCHEDULED: <2019-09-17 Tue>
+** Scheduled hour
+SCHEDULED: <2020-10-14 Wen 12:46>
+* Scheduled All
+SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>

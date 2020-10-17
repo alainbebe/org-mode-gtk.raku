@@ -51,6 +51,9 @@ my $debug=1;            # to debug =1
 my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 my Gnome::Gtk3::TreeIter $iter;
 my $is-return=False;    # memorize the return key
+my Gnome::Gtk3::Button $b-scheduled; # to remove
+my Gnome::Gtk3::Button $b-deadline; # to remove
+my Gnome::Gtk3::Button $b-closed; # to remove
 
 my Gnome::Gtk3::Main $m .= new;
 
@@ -96,170 +99,321 @@ class AppSignalHandlers {
         $m.gtk-main-quit if $button != GTK_RESPONSE_CANCEL;
         1
     }
+    multi method create-button($label,$method,Gnome::Gtk3::Label $l-result,DateOrg $d,DateTime $next-date,
+            Gnome::Gtk3::ComboBoxText $year, Gnome::Gtk3::ComboBoxText $month, Gnome::Gtk3::ComboBoxText $day) {
+#        note "create button for today,..." if $debug;
+        my Gnome::Gtk3::Button $b  .= new(:label($label));
+        $b.register-signal(self, $method, 'clicked',:l-result($l-result),:date($d),:next-date($next-date),
+                                                    :year($year),:month($month),:day($day));
+        return $b;
+    }
     multi method create-button($label,$method,$iter?,$inc?) {
+        note "create button by default" if $debug;
         my Gnome::Gtk3::Button $b  .= new(:label($label));
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
-    multi method create-button($label,$method,Gnome::Gtk3::Entry $entry) {
-        my Gnome::Gtk3::Button $b  .= new(:label($label));
-        $b.register-signal(self, $method, 'clicked',:edit($entry));
-        return $b;
-    }
-    multi method create-button($label,$method,Str $text) {
-        my Gnome::Gtk3::Button $b  .= new(:label($label));
-        $b.register-signal(self, $method, 'clicked',:edit($text));
-        return $b;
-    }
-    method create-check($method,Gnome::Gtk3::Entry $entry) {
+    method create-check($method,Gnome::Gtk3::Label $label,Int $check) {
         my Gnome::Gtk3::CheckButton $cb .= new;
-        $cb.register-signal( self, $method, 'toggled',:edit($entry));
+        $cb.set-active($check);
+        $cb.register-signal( self, $method, 'toggled',:edit($label));
         return $cb;
     }
-    method go-to-link ( :$edit ) {
+    method go-to-link ( :$iter ) { # TODO it's not iter, but text. To refactoring
 #        my $proc = run '/opt/firefox/firefox', '--new-tab', $edit;
-        shell "/opt/firefox/firefox --new-tab $edit";
+        shell "/opt/firefox/firefox --new-tab $iter";
         1
     }
-    method time ( :$widget, :$edit ) {
-        note " button  ",
-         $widget.get-active.Bool ;
+    method year (:$widget, :$label,:$date) {
+        $date.begin=$date.begin.clone(year => $widget.get-active-text);
+        $label.set-text($date.str);
     }
-    method today (:$edit) {
-        my $ds=&d-now().Str.substr(0,14);
-        my $ori=$edit.get-text;
-        $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
-        $edit.set-text($ori); 
+    method month (:$widget, :$label,:$date) {
+        $date.begin=$date.begin.clone(month => $widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method day (:$widget, :$label,:$date,:$type) {
+#say "t ",$type;
+#        $date.begin=$date.begin.clone($type => $widget.get-active-text); # TODO Doesn't work
+        $date.begin=$date.begin.clone(day => $widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method today (:$widget, :$l-result, :$date!, :$next-date!, :$year!, :$month!, :$day!) {
+        $date.begin=$date.begin.clone(year => $next-date.year, month => $next-date.month, day => $next-date.day);
+        $l-result.set-text($date.str);
+        $year.set-active($date.begin.year-2018);
+        $month.set-active($date.begin.month-1);
+        $day.set-active($date.begin.day-1);
         1
     }
-    method tomorrow (:$edit) {
-        my $ds=&d-now().later(days => 1).Str.substr(0,14);
-        my $ori=$edit.get-text;
-        $ori ~~ s/^.**14/$ds/; # TODO not very good, but work
-        $edit.set-text($ori); 
-        1
+    method begin-hour (:$widget, :$label,:$date) {
+        $date.begin=$date.begin.clone(hour => $widget.get-active-text);
+        $label.set-text($date.str);
     }
-    method repeat-i (:$widget, :$edit, :$cbt) {
-        $edit.get-text  ~~ /<dateorg>/;
-        my DateOrg $d=date-from-dateorg($/{'dateorg'});
-        if $widget.get-active-text ne "0" {
-            $d.repeater="+"~$widget.get-active-text~$cbt.get-active-text;
+    method begin-min (:$widget, :$label,:$date) {
+        $date.begin=$date.begin.clone(minute => $widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method begin-time (:$widget, :$label,:$date,:$hour,:$min) {
+        if $widget.get-active.Bool {
+            $date.begin=$date.begin.clone(hour => $hour.get-active-text);
+            $date.begin=$date.begin.clone(minute => $min.get-active-text);
         } else {
-            $d.repeater="";
+            $date.begin=$date.begin.clone(hour => 0);
+            $date.begin=$date.begin.clone(minute => 0);
         }
-        $edit.set-text($d.str); 
-        1
+        $label.set-text($date.str);
     }
-    method repeat-w (:$widget, :$edit, :$cbt) {
-        $edit.get-text  ~~ /<dateorg>/;
-        my DateOrg $d=date-from-dateorg($/{'dateorg'});
-        if $cbt.get-active-text ne "0" {
-            $d.repeater="+"~$cbt.get-active-text~$widget.get-active-text;
-        } else {
-            $d.repeater="";
-        }
-        $edit.set-text($d.str); 
-        1
+    method end-hour (:$widget, :$label,:$date) {
+        $date.end=$date.end.clone(hour => $widget.get-active-text);
+        $label.set-text($date.str);
     }
-    method delay-i (:$widget, :$edit, :$cbt) {
-        $edit.get-text  ~~ /<dateorg>/;
-        my DateOrg $d=date-from-dateorg($/{'dateorg'});
-        if $widget.get-active-text ne "0" {
-            $d.delay="-"~$widget.get-active-text~$cbt.get-active-text;
-        } else {
-            $d.delay="";
-        }
-        $edit.set-text($d.str); 
-        1
+    method end-min (:$widget, :$label,:$date) {
+        $date.end=$date.end.clone(minute => $widget.get-active-text);
+        $label.set-text($date.str);
     }
-    method delay-w (:$widget, :$edit, :$cbt) {
-        $edit.get-text  ~~ /<dateorg>/;
-        my DateOrg $d=date-from-dateorg($/{'dateorg'});
-        if $cbt.get-active-text ne "0" {
-            $d.delay="-"~$cbt.get-active-text~$widget.get-active-text;
+my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :0.1:
+    if ($self.hour==0 && $self.minute==0) {
+        sprintf ''; 
+    } else {
+        sprintf '%02d:%02d', 
+                $self.hour,$self.minute;
+    }
+}
+    method end-time (:$widget, :$label,:$date,:$hour,:$min) {
+        if $widget.get-active.Bool {
+            $date.end=DateTime.new(
+                year => $date.begin.year, 
+                month => $date.begin.month, 
+                day => $date.begin.day,
+                hour => $hour.get-active-text,
+                minute => $min.get-active-text,
+                formatter => $format-org-time
+            );
         } else {
-            $d.delay="";
+            $date.end=$date.end.clone(hour => 0);
+            $date.end=$date.end.clone(minute => 0);
         }
-        $edit.set-text($d.str); 
-        1
+        $label.set-text($date.str);
+    }
+    method repeater-type (:$widget, :$label,:$date) {
+        $date.repeater-type($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method repeater-freq (:$widget, :$label,:$date) {
+        $date.repeater-freq($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method repeater-period (:$widget, :$label,:$date) {
+        $date.repeater-period($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method repeater ( :$widget, :$label,:$date, :$type,:$freq,:$period) {
+        if $widget.get-active.Bool {
+            $date.repeater=$type.get-active-text~$freq.get-active-text~$period.get-active-text;
+        } else {
+            $date.repeater=Nil;
+        }
+        $label.set-text($date.str);
+    }
+    method delay-type (:$widget, :$label,:$date) {
+        $date.delay-type($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method delay-freq (:$widget, :$label,:$date) {
+        $date.delay-freq($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method delay-period (:$widget, :$label,:$date) {
+        $date.delay-period($widget.get-active-text);
+        $label.set-text($date.str);
+    }
+    method delay ( :$widget, :$label,:$date, :$type,:$freq,:$period) {
+        if $widget.get-active.Bool {
+            $date.delay=$type.get-active-text~$freq.get-active-text~$period.get-active-text;
+        } else {
+            $date.delay=Nil;
+        }
+        $label.set-text($date.str);
     }
     method manage-date (DateOrg $date is rw) {
 #say $date.begin;
         my Gnome::Gtk3::Dialog $dialog2 .= new(
-            :title("Scheduling"), 
+            :title("Manage Date"), 
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,     # TODO rajouter un "delete"
+#                "Clear", 1, # TODO to manage 0.x
                 "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK,
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
+        my $cur=$date ?? $date.str !! &dd-now();
+        $cur ~~ /<dateorg>/;
+        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+note "date : ",$d;
+        
+        my Gnome::Gtk3::Grid $gd .= new;
+        $content-area.gtk_container_add($gd);
+        my $l=0; 
 
-        # entry
-        my Gnome::Gtk3::Entry $e-edit-d .= new;
-        $e-edit-d.set-text($date??$date.str!!&d-now());
-        $content-area.gtk_container_add($e-edit-d);
+        # result
+        my Gnome::Gtk3::Label $l-result .= new(:text($cur)); # TODO it's necessary to initialize 'essai'. Send to Marcel 0.1
+        $gd.gtk-grid-attach( $l-result ,                                       1, $l, 4, 1);
+        $l++;
 
-        # 3 button
-        my Gnome::Gtk3::Grid $g3 .= new;
-        $content-area.gtk_container_add($g3);
-
-        $g3.gtk-grid-attach( $.create-button('Today','today',$e-edit-d),            0, 0, 1, 1);
-        $g3.gtk-grid-attach( $.create-button('Tomorrow','tomorrow',$e-edit-d),      1, 0, 1, 1);
-#        $g3.gtk-grid-attach( $.create-button('Next Saturday','next-sat',$e-edit-d), 2, 0, 1, 1);
+        $gd.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Day')),             0, $l, 1, 1);
+        $l++;
 
         # Time
-        my Gnome::Gtk3::Grid $gt .= new;
-        $content-area.gtk_container_add($gt);
+        my Gnome::Gtk3::ComboBoxText $cbt-year .=new;
+        $cbt-year.append-text("$_") for 2018..2025;
+        $cbt-year.set-active($d.begin.year-2018);
+        $cbt-year.register-signal(self, 'year', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-year,                                        0, $l, 2, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt-month .=new;
+        $cbt-month.append-text("$_") for 1..12;
+        $cbt-month.set-active($d.begin.month-1);
+        $cbt-month.register-signal(self, 'month', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-month,                                       2, $l, 2, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt-day .=new;
+        $cbt-day.append-text("$_") for 1..31;
+        $cbt-day.set-active($d.begin.day-1);
+        $cbt-day.register-signal(self, 'day', 'changed',:label($l-result),:date($d),:type('day')); # TODO type() not work, to improve
+        $gd.gtk-grid-attach( $cbt-day,                                         4, $l, 2, 1);
+        $l++;
 
-#        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Time')),            0, 0, 1, 1);
-#        $gt.gtk-grid-attach( $.create-button('Time','time',$e-edit-d),         0, 1, 1, 1);
-#        $gt.gtk-grid-attach( $.create-check('time',$e-edit-d),                 1, 1, 1, 1);
+        # 3 button
+        my $d-now = DateTime.now.later(days => 1);
+        $gd.gtk-grid-attach( $.create-button('Today','today',$l-result, $d,DateTime.now,
+                                                $cbt-year,$cbt-month,$cbt-day), 0, $l, 2, 1);
+        $gd.gtk-grid-attach( $.create-button('Tomorrow','today',$l-result, $d,DateTime.now.later(days => 1),
+                                                $cbt-year,$cbt-month,$cbt-day), 2, $l, 2, 1);
+        $gd.gtk-grid-attach( $.create-button('Next Week','today',$l-result, $d,DateTime.now.later(days => 7),
+                                                $cbt-year,$cbt-month,$cbt-day), 4, $l, 2, 1);
+        $l++;
 
-#        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('End time')),        2, 0, 1, 1);
-#        $gt.gtk-grid-attach( $.create-button('End time','end-time',$e-edit-d), 2, 1, 1, 1);
-#        $gt.gtk-grid-attach( $.create-check('end-time',$e-edit-d),             3, 1, 1, 1);
+        # Time
+        $gd.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Hour')),             0, $l, 1, 1);
+        $gd.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('End')),              3, $l, 1, 1);
+        $l++;
 
-        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Repeat')),          0, 2, 1, 1);
+        note "hour ",$d.begin.hour if $debug;
+        my Gnome::Gtk3::ComboBoxText $cbt-hour .=new;
+        $cbt-hour.append-text("$_") for 0..23;
+        $cbt-hour.set-active($d.begin.hour??$d.begin.hour!!0);
+        $cbt-hour.register-signal(self, 'begin-hour', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-hour,                                        0, $l, 1, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt-min  .=new;
+        $cbt-min.append-text("$_") for (0..59);
+        $cbt-min.set-active($d.begin.minute??$d.begin.minute!!0);
+        $cbt-min.register-signal(self, 'begin-min', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-min,                                         1, $l, 1, 1);
+        my Gnome::Gtk3::CheckButton $cb-begin .= new;
+        $cb-begin.set-active($d.begin.hour??1!!0);
+        $cb-begin.register-signal( self, 'begin-time', 'toggled',:label($l-result),:date($d),
+                                :hour($cbt-hour),:min($cbt-min));
+        $gd.gtk-grid-attach( $cb-begin,                                         2, $l, 1, 1);
+
+        my Gnome::Gtk3::ComboBoxText $cbt-hour-e .=new;
+        $cbt-hour-e.append-text("$_") for 0..23;
+        $cbt-hour-e.set-active($d.end && $d.end.hour??$d.end.hour!!0);
+        $cbt-hour-e.register-signal(self, 'end-hour', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-hour-e,                                      3, $l, 1, 1);
+        my Gnome::Gtk3::ComboBoxText $cbt-min-e  .=new;
+        $cbt-min-e.append-text("$_") for 0..59;
+        $cbt-min-e.set-active($d.end && $d.end.minute??$d.end.minute!!0);
+        $cbt-min-e.register-signal(self, 'end-min', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-min-e,                                       4, $l, 1, 1);
+        my Gnome::Gtk3::CheckButton $cb-end .= new;
+        $cb-end.set-active($d.end && $d.end.hour??1!!0);
+        $cb-end.register-signal( self, 'end-time', 'toggled',:label($l-result),:date($d),
+                                :hour($cbt-hour-e),:min($cbt-min-e));
+        $gd.gtk-grid-attach( $cb-end,                                          5, $l, 1, 1);
+        $l++;
+
+        $gd.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Repeat')),          0, $l, 1, 1);
+        $l++;
+
+        my Gnome::Gtk3::ComboBoxText $cbt-m .=new;
+        $cbt-m.append-text($_) for <+ ++ .+>;
+        if    !$d.repeater           {$cbt-m.set-active(2)}
+        elsif  $d.repeater ~~ /"++"/ {$cbt-m.set-active(1)}
+        elsif  $d.repeater ~~ /".+"/ {$cbt-m.set-active(2)}
+        else                         {$cbt-m.set-active(0)}   # $d.repeater ~~ /"+"/ 
+        $cbt-m.register-signal(self, 'repeater-type', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-m,                                           0, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt-int .=new;
         $cbt-int.append-text("$_") for 0..10;
-        $cbt-int.set-active(0);
-        $gt.gtk-grid-attach( $cbt-int,                                         0, 3, 1, 1);
+        if !$d.repeater {
+            $cbt-int.set-active(1)
+        } else {
+            $d.repeater ~~ /(\d+)/;
+            $cbt-int.set-active($0.Int);
+        }
+        $cbt-int.register-signal(self, 'repeater-freq', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt-int,                                           1, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt .=new;
         $cbt.append-text($_) for <d w m y>;
-        $cbt.set-active(1);
-        $gt.gtk-grid-attach( $cbt,                                             1, 3, 1, 1);
-        $cbt-int.register-signal(self, 'repeat-i', 'changed',:edit($e-edit-d),:cbt($cbt));
-        $cbt.register-signal(self, 'repeat-w', 'changed',:edit($e-edit-d),:cbt($cbt-int));
+        if    !$d.repeater           {$cbt.set-active(1)}
+        elsif  $d.repeater ~~ /"d"/ {$cbt.set-active(0)}
+        elsif  $d.repeater ~~ /"w"/ {$cbt.set-active(1)}
+        elsif  $d.repeater ~~ /"m"/ {$cbt.set-active(2)}
+        else                        {$cbt.set-active(3)}   # $d.repeater ~~ /"y"/ 
+        $cbt.register-signal(self, 'repeater-period', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt,                                               2, $l, 1, 1);
+        my Gnome::Gtk3::CheckButton $cb-repeater .= new;
+        $cb-repeater.set-active($d.repeater??1!!0);
+        $cb-repeater.register-signal( self, 'repeater', 'toggled',:label($l-result),:date($d),
+                                :type($cbt-m),:freq($cbt-int),:period($cbt));
+        $gd.gtk-grid-attach( $cb-repeater,                                       3, $l, 1, 1);
+        $l++;
 
-        $gt.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Delay')),           0, 4, 1, 1);
-#        $gt.gtk-grid-attach( $.create-button('Delay','delay',$e-edit-d),       0, 5, 1, 1);
-#        $gt.gtk-grid-attach( $.create-check('delay',$e-edit-d),                1, 5, 1, 1);
+        $gd.gtk-grid-attach( Gnome::Gtk3::Label.new(:text('Delay')),             0, $l, 1, 1);
+        $l++;
 
+        my Gnome::Gtk3::ComboBoxText $cbt2-m .=new;
+        $cbt2-m.append-text($_) for <- -->;
+        if    !$d.delay           {$cbt2-m.set-active(0)}
+        elsif  $d.delay ~~ /"--"/ {$cbt2-m.set-active(1)}
+        else                      {$cbt2-m.set-active(0)}   # $d.delay ~~ /"-"/ 
+        $cbt2-m.register-signal(self, 'delay-type', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt2-m,                                            0, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt2-int .=new;
         $cbt2-int.append-text("$_") for 0..10;
-        $cbt2-int.set-active(0);
-        $gt.gtk-grid-attach( $cbt2-int,                                         0, 5, 1, 1);
+        if !$d.delay {
+            $cbt2-int.set-active(1)
+        } else {
+            $d.delay ~~ /(\d+)/;
+            $cbt2-int.set-active($0.Int);
+        }
+        $cbt2-int.register-signal(self, 'delay-freq', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt2-int,                                           1, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt2 .=new;
         $cbt2.append-text($_) for <d w m y>;
-        $cbt2.set-active(1);
-        $gt.gtk-grid-attach( $cbt2,                                             1, 5, 1, 1);
-        $cbt2-int.register-signal(self, 'delay-i', 'changed',:edit($e-edit-d),:cbt($cbt2));
-        $cbt2.register-signal(self, 'delay-w', 'changed',:edit($e-edit-d),:cbt($cbt2-int));
+        if    !$d.delay           {$cbt2.set-active(0)}
+        elsif  $d.delay ~~ /"d"/  {$cbt2.set-active(0)}
+        elsif  $d.delay ~~ /"w"/  {$cbt2.set-active(1)}
+        elsif  $d.delay ~~ /"m"/  {$cbt2.set-active(2)}
+        else                      {$cbt2.set-active(3)}   # $d.delay ~~ /"y"/ 
+        $cbt2.register-signal(self, 'delay-period', 'changed',:label($l-result),:date($d));
+        $gd.gtk-grid-attach( $cbt2,                                               2, $l, 1, 1);
+        my Gnome::Gtk3::CheckButton $cb-delay .= new;
+        $cb-delay.set-active($d.delay??1!!0);
+        $cb-delay.register-signal( self, 'delay', 'toggled',:label($l-result),:date($d),
+                                :type($cbt2-m),:freq($cbt2-int),:period($cbt2));
+        $gd.gtk-grid-attach( $cb-delay,                                           3, $l, 1, 1);
+        $l++;
 
         $dialog2.show-all;
         my $response = $dialog2.gtk-dialog-run;
-        if $response == GTK_RESPONSE_OK {
-            my $ds=$e-edit-d.get-text;  # date string
-            if $ds ~~ /<dateorg>/ {
-                $date=date-from-dateorg($/{'dateorg'});
-            } else {
-                say "erreur de format";
-            }
-        }
         $dialog2.gtk_widget_destroy;
-        return $date;
+        if $response == GTK_RESPONSE_OK {
+            return $d;
+        } else {
+            return $date;
+        }
     }
     method file-new ( --> Int ) {
         $gf.ts.clear;
@@ -464,14 +618,42 @@ class AppSignalHandlers {
         }
         1
     }
-    method scheduled ( :$iter ) {
-        my $task=$gf.search-task-from($gf.om,$iter);
+    method scheduled ( :$t ) {
+        $gf.change=1;
+        my $task=$t ?? $t !! $selected-task;
         $task.scheduled=self.manage-date($task.scheduled);
+        $b-scheduled.set-label($task.scheduled.str) if $b-scheduled;
         1
     }
-    method deadline ( :$iter ) {
-        my $task=$gf.search-task-from($gf.om,$iter);
+    method clear-scheduled ( :$task, :$button ) {
+        $gf.change=1;
+        $task.scheduled=Nil;
+        $button.set-label('-');
+        1
+    }
+    method deadline ( :$t ) {
+        $gf.change=1;
+        my $task=$t ?? $t !! $selected-task;
         $task.deadline=self.manage-date($task.deadline);
+        $b-deadline.set-label($task.deadline.str) if $b-deadline;
+        1
+    }
+    method clear-deadline ( :$task, :$button ) {
+        $gf.change=1;
+        $task.deadline=Nil;
+        $button.set-label('-');
+        1
+    }
+    method closed ( :$iter ) {
+        my $task=$gf.search-task-from($gf.om,$iter);
+        $task.closed=self.manage-date($task.closed);
+        $b-closed.set-label($task.closed.str);
+        1
+    }
+    method clear-closed ( :$task, :$button ) {
+        $gf.change=1;
+        $task.closed=Nil;
+        $button.set-label('-');
         1
     }
     method clear-tags-button-click ( :$iter ) {
@@ -595,12 +777,34 @@ class AppSignalHandlers {
         $g.gtk-grid-attach( $rb-pr4,                                                        2, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr1,                                                        3, 3, 1, 1);
 
-        my $label='Scheduling';
-        $label~=' : '~$task.scheduled.str if $task.scheduled;
-        $g.gtk-grid-attach($.create-button($label,'scheduled',$task.iter,1),            0, 4, 4, 1);
-        $label='Deadline';
-        $label~=' : '~$task.deadline.str if $task.deadline;
-        $g.gtk-grid-attach($.create-button($label,'deadline',$task.iter,1),               0, 5, 4, 1);
+        $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Scheduling')),                     0, 4, 1, 1);
+        $b-scheduled  .= new(:label($task.scheduled??$task.scheduled.str!!"-"));
+        $b-scheduled.register-signal(self, 'scheduled', 'clicked',:task($task));
+        $g.gtk-grid-attach($b-scheduled,                                                    1, 4, 2, 1);
+
+        my Gnome::Gtk3::Button $b-cs  .= new(:label("X"));
+        $b-cs.register-signal(self, 'clear-scheduled', 'clicked',:task($task),:button($b-scheduled));
+        $g.gtk-grid-attach($b-cs,                                                           3, 4, 1, 1);
+
+        $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Deadline')),                       0, 5, 1, 1);
+        $b-deadline  .= new(:label($task.deadline??$task.deadline.str!!"-"));
+        $b-deadline.register-signal(self, 'deadline', 'clicked',:task($task));
+        $g.gtk-grid-attach($b-deadline,                                                     1, 5, 2, 1);
+
+        my Gnome::Gtk3::Button $b-cd  .= new(:label("X"));
+        $b-cd.register-signal(self, 'clear-deadline', 'clicked',:task($task),:button($b-deadline));
+        $g.gtk-grid-attach($b-cd,                                                           3, 5, 1, 1);
+
+        if $task.closed {
+            $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Closed')),                     0, 6, 1, 1);
+            $b-closed  .= new(:label($task.closed??$task.closed.str!!"-"));
+            $b-closed.register-signal(self, 'closed', 'clicked',:iter($task.iter));
+            $g.gtk-grid-attach($b-closed,                                                   1, 6, 2, 1);
+
+            my Gnome::Gtk3::Button $b-cc  .= new(:label("X"));
+            $b-cc.register-signal(self, 'clear-closed', 'clicked',:task($task),:button($b-closed));
+            $g.gtk-grid-attach($b-cc,                                                       3, 6, 1, 1);
+        }
         
         # To edit properties
         $content-area.gtk_container_add(Gnome::Gtk3::Label.new(:text('Properties')));
@@ -689,6 +893,8 @@ class AppSignalHandlers {
                 $task.properties=map {$_.split(/" "/)},$new-text.split(/\n/);
             }
         }
+        $b-scheduled=Nil; # TODO to improve, pass as parameter
+        $b-deadline=Nil;
         $dialog.gtk_widget_destroy;
     }
     my @ctrl-keys;
@@ -753,7 +959,7 @@ class AppSignalHandlers {
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);
-        $content-area.gtk_container_add($.create-button('Update Preface','edit-preface',''));
+        $content-area.gtk_container_add($.create-button('Update Preface','edit-preface'));
         if $gf.om.text {
             my $text=$gf.om.text.join("\n");
             $text ~~ /(http:..\S*)/;
@@ -785,12 +991,12 @@ class AppSignalHandlers {
                 given join('',@ctrl-keys) {
                     when  ""  {}
                     when  "c" {say "c"}
-                    when  "x" {say "x"}
+                    when  "x" {say "x"} # TODO Write in a info line
 #                    when "cc" {@ctrl-keys=''; say "cc"}
-#                    when "cd" {@ctrl-keys=''; say "deadline"}
-#                    when "cs" {@ctrl-keys=''; say "scheduled"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k" {@ctrl-keys=''; $gf.delete-branch($clicked-task.iter); }
+                    when "cs" {@ctrl-keys=''; self.scheduled(:task($selected-task))}
+                    when "cd" {@ctrl-keys=''; self.deadline(:task($selected-task))}
                     when "ct" {@ctrl-keys=''; self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; self.file-save}
                     when "xc" {@ctrl-keys=''; self.exit-gui}
@@ -909,6 +1115,16 @@ sub make-menubar-list-org {
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'priority-down', 'activate');
+
+    $menu-item .= new(:label('Schedule item                C-c C-s'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'scheduled', 'activate'); 
+
+    $menu-item .= new(:label('Deadline                    C-c C-d'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'deadline', 'activate');
 
     $menu
 }   
