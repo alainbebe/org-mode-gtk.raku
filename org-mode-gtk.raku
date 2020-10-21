@@ -548,14 +548,6 @@ note "date : ",$d;
         }
         1
     }
-    method edit-preface {
-        $gf.change=1;
-        my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
-        my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-        my $new-text=$text-buffer.get-text( $start, $end, 0);
-        $gf.om.text=$new-text.split(/\n/);
-        1
-    }
     method move-right-button-click {
         my $iter=$selected-task.iter;
         my @path= $gf.ts.get-path($iter).get-indices.Array;
@@ -947,6 +939,10 @@ note "date : ",$d;
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
+            :button-spec( [
+                "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK,
+            ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
 
@@ -959,14 +955,15 @@ note "date : ",$d;
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);
-        $content-area.gtk_container_add($.create-button('Update Preface','edit-preface'));
-        if $gf.om.text {
-            my $text=$gf.om.text.join("\n");
-            $text ~~ /(http:..\S*)/;
-            $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
-        }
         $dialog.show-all;
-        $dialog.gtk-dialog-run;
+        my $response=$dialog.gtk-dialog-run;
+        if $response == GTK_RESPONSE_OK {
+            $gf.change=1;
+            my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
+            my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
+            my $new-text=$text-buffer.get-text( $start, $end, 0);
+            $gf.om.text=$new-text.split(/\n/);
+        }
         $dialog.gtk_widget_destroy;
         1
     }
