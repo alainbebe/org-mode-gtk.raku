@@ -52,7 +52,7 @@ class Task {
             else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
 
             if $.tags {
-                $display~=' <span foreground="grey">'~$.tags~'</span>';
+                $display~=' <span foreground="grey">'~$.tags~'</span>'; # TODO write "tag" in another column to align right
             }
         }
         return $display;
@@ -74,8 +74,10 @@ class Task {
             $orgmode~=$.todo~" " if $.todo;
             $orgmode~="\[#"~$.priority~"\] " if $.priority;
             $orgmode~=$.header;
-            $orgmode~=" :" ~ join(':',$.tags.Array) ~ ':' if $.tags; # TODO why it's necessary to write .Array ?
-                # align write 77 (default emacs) :0.1:
+            $orgmode~=  " " x (70-$orgmode.chars) ~ 
+                        " :" ~ join(':',$.tags.Array) ~ # TODO why it's necessary to write .Array ?
+                        ':' 
+                        if $.tags; 
             $orgmode~="\n";
         }
         $orgmode~="CLOSED: ["~$.closed.str~"]" if $.closed;

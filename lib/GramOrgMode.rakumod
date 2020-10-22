@@ -34,7 +34,7 @@ class Content-actions {
         make $task;
     }
     method header($/) {
-        make $/.Str ;
+        make $/.Str.trim-trailing;
     }
     method level($/) {
         make $/.Str.chars;

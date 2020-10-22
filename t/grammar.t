@@ -3,7 +3,7 @@ use lib “lib”;
 use GramOrgMode;
 
 use Test;
-plan 49;
+plan 52; # TODO write other type of test, writing,... :0.x:
 
 my $file = 
 "* header";
@@ -50,9 +50,15 @@ ok OrgMode.parse($file), 'parses';
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].todo     eq "TODO"    , "TODO";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].priority eq "B"       , "B";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].level    == 1         , "level 1";
-ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].header   eq "header"  , "header 1";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].header   eq "header"  , "header";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].tags[0]  eq "tag1"    , "tag1";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].tags[1]  eq "tag2"    , "tag2";
+
+$file = 
+"* TODO [#B] Space before tag         :tag1:";
+ok OrgMode.parse($file), 'parses';
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].header   eq "Space before tag"  , "Space before tag";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].tags[0]  eq "tag1"    , "tag1";
 
 $file = 
 "* header

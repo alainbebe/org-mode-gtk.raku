@@ -15,7 +15,7 @@ repeat, delay, hms
 *** TODO Manage "Closed" :0.1:
 CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
-*** TODO Orgzly mode vs emacs mode :0.1:
+*** TODO Orgzly mode vs emacs mode :0.x:
 https://github.com/orgzly/orgzly-android/issues/529
 ** DONE Emacs windows write "lun." , orgzly "Mon"
 CLOSED: [2020-05-28 jeu 07:51]
