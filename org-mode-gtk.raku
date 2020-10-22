@@ -67,11 +67,7 @@ $top-window.gtk-container-add($g);
 my GtkFile $gf.=new;
 $g.gtk-grid-attach( $gf.sw, 0, 1, 4, 1);
 
-my Gnome::Gtk3::Entry $e-add  .= new;
-my Gnome::Gtk3::Button $b-add  .= new(:label('Add task'));
 my Gnome::Gtk3::Label $l-del  .= new(:text('Click on task to manage'));
-$g.gtk-grid-attach( $e-add, 0, 2, 1, 1);
-$g.gtk-grid-attach( $b-add, 1, 2, 1, 1);
 $g.gtk-grid-attach( $l-del, 2, 2, 1, 1);
 
 my Gnome::Gtk3::AboutDialog $about .= new;
@@ -526,15 +522,11 @@ note "date : ",$d;
         $about.gtk-dialog-run;
         $about.gtk-widget-hide;
     }
-    method add-button-click  {
-        if $e-add.get-text {
-            $gf.change=1;
-            my GtkTask $task.=new(:header($e-add.get-text),:todo('TODO'),:level(1),:darth-vader($gf.om));
-            $e-add.set-text("");
-            $gf.create-task($task);
-            $gf.om.tasks.push($task);
-        }
-        1
+    method add-brother-down {
+        $gf.change=1;
+        my $task=$selected-task;
+        my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task));
+        self.manage($child);
     }
     method add2-button-click ( :$iter --> Int ) {
         if $e-add2.get-text {
@@ -836,6 +828,10 @@ note "date : ",$d;
         $dialog.show-all;
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
+            if !$task.iter {
+                $gf.create-task($task,$task.darth-vader.iter);
+                push($task.darth-vader.tasks,$task);
+            }
             if ($task.header ne $e-edit.get-text) {
                 $gf.change=1;
                 $task.header=$e-edit.get-text;
@@ -1078,6 +1074,11 @@ sub make-menubar-list-option {
 sub make-menubar-list-org {
     my Gnome::Gtk3::Menu $menu .= new;
 
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('New Heading                M-Enter'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'add-brother-down', 'activate');
+
     my Gnome::Gtk3::Menu $sm-es = make-menubar-es($ash);
     my Gnome::Gtk3::MenuItem $es-root-menu .= new(:label('Edit Structure'));
     $es-root-menu.set-submenu($sm-es);
@@ -1191,7 +1192,6 @@ sub make-menubar-list-help  {
 sub MAIN($arg = '') {
     $gf.open-file($arg);
 #    $gf.inspect($gf.om); # TODO create a method without param
-    $b-add.register-signal( $ash, 'add-button-click', 'clicked');
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');

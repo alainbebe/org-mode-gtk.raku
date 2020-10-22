@@ -1,9 +1,9 @@
 preface
-* DOES task :essai:suite:
+* DOES task                                                            :essai:suite:
 detail
 detail suite
-** [#B] sub task1                                                     :essai:
-** DONE [#B] sub task2                                                :suite:
+** [#B] sub task1                                                      :essai:
+** DONE [#B] sub task2                                                 :suite:
 *** Level 3
 * TODO [#D] another task
 SCHEDULED: <2020-05-18 Mon>
@@ -12,7 +12,7 @@ Mon site http://www.barbason.be blabla
 * DONE try
 ** DONE sub try 1
 detail of sub task
-* [#A] final :essai:
+* [#A] final                                                           :essai:
 other detail
 ** sub final
 * TODO org-mode-gtk.raku
@@ -25,5 +25,8 @@ SCHEDULED: <2020-06-30 Tue>
 SCHEDULED: <2019-09-17 Tue>
 ** Scheduled hour
 SCHEDULED: <2020-10-14 Wen 12:46>
-* Scheduled All
+** Scheduled All
 SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
+* header 1
+** header2
+*** header 3
