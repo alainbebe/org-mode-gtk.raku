@@ -1077,7 +1077,50 @@ sub make-menubar-list-option {
 }
 sub make-menubar-list-org {
     my Gnome::Gtk3::Menu $menu .= new;
+
+    my Gnome::Gtk3::Menu $sm-es = make-menubar-es($ash);
+    my Gnome::Gtk3::MenuItem $es-root-menu .= new(:label('Edit Structure'));
+    $es-root-menu.set-submenu($sm-es);
+    $menu.gtk-menu-shell-append($es-root-menu);
+
+    my Gnome::Gtk3::Menu $sm-todo = make-menubar-todo($ash);
+    my Gnome::Gtk3::MenuItem $sm-root-menu .= new(:label('TODO Lists'));
+    $sm-root-menu.set-submenu($sm-todo);
+    $menu.gtk-menu-shell-append($sm-root-menu);
+
+#    my Gnome::Gtk3::Menu $sm-tp = make-menubar-tp($ash);
+#    my Gnome::Gtk3::MenuItem $tp-root-menu .= new(:label('TAG and Properties'));
+#    $tp-root-menu.set-submenu($sm-tp);
+#    $menu.gtk-menu-shell-append($tp-root-menu);
+#
+    my Gnome::Gtk3::Menu $sm-ds = make-menubar-ds($ash);
+    my Gnome::Gtk3::MenuItem $ds-root-menu .= new(:label('Dates and Scheduling'));
+    $ds-root-menu.set-submenu($sm-ds);
+    $menu.gtk-menu-shell-append($ds-root-menu);
+
+    $menu
+}   
+sub make-menubar-todo ( AppSignalHandlers $ash ) {
+    my Gnome::Gtk3::Menu $menu .= new;
+
     create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$ash,'edit-todo-done');
+
+    # TODO add a menu separator
+
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Priority Up                  S-up'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-up', 'activate');
+
+    $menu-item .= new(:label('Priority Down                S-down'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-down', 'activate');
+
+    $menu
+}
+sub make-menubar-es ( AppSignalHandlers $ash ) {
+    my Gnome::Gtk3::Menu $menu .= new;
 
 #    create-sub-menu2($menu,"Up          M-up",$ash,'move-up-down-button-click',-1); # TODO doesn't work. Why ?
                                                             # Too many positionals passed; expected 4 arguments but got 5
@@ -1103,17 +1146,17 @@ sub make-menubar-list-org {
 
     create-sub-menu($menu,"Move Subtree ...",$ash,'move-header');
 
-    $menu-item .= new(:label('Priority Up                  S-up'));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'priority-up', 'activate');
+    $menu
+}
+#sub make-menubar-tp ( AppSignalHandlers $ash ) {
+#    my Gnome::Gtk3::Menu $menu .= new;
+#
+#    $menu
+#}
+sub make-menubar-ds ( AppSignalHandlers $ash ) {
+    my Gnome::Gtk3::Menu $menu .= new;
 
-    $menu-item .= new(:label('Priority Down                S-down'));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'priority-down', 'activate');
-
-    $menu-item .= new(:label('Schedule item                C-c C-s'));
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Schedule item                C-c C-s'));
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'scheduled', 'activate'); 
@@ -1124,7 +1167,7 @@ sub make-menubar-list-org {
     $menu-item.register-signal( $ash, 'deadline', 'activate');
 
     $menu
-}   
+}
 sub make-menubar-list-view {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"_Fold All",$ash,'view-fold-all');
