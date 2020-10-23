@@ -79,7 +79,6 @@ $about.set-website-label("http://www.barbason.be");
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
 # Global Gtk variable : to remove ?
-my Gnome::Gtk3::Entry $e-add2;
 my Gnome::Gtk3::Entry $e-edit-tags;
 my Gnome::Gtk3::Entry $e-edit-text;
 my Gnome::Gtk3::Dialog $dialog;
@@ -528,17 +527,12 @@ note "date : ",$d;
         my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task));
         self.manage($child);
     }
-    method add2-button-click ( :$iter --> Int ) {
-        if $e-add2.get-text {
-            $gf.change=1;
-            my $task=$gf.search-task-from($gf.om,$iter);
-            my GtkTask $child.=new(:header($e-add2.get-text),:todo("TODO"),:level($task.level+1),:darth-vader($task));
-            $e-add2.set-text("");
-            $gf.create-task($child,$iter);
-            push($task.tasks,$child);
-            $gf.expand-row($task,0);
-        }
-        1
+    method add-child {
+        $gf.change=1; # TODO to do if manage return OK
+        my $task=$selected-task;
+        my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
+        self.manage($child);
+        self.unfold-branch; # TODO refactoring $task.unfold-branch ? :0.1:
     }
     method move-right-button-click {
         my $iter=$selected-task.iter;
@@ -819,67 +813,72 @@ note "date : ",$d;
             $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
         }
         
-        # To add a sub-task
-        $e-add2  .= new;
-        $content-area.gtk_container_add($e-add2);
-        $content-area.gtk_container_add($.create-button('Add sub-task','add2-button-click',$task.iter));
-        
         # Show the dialog.
         $dialog.show-all;
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
-            if !$task.iter {
-                $gf.create-task($task,$task.darth-vader.iter);
-                push($task.darth-vader.tasks,$task);
-            }
-            if ($task.header ne $e-edit.get-text) {
-                $gf.change=1;
-                $task.header=$e-edit.get-text;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
-            }
-            if ($e-edit-tags.get-text ne join(" ",$task.tags)) {
-                $gf.change=1;
-                $task.tags=split(/" "/,$e-edit-tags.get-text);
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
-            }
-            my $todo="";
-            $todo="TODO" if $rb-td2.get-active();
-            $todo="DONE" if $rb-td3.get-active();
-            if $task.todo ne $todo {
-                $gf.change=1;
-                $task.todo=$todo;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
-                if $todo eq 'DONE' {
-                    my $ds=&d-now();
-                    if $ds ~~ /<dateorg>/ {
-                        $task.closed=date-from-dateorg($/{'dateorg'});
-                    }
-                } else {
-                    $task.closed=DateOrg;
+#            if ($task.header.chars > 0) {
+                if !$task.iter {
+                    $gf.create-task($task,$task.darth-vader.iter);
+                    push($task.darth-vader.tasks,$task);
                 }
-            }
-            my $prior="";
-            $prior="A" if $rb-pr2.get-active();
-            $prior="B" if $rb-pr3.get-active();
-            $prior="C" if $rb-pr4.get-active();
-            if $task.priority ne $prior {
-                $task.priority=$prior;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
-            }
-            my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
-            my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
-            my $new-text=$text-buffer2.get-text( $start, $end, 0);
-            if ($new-text ne $task.text.join("\n")) {
-                $gf.change=1;
-                $gf.update-text($task.iter,$new-text);
-            }
-            $start = $prop-buffer.get-start-iter;
-            $end = $prop-buffer.get-end-iter;
-            $new-text=$prop-buffer.get-text( $start, $end, 0);
-            if ($new-text ne $task.properties.join("\n")) {
-                $gf.change=1;
-                $task.properties=map {$_.split(/" "/)},$new-text.split(/\n/);
-            }
+                if ($task.header ne $e-edit.get-text || $task.header.chars==0) {
+                    $gf.change=1;
+                    $task.header=$e-edit.get-text;
+                    $task.header='Change Header' if $task.header.chars==0; # TODO best manage :0.1:
+                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                }
+                if ($e-edit-tags.get-text ne join(" ",$task.tags)) {
+                    $gf.change=1;
+                    $task.tags=split(/" "/,$e-edit-tags.get-text);
+                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                }
+                my $todo="";
+                $todo="TODO" if $rb-td2.get-active();
+                $todo="DONE" if $rb-td3.get-active();
+                if $task.todo ne $todo {
+                    $gf.change=1;
+                    $task.todo=$todo;
+                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                    if $todo eq 'DONE' {
+                        my $ds=&d-now();
+                        if $ds ~~ /<dateorg>/ {
+                            $task.closed=date-from-dateorg($/{'dateorg'});
+                        }
+                    } else {
+                        $task.closed=DateOrg;
+                    }
+                }
+                my $prior="";
+                $prior="A" if $rb-pr2.get-active();
+                $prior="B" if $rb-pr3.get-active();
+                $prior="C" if $rb-pr4.get-active();
+                if $task.priority ne $prior {
+                    $task.priority=$prior;
+                    $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
+                }
+                my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
+                my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
+                my $new-text=$text-buffer2.get-text( $start, $end, 0);
+                if ($new-text ne $task.text.join("\n")) {
+                    $gf.change=1;
+                    $gf.update-text($task.iter,$new-text);
+                }
+                $start = $prop-buffer.get-start-iter;
+                $end = $prop-buffer.get-end-iter;
+                $new-text=$prop-buffer.get-text( $start, $end, 0);
+                if ($new-text ne $task.properties.join("\n")) {
+                    $gf.change=1;
+                    $task.properties=map {$_.split(/" "/)},$new-text.split(/\n/);
+                }
+#            } else {
+#                my Gnome::Gtk3::MessageDialog $md .=new(
+#                                    :message("It's necessary to have a header."),
+#                                    :buttons(GTK_BUTTONS_OK)
+#                );
+#                $md.run;
+#                $md.destroy;
+#            }
         }
         $b-scheduled=Nil; # TODO to improve, pass as parameter
         $b-deadline=Nil;
@@ -1057,6 +1056,7 @@ sub make-menubar-list-file {
 }
 sub make-menubar-list-edit {
     my Gnome::Gtk3::Menu $menu .= new;
+    create-sub-menu($menu,"Add child",$ash,'add-child');
     create-sub-menu($menu,"Delete task (and sub-tasks)",$ash,'del-button-click');
     create-sub-menu($menu,"Delete sub-tasks",$ash,'del-children-button-click');
     $menu
