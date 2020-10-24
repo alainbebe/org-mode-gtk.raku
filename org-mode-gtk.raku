@@ -153,9 +153,13 @@ class AppSignalHandlers {
         if $widget.get-active.Bool {
             $date.begin=$date.begin.clone(hour => $hour.get-active-text);
             $date.begin=$date.begin.clone(minute => $min.get-active-text);
+            $hour.set-sensitive(True); 
+            $min.set-sensitive(True); 
         } else {
             $date.begin=$date.begin.clone(hour => 0);
             $date.begin=$date.begin.clone(minute => 0);
+            $hour.set-sensitive(False); 
+            $min.set-sensitive(False); 
         }
         $label.set-text($date.str);
     }
@@ -185,9 +189,13 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :
                 minute => $min.get-active-text,
                 formatter => $format-org-time
             );
+            $hour.set-sensitive(True); 
+            $min.set-sensitive(True); 
         } else {
             $date.end=$date.end.clone(hour => 0);
             $date.end=$date.end.clone(minute => 0);
+            $hour.set-sensitive(False); 
+            $min.set-sensitive(False); 
         }
         $label.set-text($date.str);
     }
@@ -206,8 +214,14 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :
     method repeater ( :$widget, :$label,:$date, :$type,:$freq,:$period) {
         if $widget.get-active.Bool {
             $date.repeater=$type.get-active-text~$freq.get-active-text~$period.get-active-text;
+            $type.set-sensitive(True); 
+            $freq.set-sensitive(True); 
+            $period.set-sensitive(True); 
         } else {
             $date.repeater=Nil;
+            $type.set-sensitive(False); 
+            $freq.set-sensitive(False); 
+            $period.set-sensitive(False); 
         }
         $label.set-text($date.str);
     }
@@ -226,8 +240,14 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :
     method delay ( :$widget, :$label,:$date, :$type,:$freq,:$period) {
         if $widget.get-active.Bool {
             $date.delay=$type.get-active-text~$freq.get-active-text~$period.get-active-text;
+            $type.set-sensitive(True); 
+            $freq.set-sensitive(True); 
+            $period.set-sensitive(True); 
         } else {
             $date.delay=Nil;
+            $type.set-sensitive(False); 
+            $freq.set-sensitive(False); 
+            $period.set-sensitive(False); 
         }
         $label.set-text($date.str);
     }
@@ -254,7 +274,7 @@ note "date : ",$d;
         my $l=0; 
 
         # result
-        my Gnome::Gtk3::Label $l-result .= new(:text($cur)); # TODO it's necessary to initialize 'essai'. Send to Marcel 0.1
+        my Gnome::Gtk3::Label $l-result .= new(:text($cur));
         $gd.gtk-grid-attach( $l-result ,                                       1, $l, 4, 1);
         $l++;
 
@@ -298,15 +318,17 @@ note "date : ",$d;
         my Gnome::Gtk3::ComboBoxText $cbt-hour .=new;
         $cbt-hour.append-text("$_") for 0..23;
         $cbt-hour.set-active($d.begin.hour??$d.begin.hour!!0);
+        $cbt-hour.set-sensitive($d.begin.hour+$d.begin.minute>0);
         $cbt-hour.register-signal(self, 'begin-hour', 'changed',:label($l-result),:date($d));
         $gd.gtk-grid-attach( $cbt-hour,                                        0, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt-min  .=new;
         $cbt-min.append-text("$_") for (0..59);
         $cbt-min.set-active($d.begin.minute??$d.begin.minute!!0);
+        $cbt-min.set-sensitive($d.begin.hour+$d.begin.minute>0);
         $cbt-min.register-signal(self, 'begin-min', 'changed',:label($l-result),:date($d));
         $gd.gtk-grid-attach( $cbt-min,                                         1, $l, 1, 1);
         my Gnome::Gtk3::CheckButton $cb-begin .= new;
-        $cb-begin.set-active($d.begin.hour??1!!0);
+        $cb-begin.set-active($d.begin.hour+$d.begin.minute>0);
         $cb-begin.register-signal( self, 'begin-time', 'toggled',:label($l-result),:date($d),
                                 :hour($cbt-hour),:min($cbt-min));
         $gd.gtk-grid-attach( $cb-begin,                                         2, $l, 1, 1);
@@ -314,15 +336,17 @@ note "date : ",$d;
         my Gnome::Gtk3::ComboBoxText $cbt-hour-e .=new;
         $cbt-hour-e.append-text("$_") for 0..23;
         $cbt-hour-e.set-active($d.end && $d.end.hour??$d.end.hour!!0);
+        $cbt-hour-e.set-sensitive($d.end ?? ($d.end.hour+$d.end.minute>0) !! 0);
         $cbt-hour-e.register-signal(self, 'end-hour', 'changed',:label($l-result),:date($d));
         $gd.gtk-grid-attach( $cbt-hour-e,                                      3, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt-min-e  .=new;
         $cbt-min-e.append-text("$_") for 0..59;
         $cbt-min-e.set-active($d.end && $d.end.minute??$d.end.minute!!0);
+        $cbt-min-e.set-sensitive($d.end ?? ($d.end.hour+$d.end.minute>0) !! 0);
         $cbt-min-e.register-signal(self, 'end-min', 'changed',:label($l-result),:date($d));
         $gd.gtk-grid-attach( $cbt-min-e,                                       4, $l, 1, 1);
         my Gnome::Gtk3::CheckButton $cb-end .= new;
-        $cb-end.set-active($d.end && $d.end.hour??1!!0);
+        $cb-end.set-active($d.end ?? ($d.end.hour+$d.end.minute>0) !! 0);
         $cb-end.register-signal( self, 'end-time', 'toggled',:label($l-result),:date($d),
                                 :hour($cbt-hour-e),:min($cbt-min-e));
         $gd.gtk-grid-attach( $cb-end,                                          5, $l, 1, 1);
@@ -333,7 +357,8 @@ note "date : ",$d;
 
         my Gnome::Gtk3::ComboBoxText $cbt-m .=new;
         $cbt-m.append-text($_) for <+ ++ .+>;
-        if    !$d.repeater           {$cbt-m.set-active(2)}
+        if    !$d.repeater           {$cbt-m.set-active(2);
+                                      $cbt-m.set-sensitive($d.repeater??1!!0)}
         elsif  $d.repeater ~~ /"++"/ {$cbt-m.set-active(1)}
         elsif  $d.repeater ~~ /".+"/ {$cbt-m.set-active(2)}
         else                         {$cbt-m.set-active(0)}   # $d.repeater ~~ /"+"/ 
@@ -342,7 +367,8 @@ note "date : ",$d;
         my Gnome::Gtk3::ComboBoxText $cbt-int .=new;
         $cbt-int.append-text("$_") for 0..10;
         if !$d.repeater {
-            $cbt-int.set-active(1)
+            $cbt-int.set-active(1);
+            $cbt-int.set-sensitive($d.repeater??1!!0);
         } else {
             $d.repeater ~~ /(\d+)/;
             $cbt-int.set-active($0.Int);
@@ -351,7 +377,8 @@ note "date : ",$d;
         $gd.gtk-grid-attach( $cbt-int,                                           1, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt .=new;
         $cbt.append-text($_) for <d w m y>;
-        if    !$d.repeater           {$cbt.set-active(1)}
+        if    !$d.repeater           {$cbt.set-active(1);
+                                      $cbt.set-sensitive($d.repeater??1!!0)}
         elsif  $d.repeater ~~ /"d"/ {$cbt.set-active(0)}
         elsif  $d.repeater ~~ /"w"/ {$cbt.set-active(1)}
         elsif  $d.repeater ~~ /"m"/ {$cbt.set-active(2)}
@@ -370,7 +397,8 @@ note "date : ",$d;
 
         my Gnome::Gtk3::ComboBoxText $cbt2-m .=new;
         $cbt2-m.append-text($_) for <- -->;
-        if    !$d.delay           {$cbt2-m.set-active(0)}
+        if    !$d.delay           {$cbt2-m.set-active(0);
+                                   $cbt2-m.set-sensitive($d.repeater??1!!0)}
         elsif  $d.delay ~~ /"--"/ {$cbt2-m.set-active(1)}
         else                      {$cbt2-m.set-active(0)}   # $d.delay ~~ /"-"/ 
         $cbt2-m.register-signal(self, 'delay-type', 'changed',:label($l-result),:date($d));
@@ -378,7 +406,8 @@ note "date : ",$d;
         my Gnome::Gtk3::ComboBoxText $cbt2-int .=new;
         $cbt2-int.append-text("$_") for 0..10;
         if !$d.delay {
-            $cbt2-int.set-active(1)
+            $cbt2-int.set-active(1);
+            $cbt2-int.set-sensitive($d.repeater??1!!0);
         } else {
             $d.delay ~~ /(\d+)/;
             $cbt2-int.set-active($0.Int);
@@ -387,7 +416,8 @@ note "date : ",$d;
         $gd.gtk-grid-attach( $cbt2-int,                                           1, $l, 1, 1);
         my Gnome::Gtk3::ComboBoxText $cbt2 .=new;
         $cbt2.append-text($_) for <d w m y>;
-        if    !$d.delay           {$cbt2.set-active(0)}
+        if    !$d.delay           {$cbt2.set-active(0);
+                                   $cbt2.set-sensitive($d.repeater??1!!0)}
         elsif  $d.delay ~~ /"d"/  {$cbt2.set-active(0)}
         elsif  $d.delay ~~ /"w"/  {$cbt2.set-active(1)}
         elsif  $d.delay ~~ /"m"/  {$cbt2.set-active(2)}
@@ -411,36 +441,48 @@ note "date : ",$d;
         }
     }
     method file-new ( --> Int ) {
-        $gf.ts.clear;
-        $gf.om.tasks=[]; 
-        $gf.om.text=[]; 
-        $gf.om.properties=(); # TODO use undefined ?
-        $gf.om.header = "";
-        $!top-window.set-title('Org-Mode with GTK and raku');
-        $gf.default;
-        1
-    }
-    method file-open ( --> Int ) {
-        $gf.try-save($!top-window); # TODO check return button cancel :0.1:
-        my Gnome::Gtk3::FileChooserDialog $dialog .= new(
-            :title("Open File"), 
-            :action(GTK_FILE_CHOOSER_ACTION_SAVE),
-            :button-spec( [
-                "_Cancel", GTK_RESPONSE_CANCEL,
-                "_Open", GTK_RESPONSE_ACCEPT
-            ] )
-        );
-        my $response = $dialog.gtk-dialog-run;
-        if $response ~~ GTK_RESPONSE_ACCEPT {
+        if $gf.try-save($!top-window) != GTK_RESPONSE_CANCEL {
             $gf.ts.clear;
             $gf.om.tasks=[]; 
             $gf.om.text=[]; 
             $gf.om.properties=(); # TODO use undefined ?
-            $gf.om.header = $dialog.get-filename;
-            $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$gf.om.header).Array.pop) if $gf.om.header;
-            self.open-file($gf.om.header) if $gf.om.header;
+            $gf.om.header = "";
+            $!top-window.set-title('Org-Mode with GTK and raku');
+            $gf.default;
         }
-        $dialog.gtk-widget-hide;
+        1
+    }
+    method file-open ( --> Int ) {
+        if $gf.try-save($!top-window) != GTK_RESPONSE_CANCEL {
+            my Gnome::Gtk3::FileChooserDialog $dialog .= new(
+                :title("Open File"), 
+                :action(GTK_FILE_CHOOSER_ACTION_SAVE),
+                :button-spec( [
+                    "_Cancel", GTK_RESPONSE_CANCEL,
+                    "_Open", GTK_RESPONSE_ACCEPT
+                ] )
+            );
+            my $response = $dialog.gtk-dialog-run;
+            if $response ~~ GTK_RESPONSE_ACCEPT {
+                my $filename = $dialog.get-filename;
+                if $filename.IO.e {
+                    $gf.ts.clear;
+                    $gf.om.tasks=[]; 
+                    $gf.om.text=[]; 
+                    $gf.om.properties=(); # TODO use undefined ?
+                    $gf.om.header = $filename;
+                    $gf.file-open($gf.om.header,$!top-window) if $gf.om.header;
+                } else {
+                    my Gnome::Gtk3::MessageDialog $md .=new(
+                                        :message("File doesn't exist !"),
+                                        :buttons(GTK_BUTTONS_OK)
+                    );
+                    $md.run;
+                    $md.destroy; # TODO destroy but keep $dialog open
+                }
+            }
+            $dialog.gtk-widget-hide;
+        }
         1
     }
     method file-save {
@@ -710,7 +752,7 @@ note "date : ",$d;
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,
+                "_Ok", GTK_RESPONSE_OK,     # TODO OK by default if "enter"
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 ] )                    # TODO Add a button "Apply"
         );
@@ -1190,7 +1232,7 @@ sub make-menubar-list-help  {
 }
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
-    $gf.open-file($arg);
+    $gf.file-open($arg,$top-window);
 #    $gf.inspect($gf.om); # TODO create a method without param
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');

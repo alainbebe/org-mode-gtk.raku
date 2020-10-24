@@ -1,0 +1,34 @@
+* Check menu File
+- [X] run/Save as 
+  - [X] Save as ? Cancel : no quit
+  - [X] open
+    - [X] xxx     : save/quit xxx.org
+    - [X] yyy.org : save/quit yyy.org
+    - [X] xxx.yyy : save/quit xxx.yyy
+    - [X] xxx.org file exist
+      - [X] ecrase Yes : save
+      - [X] ecrase No  : no save
+- [X] run/save
+  - [X] Save as ? : See "run/Save as"
+- [X] run/quit : quit
+- [X] run/modify/quit
+  - [X]	Save file ? Cancel : no save/no quit
+  - [X] Save file ? NO     : no save/no quit
+  - [X] Save file ? OK
+    - [X] Save as ? Cancel : no quit
+    - [X] open
+      - [X] xxx     : save/quit xxx.org
+      - [X] yyy.org : save/quit yyy.org
+      - [X] xxx.yyy : save/quit xxx.yyy
+      - [X] xxx.org file exist
+	- [X] ecrase Yes : save/quit
+	- [X] ecrase No  : no save/no quit
+- [X] run/open file
+  - [X] Cancel : no open
+  - [X] xxx.org Open : open xxx.org
+  - [X] zzz.org Open/file not exist/ok : no open
+- [X] run/modify/new
+  - [X] Save as : see save as
+- [X] run/modify/open
+  - [X] Save as : see save as
+- [X] run xxx.org : load file

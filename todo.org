@@ -126,7 +126,8 @@ CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
-** TODO Add Cancel when warning for save file                          :0.1:
+** DONE Add Cancel when warning for save file                          :0.1:
+CLOSED: [2020-10-24 Sat 11:24]
 ** DONE [#A] When display only #A, unfold all
 CLOSED: [2020-06-27 Sat 09:42]
 Réflechir à comment afficherles arbres claisemés
@@ -204,7 +205,8 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Create Undo/Redo
 https://en.m.wikipedia.org/wiki/Undo
 ** TODO Create copy/paste
-** TODO [#A] Warning if Save as on an existent file                    :0.1:
+** DONE Warning if Save as on an existent file                         :0.1:
+CLOSED: [2020-10-24 Sat 11:24]
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]

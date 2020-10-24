@@ -150,7 +150,7 @@ class GtkFile {
             You can view and edit the file, but it's may be wrong.
             Don't save if not sure." if $proc.exitcode; 
     }
-    method open-file-with-name($name) {
+    method file-open-with-name($name,$top-window) {
         spurt $name~".bak",slurp $name; # fast backup
 #        my $i=1;                                                   # TODO finalize to :0.2:
 #        repeat {
@@ -174,10 +174,11 @@ class GtkFile {
     #    say self.om.to-text;
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:
         self.create-task(self.om);
+        $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
     }
-    method open-file($filename) {
+    method file-open($filename,$top-window) {
         if $filename {
-            self.open-file-with-name($filename);
+            self.file-open-with-name($filename,$top-window);
         } else {
             self.default;
         }
@@ -188,21 +189,38 @@ class GtkFile {
             :parent($top-window),
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
-#                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
-                "_Open", GTK_RESPONSE_ACCEPT
+                "_Save", GTK_RESPONSE_ACCEPT
             ] )
         );
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_ACCEPT {
-            $!om.header = $dialog.get-filename;
-            my @path=split(/\//,$!om.header); # TODO [#C] rewrite with module File::Utils
-            my $name=pop(@path);
-            $!om.header~=".org" if !($name ~~ /\./);
-            $.save if $!om.header;
+            my $filename = $dialog.get-filename;
+            $filename ~= ".org" if !($filename ~~ /\./); # if no extension # TODO improve, fail if "." in directory
+            if $filename.IO.e {
+                my Gnome::Gtk3::MessageDialog $md .=new(
+                                    :message("The file already exists, do you want to overwrite it ?"),
+                                    :buttons(GTK_BUTTONS_NONE)
+                );
+                $md.add-button("_Yes", GTK_RESPONSE_YES); # TODO use add_buttons.
+                $md.add-button("_No", GTK_RESPONSE_NO);
+                my $button=$md.run;
+                if $button==GTK_RESPONSE_YES {
+                    $!om.header = $filename;
+                    $.save;
+                    $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
+                } else {
+                    $response=GTK_RESPONSE_CANCEL; # TODO if no, no close dialog file-save-as
+                }
+                $md.destroy;
+            } else {
+                $!om.header = $filename;
+                $.save;
+                $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header; # TODO rewrite with module File::Utils
+            }
         }
         $dialog.gtk-widget-hide; # TODO destroy ?
-        1
+        return $response;
     }
     method save ($name?) {
         $.change=0 if !$name;
@@ -211,18 +229,22 @@ class GtkFile {
     method try-save($top-window) {
         if $.change && (!$!om.header || $!om.header ne "demo.org") {
             my Gnome::Gtk3::MessageDialog $md .=new(
-                                :message('Voulez-vous sauver votre fichier ?'),
+                                :message('Do you like save your file ?'),
                                 :buttons(GTK_BUTTONS_NONE)
-            ); # TODO Add a Cancel and return true/false. Try for :0.1:
+            );
             $md.add-button("_Yes", GTK_RESPONSE_YES); # TODO use add_buttons. Uncomment =head2 [[gtk_] dialog_] add_buttons Dialog.pm
             $md.add-button("_No", GTK_RESPONSE_NO);
             $md.add-button("_Cancel", GTK_RESPONSE_CANCEL);
             my $button=$md.run;
             if $button==GTK_RESPONSE_YES {
-                $!om.header ?? $.save !! $.file-save-as($top-window);
+                if $!om.header { 
+                    $.save 
+                } else {
+                    $button = $.file-save-as($top-window);
+                }
             }
             $md.destroy;
-            return $button; # TODO return file-save-as button is "cancel". try for :0.1:
+            return $button;
         }
     }
     method update-text($iter,$new-text) {
