@@ -532,7 +532,7 @@ note "date : ",$d;
         my $task=$selected-task;
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         self.manage($child);
-        self.unfold-branch; # TODO refactoring $task.unfold-branch ? :0.1:
+        $gf.unfold-branch($task);
     }
     method move-right-button-click {
         my $iter=$selected-task.iter;
@@ -600,7 +600,7 @@ note "date : ",$d;
         $gf.change=1;
         my $task=$t ?? $t !! $selected-task;
         $task.scheduled=self.manage-date($task.scheduled);
-        $b-scheduled.set-label($task.scheduled.str) if $b-scheduled;
+        $b-scheduled.set-label($task.scheduled ?? $task.scheduled.str !! "") if $b-scheduled;
         1
     }
     method clear-scheduled ( :$task, :$button ) {
@@ -613,7 +613,7 @@ note "date : ",$d;
         $gf.change=1;
         my $task=$t ?? $t !! $selected-task;
         $task.deadline=self.manage-date($task.deadline);
-        $b-deadline.set-label($task.deadline.str) if $b-deadline;
+        $b-deadline.set-label($task.deadline ?? $task.deadline.str !! "") if $b-deadline;
         1
     }
     method clear-deadline ( :$task, :$button ) {
@@ -692,15 +692,15 @@ note "date : ",$d;
         1
     }
     method fold-branch {
-        $gf.tv.collapse-row($gf.ts.get-path($selected-task.iter));
+        $gf.fold-branch($selected-task);
         1
     }
     method unfold-branch {
-        $gf.tv.expand-row($gf.ts.get-path($selected-task.iter),0);
+        $gf.unfold-branch($selected-task);
         1
     }
     method unfold-branch-child {
-        $gf.tv.expand-row($gf.ts.get-path($selected-task.iter),1); # TODO merge with unfold-branch :refactoring:
+        $gf.unfold-branch-child($selected-task);
         1
     }
     method manage($task) {

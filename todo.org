@@ -5,27 +5,27 @@ CLOSED: [2020-04-26 dim  09:02]
 ** DONE Tag
 CLOSED: [2020-04-27 lun  19:31]
 ** DONE [#A] Scheduled date
-CLOSED: [2020-05-15 ven 17:59]
+CLOSED: [2020-05-15 Fri 17:59]
 ** DONE [#A] Deadline date
-CLOSED: [2020-05-15 ven 17:59]
+CLOSED: [2020-05-15 Fri 17:59]
 ** DONE pass to level 3 and more
 CLOSED: [2020-05-03 dim  07:51]
 ** TODO Improve Scheduled et Deadline
 repeat, delay, hms
-*** TODO Manage "Closed" :0.1:
+*** TODO Manage "Closed"                                               :0.1:
 CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
-*** TODO Orgzly mode vs emacs mode :0.x:
+*** TODO Orgzly mode vs emacs mode                                     :0.x:
 https://github.com/orgzly/orgzly-android/issues/529
 ** DONE Emacs windows write "lun." , orgzly "Mon"
-CLOSED: [2020-05-28 jeu 07:51]
+CLOSED: [2020-05-28 Thu 07:51]
 aligné sur Orgzly, en anglais
 ** TODO autcomplétion des tags
 * Bug
 ** DONE [#A] Save File ne fonctionne plus
-   CLOSED: [2020-08-02 dim 11:20]
+CLOSED: [2020-08-02 Son 11:20]
 ** DONE [#A] ajout d'un tache ne fonctionne plus
-   CLOSED: [2020-08-02 dim 08:02]
+CLOSED: [2020-08-02 Son 08:02]
 ** DONE bug if create a task after change the name of a sub-task
    force Seq to Array
 ** DONE Resolve problem "é" in text
@@ -46,7 +46,7 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** TODO make a User Manuel :0.1:
+** TODO make a User Manuel                                             :0.1:
 ** DONE Add new file menu
 CLOSED: [2020-05-05 mar  07:24]
 ** DONE Append ScrolBar for long Todo
@@ -57,7 +57,7 @@ CLOSED: [2020-05-05 mar  07:24]
 Accent "é" create problem
 Refresh of tree to improve
 ** DONE Delete "text" of a task
-CLOSED: [2020-06-23 mar 07:50]
+CLOSED: [2020-06-23 Tue 07:50]
 Presently, it's possible to remove all but a blank line exist enough
 ** DONE Display only TODO task
 CLOSED: [2020-04-25 sam  08:02]
@@ -67,32 +67,32 @@ Improve this swap if task is hide
 ** DONE Create a different display for README style or TODO style
 ** TODO [#B] Use GdkEventKey for keyboard
 *** DONE Short-Cut  "Ctrl-s" forsave
-CLOSED: [2020-10-05 lun 07:13]
+CLOSED: [2020-10-05 Mon 07:13]
 *** TODO link F11 to maximize the window
 Me or Gnome::Gtk3
 *** TODO Shift-left unfold only current selection, not child
 or capture keyboard and redifine de Shift-right
-*** TODO Create one (or 2) bar menu :0.2:
+*** TODO Create one (or 2) bar menu                                    :0.2:
 ** DONE Accent é create problem in edit "text"
 CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
-** TODO [#B] Possibility to do all action with menu :0.1:
+** TODO [#B] Possibility to do all action with menu                    :0.1:
 *** TODO Find Iter of select row, to use with menu
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
 #+PROPERTY: var  foo=1
 ** DONE Activate Link http in "text"
-CLOSED: [2020-06-01 lun 08:06]
+CLOSED: [2020-06-01 Mon 08:06]
 I think it's not possible, 
 but create a cell to simulate
 https://stackoverflow.com/questions/17109634/hyperlink-in-cellrenderertext-markup
 ** DONE display/edit Preface
-CLOSED: [2020-07-15 mer 10:16]
+CLOSED: [2020-07-15 Wen 10:16]
 ** DONE Scroll for Manage Task if "text" is long
-CLOSED: [2020-06-23 mar 18:55]
+CLOSED: [2020-06-23 Tue 18:55]
 ** DONE [#A] Work with only one sub-branch
 CLOSED: [2020-05-09 sam  07:33]
 sélectionner une branch, mais en fait surtout une sous branche
@@ -106,19 +106,19 @@ CLOSED: [2020-05-05 mar  07:16]
 display also header without #A but have a children with #A
 ** TODO Create Tab to edit 2 or more files
 *** DONE [#A] put $change in GtkFile
-CLOSED: [2020-06-14 dim 09:21]
+CLOSED: [2020-06-14 Son 09:21]
 *** DONE [#A] put "Presentation" i GtkFile
-CLOSED: [2020-07-12 dim 10:46]
+CLOSED: [2020-07-12 Son 10:46]
 *** TODO use filename for label of tab
 *** TODO Improve Menu
 open in new tab
 close tab
 close all tab
 *** DONE [#A] File/Quit loop on tab
-CLOSED: [2020-06-14 dim 09:21]
+CLOSED: [2020-06-14 Son 09:21]
 ** TODO Separte, momentarily, a file in multiple tabs
 ** DONE Display Priority #A/B # A/B/C with or not no priority
-CLOSED: [2020-06-27 sam 11:35]
+CLOSED: [2020-06-27 Sat 11:35]
 ** TODO Griser les menus non-utilisables
 Top of treesi déjà au Top, save si déja sauvé,...
 ** DONE For Open and Save as, remove Ok button
@@ -126,32 +126,33 @@ CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO Griser les boutons non-utilisables
 <, ^, v,..
-** TODO Add Cancel when warning for save file :0.1:
+** TODO Add Cancel when warning for save file                          :0.1:
 ** DONE [#A] When display only #A, unfold all
-CLOSED: [2020-06-27 sam 09:42]
+CLOSED: [2020-06-27 Sat 09:42]
 Réflechir à comment afficherles arbres claisemés
 ** TODO Improve link in text
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
-** TODO Refactoring new file with GtkFile = .new :0.1:
+** TODO Refactoring new file with GtkFile = .new                       :0.1:
 ** DONE [#A] Fold All
-CLOSED: [2020-06-27 sam 09:17]
+CLOSED: [2020-06-27 Sat 09:17]
 Option/fold all
 ** DONE [#A] When Add-sub task unflod task, not sub-task
-CLOSED: [2020-06-27 sam 09:31]
+CLOSED: [2020-06-27 Sat 09:31]
 ** TODO Edit Properties
 ** TODO Add Brother task
 ** TODO [#A] Bug if view #A, and #A in DONE task
 xx TODO Create Tab to edit 2 or more files
 xxx DONE [#A] put $change in GtkFile
 ** TODO [#A] Display message (saved file,...) when use shortcut
-** DONE Put shortcut on right of menu entries :0.1:
-   CLOSED: [2020-10-10 sam 13:53]
+** DONE Put shortcut on right of menu entries                          :0.1:
+CLOSED: [2020-10-10 Sat 13:53]
 ** TODO Indentation des tag
 *** TODO to display (add column to tree ?)
 *** TODO When save. Parameter as Orgzly or Emacs
-** TODO [#A] Move "Add sub-task" to menu "Edit" :0.1:
+** DONE Move "Add sub-task" to menu "Edit"                             :0.1:
+CLOSED: [2020-10-23 Fri 07:45]
 créer une tache sans iter et la faire manager par method tv
  en fait, extraire de tv button la partie sans iter
 * raku improve
@@ -160,11 +161,11 @@ CLOSED: [2020-04-21 mar  18:35]
 ** DONE Create Class Orgmode
 CLOSED: [2020-04-21 mar  19:29]
 ** DONE create a task.pm
-CLOSED: [2020-08-09 dim 09:23]
+CLOSED: [2020-08-09 Son 09:23]
 ** DONE TODO -&gt; DONE add line with date
 ** DONE Read filename on the command line
 ** DONE DONE to TODO, remove date but exist a blank line if no text
-CLOSED: [2020-06-23 mar 07:50]
+CLOSED: [2020-06-23 Tue 07:50]
 Utiliser update text, 
 en mettant la nouvelle chaine en premier
 ** DONE read/write preface
@@ -174,13 +175,13 @@ CLOSED: [2020-05-02 sam  09:44]
 ** DONE Move doesn't work in mode No-done.
 CLOSED: [2020-05-03 dim  17:08]
 ** DONE Read todo of a file
-CLOSED: [2020-06-20 sam 13:40]
+CLOSED: [2020-06-20 Sat 13:40]
 *** DONE Populate a special task with TODO of a file
 CLOSED: [2020-05-06 mer  08:09]
 Search in a file .raku linewith # TODO
 And append this TODO to the task.
 *** DONE [#B] DONE automatically special task # TODO is remove of the file
-CLOSED: [2020-06-20 sam 13:40]
+CLOSED: [2020-06-20 Sat 13:40]
 Load all todo from file
 Readl all TODO from org, if find in list, remove (line may be change)
 if not find Ask question Delete, DONE
@@ -203,21 +204,21 @@ No switch 1 et 3, but insert 3 before 1
 ** TODO Create Undo/Redo
 https://en.m.wikipedia.org/wiki/Undo
 ** TODO Create copy/paste
-** TODO [#A] Warning if Save as on an existent file :0.1:
+** TODO [#A] Warning if Save as on an existent file                    :0.1:
 ** TODO Add white line as Orgzly
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
 ** DONE compare .bak and original file, and create alert is different
-CLOSED: [2020-05-18 lun 07:20]
+CLOSED: [2020-05-18 Mon 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
-CLOSED: [2020-05-23 sam 09:10]
+CLOSED: [2020-05-23 Sat 09:10]
 Use Array, not Hash
 ** TODO Create a auto-save
 ** DONE Create a GtkFile.pm
-CLOSED: [2020-10-08 jeu 08:06]
+CLOSED: [2020-10-08 Thu 08:06]
 * git
 ** DONE diff ne pas afficher les blancs
-   CLOSED: [2020-04-10 ven 12:19]
+CLOSED: [2020-04-10 Fri 12:19]
    git diff -b --ignore-blank-lines
 * sed
 ** DONE mettre debug à 0 avant le push

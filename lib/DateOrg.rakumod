@@ -38,13 +38,20 @@ my $now = DateTime.now(
     formatter => {
         my $dow;
         given .day-of-week {
-            when 1 { $dow='lun'}
-            when 2 { $dow='mar'}
-            when 3 { $dow='mer'}
-            when 4 { $dow='jeu'}
-            when 5 { $dow='ven'}
-            when 6 { $dow='sam'}
-            when 7 { $dow='dim'}
+#            when 1 { $dow='lun'} # TODO as Orgzly, save in english, but display french,... :0.x:
+#            when 2 { $dow='mar'}
+#            when 3 { $dow='mer'}
+#            when 4 { $dow='jeu'}
+#            when 5 { $dow='ven'}
+#            when 6 { $dow='sam'}
+#            when 7 { $dow='dim'}
+            when 1 { $dow='Mon'}
+            when 2 { $dow='Tue'}
+            when 3 { $dow='Wen'}
+            when 4 { $dow='Thu'}
+            when 5 { $dow='Fri'}
+            when 6 { $dow='Sat'}
+            when 7 { $dow='Son'}
         }
         sprintf '%04d-%02d-%02d %s %02d:%02d', 
         .year, .month, .day, $dow, .hour, .minute

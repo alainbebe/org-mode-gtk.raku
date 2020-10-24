@@ -255,6 +255,15 @@ note "boucle ",to-markup($_);
         my Gnome::Gtk3::TreePath $tp .= new(:indices(@path2));
         return  $.ts.get-iter($tp);
     }
+    method fold-branch ($task) {
+        $.tv.collapse-row($.ts.get-path($task.iter));
+    }
+    method unfold-branch ($task) {
+        $.tv.expand-row($.ts.get-path($task.iter),0); # 0 unfold just child, not sub child
+    }
+    method unfold-branch-child ($task) {
+        $.tv.expand-row($.ts.get-path($task.iter),1); # 1 unfold all branch
+    }
 }
 
 
