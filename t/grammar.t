@@ -99,11 +99,11 @@ CLOSED: [2020-05-09 Sat] DEADLINE: <2020-05-09 Sat> SCHEDULED: <2020-05-09 Sat>
 :END:
 little text";
 ok OrgMode.parse($file), 'parses';
-ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][0] eq "color"          , "color";
-ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][1] eq "red"            , "red";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].closed.str       eq "2020-05-09 Sat" , "closed";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].deadline.str     eq "2020-05-09 Sat" , "deadline";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].scheduled.str    eq "2020-05-09 Sat" , "scheduled";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][0] eq "color"          , "color";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][1] eq "red"            , "red";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].text             eq "little text"    , "little text";
 
 $file = 

@@ -12,3 +12,13 @@ SCHEDULED: <2019-09-17 Tue>
 SCHEDULED: <2020-10-14 Wen 12:46>
 ** Scheduled All
 SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
+* No Properties
+** One Property
+:PROPERTIES:
+:key:      value
+:END:
+** Two Properties
+:PROPERTIES:
+:key:      value
+:other:    content
+:END:

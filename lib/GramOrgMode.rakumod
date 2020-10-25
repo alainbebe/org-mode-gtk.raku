@@ -4,7 +4,7 @@ use GtkTask;
 use Data::Dump;
 
 grammar Content {
-    token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n? <closed>? <deadline>? <scheduled>? <properties>? <text> $ }
+    token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n? <closed>? <deadline>? <scheduled>? <properties>? <text>? $ }
     token level      { "*"+ )> " "};
     token todo       { ["TODO"|"DONE"] )> " " }
     token priority   { "[#" <( [A|B|C] )> "] " }
@@ -13,8 +13,9 @@ grammar Content {
     token closed     { " "* "CLOSED: [" <dateorg> "]"\n? } # TODO capture space before to repsect when save :0.x:
     token deadline   { " "* "DEADLINE: <" <dateorg> ">"\n? } # TODO capture space before to repsect when save :0.x:
     token scheduled  { " "* "SCHEDULED: <" <dateorg> ">\n" }
-    token properties { ^^ ":PROPERTIES:\n" (.*?\n) ":END:\n" }
-    token text       { .* };
+    token properties { ^^ ":PROPERTIES:" \n ( <property>+ ) ":END:" \n? }
+    token property   { ^^ <!before ":END:" $$> ":" (\N+) \n }  # match
+    token text       { .+ };
 }
 sub split-properties($properties) {
     $properties ~~ /":"(.*?)":"" "+(.*)\n/;
@@ -56,6 +57,10 @@ class Content-actions {
     }
     method scheduled($/) {
         make $/.Str;
+    }
+    method property($/) {
+        note "ppy - ",$0.Str; #,"-",$1.Str;
+#        make split-properties($0.Str);
     }
     method properties($/) {
         make split-properties($0.Str);
