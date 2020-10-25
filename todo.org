@@ -12,8 +12,8 @@ CLOSED: [2020-05-15 Fri 17:59]
 CLOSED: [2020-05-03 dim  07:51]
 ** TODO Improve Scheduled et Deadline
 repeat, delay, hms
-*** TODO Manage "Closed"                                               :0.1:
-CLOSED: [2020-05-09 Sat 12:41] SCHEDULED: <2020-05-09 Sat>
+*** DONE Manage "Closed"                                               :0.1:
+CLOSED: [2020-10-24 Sat 13:47] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
 *** TODO Orgzly mode vs emacs mode                                     :0.x:
 https://github.com/orgzly/orgzly-android/issues/529
@@ -135,7 +135,8 @@ Réflechir à comment afficherles arbres claisemés
 lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
-** TODO Refactoring new file with GtkFile = .new                       :0.1:
+** TODO Refactoring new file with GtkFile = .new
+ ::
 ** DONE [#A] Fold All
 CLOSED: [2020-06-27 Sat 09:17]
 Option/fold all
@@ -156,6 +157,8 @@ CLOSED: [2020-10-10 Sat 13:53]
 CLOSED: [2020-10-23 Fri 07:45]
 créer une tache sans iter et la faire manager par method tv
  en fait, extraire de tv button la partie sans iter
+** TODO Edit task in mode text                                         :0.X:
+Possibility to edit a task (ot child) in a text editor
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

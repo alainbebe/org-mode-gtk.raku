@@ -67,7 +67,7 @@ $top-window.gtk-container-add($g);
 my GtkFile $gf.=new;
 $g.gtk-grid-attach( $gf.sw, 0, 1, 4, 1);
 
-my Gnome::Gtk3::Label $l-del  .= new(:text('Click on task to manage'));
+my Gnome::Gtk3::Label $l-del  .= new(:text('Click on task to modify'));
 $g.gtk-grid-attach( $l-del, 2, 2, 1, 1);
 
 my Gnome::Gtk3::AboutDialog $about .= new;
@@ -103,7 +103,7 @@ class AppSignalHandlers {
         return $b;
     }
     multi method create-button($label,$method,$iter?,$inc?) {
-        note "create button by default" if $debug;
+#        note "create button by default" if $debug;
         my Gnome::Gtk3::Button $b  .= new(:label($label));
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
@@ -171,7 +171,7 @@ class AppSignalHandlers {
         $date.end=$date.end.clone(minute => $widget.get-active-text);
         $label.set-text($date.str);
     }
-my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :0.1:
+my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg 
     if ($self.hour==0 && $self.minute==0) {
         sprintf ''; 
     } else {
@@ -745,6 +745,10 @@ note "date : ",$d;
         $gf.unfold-branch-child($selected-task);
         1
     }
+    method header-event-after ( N-GdkEventKey $event-key, :$widget ){
+        $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
+        1
+    }
     method manage($task) {
         # Dialog to manage task
         $dialog .= new(             # TODO try to pass dialog as parameter
@@ -760,10 +764,12 @@ note "date : ",$d;
         my Gnome::Gtk3::Grid $g .= new;
         $content-area.gtk_container_add($g);
 
-        # To edit task
+        # To edit header
         my Gnome::Gtk3::Entry $e-edit .= new;
         $e-edit.set-text($task.header);
         $g.gtk-grid-attach($e-edit,                                                       0, 0, 4, 1);
+        $e-edit.register-signal( self, 'header-event-after', 'event-after');
+        $dialog.set-response-sensitive(GTK_RESPONSE_OK,0) if $e-edit.get-text.chars==0;
 
         # To edit tags
         $e-edit-tags  .= new;
@@ -859,68 +865,58 @@ note "date : ",$d;
         $dialog.show-all;
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
-#            if ($task.header.chars > 0) {
-                if !$task.iter {
-                    $gf.create-task($task,$task.darth-vader.iter);
-                    push($task.darth-vader.tasks,$task);
-                }
-                if ($task.header ne $e-edit.get-text || $task.header.chars==0) {
-                    $gf.change=1;
-                    $task.header=$e-edit.get-text;
-                    $task.header='Change Header' if $task.header.chars==0; # TODO best manage :0.1:
-                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
-                }
-                if ($e-edit-tags.get-text ne join(" ",$task.tags)) {
-                    $gf.change=1;
-                    $task.tags=split(/" "/,$e-edit-tags.get-text);
-                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
-                }
-                my $todo="";
-                $todo="TODO" if $rb-td2.get-active();
-                $todo="DONE" if $rb-td3.get-active();
-                if $task.todo ne $todo {
-                    $gf.change=1;
-                    $task.todo=$todo;
-                    $gf.ts.set_value( $task.iter, 0,$task.display-header);
-                    if $todo eq 'DONE' {
-                        my $ds=&d-now();
-                        if $ds ~~ /<dateorg>/ {
-                            $task.closed=date-from-dateorg($/{'dateorg'});
-                        }
-                    } else {
-                        $task.closed=DateOrg;
+            if !$task.iter {
+                $gf.create-task($task,$task.darth-vader.iter);
+                push($task.darth-vader.tasks,$task);
+            }
+            if $task.header ne $e-edit.get-text {
+                $gf.change=1;
+                $task.header=$e-edit.get-text.trim;
+                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+            }
+            if $e-edit-tags.get-text ne join(" ",$task.tags) {
+                $gf.change=1;
+                $task.tags=split(/" "/,$e-edit-tags.get-text);
+                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+            }
+            my $todo="";
+            $todo="TODO" if $rb-td2.get-active();
+            $todo="DONE" if $rb-td3.get-active();
+            if $task.todo ne $todo {
+                $gf.change=1;
+                $task.todo=$todo;
+                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                if $todo eq 'DONE' {
+                    my $ds=&d-now();
+                    if $ds ~~ /<dateorg>/ {
+                        $task.closed=date-from-dateorg($/{'dateorg'});
                     }
+                } else {
+                    $task.closed=DateOrg;
                 }
-                my $prior="";
-                $prior="A" if $rb-pr2.get-active();
-                $prior="B" if $rb-pr3.get-active();
-                $prior="C" if $rb-pr4.get-active();
-                if $task.priority ne $prior {
-                    $task.priority=$prior;
-                    $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
-                }
-                my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
-                my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
-                my $new-text=$text-buffer2.get-text( $start, $end, 0);
-                if ($new-text ne $task.text.join("\n")) {
-                    $gf.change=1;
-                    $gf.update-text($task.iter,$new-text);
-                }
-                $start = $prop-buffer.get-start-iter;
-                $end = $prop-buffer.get-end-iter;
-                $new-text=$prop-buffer.get-text( $start, $end, 0);
-                if ($new-text ne $task.properties.join("\n")) {
-                    $gf.change=1;
-                    $task.properties=map {$_.split(/" "/)},$new-text.split(/\n/);
-                }
-#            } else {
-#                my Gnome::Gtk3::MessageDialog $md .=new(
-#                                    :message("It's necessary to have a header."),
-#                                    :buttons(GTK_BUTTONS_OK)
-#                );
-#                $md.run;
-#                $md.destroy;
-#            }
+            }
+            my $prior="";
+            $prior="A" if $rb-pr2.get-active();
+            $prior="B" if $rb-pr3.get-active();
+            $prior="C" if $rb-pr4.get-active();
+            if $task.priority ne $prior {
+                $task.priority=$prior;
+                $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
+            }
+            my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
+            my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
+            my $new-text=$text-buffer2.get-text( $start, $end, 0);
+            if ($new-text ne $task.text.join("\n")) {
+                $gf.change=1;
+                $gf.update-text($task.iter,$new-text);
+            }
+            $start = $prop-buffer.get-start-iter;
+            $end = $prop-buffer.get-end-iter;
+            $new-text=$prop-buffer.get-text( $start, $end, 0);
+            if ($new-text ne $task.properties.join("\n")) {
+                $gf.change=1;
+                $task.properties=map {$_.split(/" "/)},$new-text.split(/\n/);
+            }
         }
         $b-scheduled=Nil; # TODO to improve, pass as parameter
         $b-deadline=Nil;
@@ -1005,14 +1001,13 @@ note "date : ",$d;
         1
     }
     method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
-        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
+#        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
         $is-return=$event-key.keyval.fmt('0x%08x')==0xff0d; 
         if $event-key.type ~~ GDK_KEY_PRESS {
             if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
                 $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
                 $is-maximized=!$is-maximized; 
             }
-            note "eks ",$event-key.state if $debug;
             if $event-key.state == 1 { # shift push
                 given $event-key.keyval.fmt('0x%08x') {
                     when 0xff52 {self.priority-up}

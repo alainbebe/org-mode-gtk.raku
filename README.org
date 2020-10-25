@@ -33,11 +33,7 @@ Coming soon
 **** WSL
 A solution with Windows, it's to use WSL.
 https://korben.info/linux-wsl-gui-interface-graphique-windows-10.html
-***** Activate Wsl
-***** Install Debian
-***** Install VcXsr
-***** See "Install Linux"
-**** CygWin
-To do
-**** Virtual Machine
-To do
+- Activate Wsl
+- Install Debian
+- Install VcXsr
+- See "Install Linux"

@@ -196,7 +196,9 @@ class GtkFile {
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_ACCEPT {
             my $filename = $dialog.get-filename;
-            $filename ~= ".org" if !($filename ~~ /\./); # if no extension # TODO improve, fail if "." in directory
+            my @path=split(/\//,$filename); # TODO [#C] rewrite with module File::Utils
+            my $name=pop(@path);
+            $filename ~= ".org" if !($name ~~ /\./);
             if $filename.IO.e {
                 my Gnome::Gtk3::MessageDialog $md .=new(
                                     :message("The file already exists, do you want to overwrite it ?"),
