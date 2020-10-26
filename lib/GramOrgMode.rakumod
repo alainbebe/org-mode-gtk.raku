@@ -17,9 +17,16 @@ grammar Content {
     token property   { ^^ <!before ":END:" $$> ":" (\N+) \n }  # match
     token text       { .+ };
 }
-sub split-properties($properties) {
-    $properties ~~ /":"(.*?)":"" "+(.*)\n/;
-    return $0.Str,$1.Str;
+sub split-properties($properties) { # TO rewrite. ! split create Seq, use .cache
+    my List @result;
+    my @properties;
+    @properties.push($_) for split(/\n/,$properties);
+    @properties.pop;
+    for @properties {
+        $_ ~~ s/":"//;
+        push(@result,$_.split(/":"" "*/).cache);
+    }
+    return @result;
 }
 class Content-actions {
     method TOP($/) {
@@ -30,7 +37,7 @@ class Content-actions {
         $task.closed     =date-from-dateorg($<closed>{'dateorg'}) if $<closed>;
         $task.deadline   =date-from-dateorg($<deadline>{'dateorg'}) if $<deadline>;
         $task.scheduled  =date-from-dateorg($<scheduled>{'dateorg'}) if $<scheduled>;
-        $task.properties.push($<properties>.made) if $<properties>;
+        $task.properties =$<properties>.made if $<properties>;
         $task.text       =$<text>.made if $<text> && $<text>.made.chars>0;
         make $task;
     }
@@ -59,11 +66,12 @@ class Content-actions {
         make $/.Str;
     }
     method property($/) {
-        note "ppy - ",$0.Str; #,"-",$1.Str;
+#        note "ppy - ",split-property($0.Str);
 #        make split-properties($0.Str);
     }
     method properties($/) {
         make split-properties($0.Str);
+#        note "ppy2 ", $<property>>>.made;
     }
     method text($/) {
         make chomp($/.Str);   # TODO rewrite to accept one blank line after text

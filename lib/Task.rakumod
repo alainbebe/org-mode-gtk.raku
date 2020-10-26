@@ -22,8 +22,8 @@ class Task {
 
     method herite-properties($key) {
         if (@.properties) {
-            my %properties=split(" ",@.properties); # TODO [#A] Why split ?
-#            say %properties;
+            my %properties; 
+            %properties=$_ for @.properties; 
             return %properties{$key} if %properties{$key};
         } 
         return $.darth-vader.herite-properties($key) if $.darth-vader;
@@ -88,7 +88,7 @@ class Task {
         $orgmode~="\n" if $.closed || $.deadline || $.scheduled;
         if ($.properties) {
             $orgmode~=":PROPERTIES:\n";
-            for $.properties.Array { 
+            for $.properties.List { 
                 my ($k,$v) = $_;
                 my $len=$k.chars;
                 my $white="";
