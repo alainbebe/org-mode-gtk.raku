@@ -566,7 +566,7 @@ note "date : ",$d;
     method add-brother-down {
         $gf.change=1;
         my $task=$selected-task;
-        my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task));
+        my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
         self.manage($child);
     }
     method add-child {

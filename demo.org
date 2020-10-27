@@ -22,3 +22,9 @@ SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
 :key:      value
 :other:    content
 :END:
+** Two properties with text
+:PROPERTIES:
+:key:      value
+:other:    content
+:END:
+My text
