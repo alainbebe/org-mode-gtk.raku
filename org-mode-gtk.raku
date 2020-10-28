@@ -15,6 +15,7 @@ use Gnome::Gtk3::Label;
 use Gnome::Gtk3::Entry;
 use Gnome::Gtk3::TreePath;
 use Gnome::Gtk3::TreeStore;
+use Gnome::Gtk3::ListStore;
 use Gnome::Gtk3::CellRendererText;
 use Gnome::Gtk3::TreeView;
 use Gnome::Gtk3::TreeViewColumn;
@@ -760,6 +761,7 @@ note "date : ",$d;
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 ] )                    # TODO Add a button "Apply"
         );
+        $dialog.set-default-response(GTK_RESPONSE_OK);
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
         my Gnome::Gtk3::Grid $g .= new;
         $content-area.gtk_container_add($g);
@@ -843,6 +845,41 @@ note "date : ",$d;
         my Gnome::Gtk3::ScrolledWindow $swp .= new;
         $swp.gtk-container-add($tev-edit-prop);
         $content-area.gtk_container_add($swp);
+
+        my Gnome::Gtk3::ListStore $ls .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
+        my Gnome::Gtk3::TreeView $tv .= new(:model($ls));
+$tv.set-hexpand(1);
+$tv.set-vexpand(1);
+        $tv.set-headers-visible(1);
+        $content-area.gtk_container_add($tv);
+
+        my Gnome::Gtk3::CellRendererText $crt1 .= new;
+        my Gnome::GObject::Value $v .= new( :type(G_TYPE_BOOLEAN), :value<1>);
+        $crt1.set-property( 'editable', $v);
+        my Gnome::Gtk3::TreeViewColumn $tvc .= new;
+        $tvc.set-title('Key');
+        $tvc.pack-end( $crt1, 1);
+        $tvc.add-attribute( $crt1, 'text', 0);
+        $tv.append-column($tvc);
+
+        my Gnome::Gtk3::CellRendererText $crt2 .= new;
+        $crt2.set-property( 'editable', $v);
+        $tvc .= new;
+        $tvc.set-title('Value');
+        $tvc.pack-end( $crt2, 1);
+        $tvc.add-attribute( $crt2, 'text', 1);
+        $tv.append-column($tvc);
+
+for $task.properties -> $row {
+note "Insert: ", $row.kv.join(', ');
+  $iter = $ls.gtk-list-store-append;
+  $ls.gtk-list-store-set( $iter, |$row.kv);
+}
+
+$iter = $ls.gtk-list-store-append;
+$ls.set-value( $iter, 0, 'Test');
+$ls.set-value( $iter, 1, 'Suite');
+
         
         # To edit text
         $content-area.gtk_container_add(Gnome::Gtk3::Label.new(:text('Content')));
@@ -923,6 +960,11 @@ note "date : ",$d;
         $dialog.gtk_widget_destroy;
     }
     my @ctrl-keys;
+#    method tv-cursor-row (N-GtkTreePath $path, N-GObject $column , $a1 , $a2) {
+    method tv-cursor-row () {
+        note 'ici : to remove';
+        1
+    }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $gf.ts.tree-model-get-iter($tree-path);
@@ -1230,6 +1272,7 @@ sub MAIN($arg = '') {
     $gf.file-open($arg,$top-window);
 #    $gf.inspect($gf.om); # TODO create a method without param
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
+    $gf.tv.register-signal( $ash, 'tv-cursor-row', 'cursor-changed');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
     $top-window.show-all;

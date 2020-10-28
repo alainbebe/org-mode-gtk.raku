@@ -1,7 +1,4 @@
 preface
-* DONE try
-** DONE sub try 1
-detail of sub task
 * header 1
 ** header2
 *** header 3
@@ -19,12 +16,12 @@ SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
 :END:
 ** Two Properties
 :PROPERTIES:
-:key:      value
-:other:    content
+:Color:    Red
+:Size:     Big
 :END:
 ** Two properties with text
 :PROPERTIES:
-:key:      value
-:other:    content
+:Color:    Red
+:Size:     Big
 :END:
 My text

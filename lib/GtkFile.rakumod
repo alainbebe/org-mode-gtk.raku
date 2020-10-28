@@ -31,7 +31,7 @@ class GtkFile {
         $!tv.set-hexpand(1);
         $!tv.set-vexpand(1);
         $!tv.set-headers-visible(0);
-        $!tv.set-activate-on-single-click(1);
+#        $!tv.set-activate-on-single-click(1);
         $!sw                  .= new;
         $!sw.gtk-container-add($!tv);
 
