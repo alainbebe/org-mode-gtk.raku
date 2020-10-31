@@ -3,12 +3,19 @@ preface
 ** header2
 *** header 3
 * No Scheduling
+SCHEDULED: <2019-11-01 Fri>
 ** Scheduled in 2019
 SCHEDULED: <2019-09-17 Tue>
 ** Scheduled hour
 SCHEDULED: <2020-10-14 Wen 12:46>
 ** Scheduled All
 SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
+** Sheduled in 2025
+SCHEDULED: <2025-10-31 Fri>
+** Scheduled today (to update)
+SCHEDULED: <2020-11-01 Son>
+** DONE Scheduled 2019 and Done
+CLOSED: [2020-11-01 Son 12:14] SCHEDULED: <2019-11-01 Fri>
 * No Properties
 ** One Property
 :PROPERTIES:
@@ -25,3 +32,17 @@ SCHEDULED: <2020-10-17 Sat 09:23-23:23 ++3m --1w>
 :Size:     Big
 :END:
 My text
+* TODO Todo
+** DONE Done
+CLOSED: [2020-10-31 Sat 09:33]
+** DONE Done without closed
+* [#A] Priority
+** Task with sub-task with priority B
+*** [#B] Priority B
+** Task with sub-task  with proority A
+*** [#A] Priority
+* No Deadline
+** Deadline today (to update)
+DEADLINE: <2020-11-01 Son>
+** Deadline 2019
+DEADLINE: <2019-11-01 Fri>

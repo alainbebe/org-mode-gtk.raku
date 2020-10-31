@@ -16,13 +16,14 @@ class GtkFile {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
-    has Gnome::Gtk3::ScrolledWindow $.sw             ; #.= new;
-    has                             $.i             is rw =0;          # for creation of level1 in tree # TODO [#A] rename
-    has Int                         $.change        is rw =0;           # for ask question to save when quit
+    has Gnome::Gtk3::ScrolledWindow $.sw            ; #.= new;
+    has                             $.i             is rw =0;          # for creation of level 1 in tree # TODO [#A] rename
+    has Int                         $.change        is rw =0;          # for ask question to save when quit
     has                             $.no-done       is rw =True;       # display with no DONE
     has                             $.prior-A       is rw =False;      # display #A          
     has                             $.prior-B       is rw =False;      # display #B          
     has                             $.prior-C       is rw =False;      # display #C          
+    has                             $.today-past    is rw =False;      # display only task in past and note Done          
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -74,14 +75,16 @@ class GtkFile {
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
-    method create-task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?,$pos = -1) {
-        my Gnome::Gtk3::TreeIter $iter-task;
-        if $task.level==0 || (                                 # display always the base level
-            !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
-            && (!$.prior-A || $task.is-child-prior("A"))
-            && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A"))
-            && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
-        ) { 
+    method create-task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool $cond = True) {
+        if  !$cond || # if conditionnal, possibility to filter, else create all sub task
+            $task.level==0 || (                                 # display always the base level
+                !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
+                && (!$.prior-A || $task.is-child-prior("A"))
+                && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A"))
+                && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
+                && (!$.today-past || $task.is-in-past-and-no-done)
+                ) { 
+            my Gnome::Gtk3::TreeIter $iter-task;
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>0) {
                 if ($task.level==1) { 
@@ -100,7 +103,7 @@ class GtkFile {
             }
             if $task.tasks {
                 for $task.tasks.Array {
-                    $.create-task($_,$iter-task);
+                    $.create-task($_,$iter-task,:cond($cond));
                 }
             }
         }
@@ -122,7 +125,7 @@ class GtkFile {
     }
     method default {
         my GtkTask $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1),:darth-vader($!om));
-        $.create-task($task);
+        $.create-task($task,:cond(False));
         $!om.tasks.push($task);
     }
     method reconstruct-tree { # not good practice, not abuse 

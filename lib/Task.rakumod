@@ -110,6 +110,28 @@ class Task {
         #$j--;
         return $orgmode;
     }
+    method is-child-prior($prior) {
+        return True if $.priority && $.priority eq $prior; 
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.is-child-prior($prior);
+            }
+        }
+        return False;
+    }
+    method is-in-past-and-no-done {
+        return True if 
+            !($.todo && $.todo eq 'DONE')
+            && (
+                $.scheduled && $.scheduled.begin.Date <= DateTime.now.Date
+                || $.deadline && $.deadline.begin && $.deadline.begin.Date <= DateTime.now.Date);
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.is-in-past-and-no-done;
+            }
+        }
+        return False;
+    }
     method inspect($task) {
         my $prefix=" " x $task.level*2;
         say $prefix,"level       ",$task.level;

@@ -66,10 +66,10 @@ my Gnome::Gtk3::Grid $g .= new;
 $top-window.gtk-container-add($g);
 
 my GtkFile $gf.=new;
-$g.gtk-grid-attach( $gf.sw, 0, 1, 4, 1);
+$g.gtk-grid-attach($gf.sw, 0, 1, 4, 1);
 
-my Gnome::Gtk3::Label $l-del  .= new(:text('Click on task to modify'));
-$g.gtk-grid-attach( $l-del, 2, 2, 1, 1);
+my Gnome::Gtk3::Label $l-info .= new(:text('Double-Click on task to modify'));
+$g.gtk-grid-attach($l-info, 0, 2, 1, 1);
 
 my Gnome::Gtk3::AboutDialog $about .= new;
 $about.set-program-name('org-mode-gtk.raku');
@@ -253,22 +253,20 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $label.set-text($date.str);
     }
     method manage-date (DateOrg $date is rw) {
-#say $date.begin;
         my Gnome::Gtk3::Dialog $dialog2 .= new(
             :title("Manage Date"), 
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
 #                "Clear", 1, # TODO to manage 0.x
-                "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Ok", GTK_RESPONSE_OK,
+                "_Cancel", GTK_RESPONSE_CANCEL,
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
         my $cur=$date ?? $date.str !! &dd-now();
         $cur ~~ /<dateorg>/;
         my DateOrg $d=date-from-dateorg($/{'dateorg'});
-note "date : ",$d;
         
         my Gnome::Gtk3::Grid $gd .= new;
         $content-area.gtk_container_add($gd);
@@ -315,7 +313,6 @@ note "date : ",$d;
         $gd.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('End')),              3, $l, 1, 1);
         $l++;
 
-        note "hour ",$d.begin.hour if $debug;
         my Gnome::Gtk3::ComboBoxText $cbt-hour .=new;
         $cbt-hour.append-text("$_") for 0..23;
         $cbt-hour.set-active($d.begin.hour??$d.begin.hour!!0);
@@ -490,7 +487,7 @@ note "date : ",$d;
         $gf.om.header ?? $gf.save !! $gf.file-save-as($!top-window);
     }
     method file-save-as {
-        $gf.file-save-as($!top-window); # TODO [#A] change title of windows
+        $gf.file-save-as($!top-window);
         1
     }
     method file-save-test {
@@ -533,7 +530,7 @@ note "date : ",$d;
         $gf.prior-B=False;
         $gf.prior-C=False;
         $gf.reconstruct-tree;
-        $gf.prior-A??$gf.tv.expand-all!!$gf.tv.collapse-all;
+        $gf.prior-A ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
         1
     }
     method option-prior-B {
@@ -541,7 +538,7 @@ note "date : ",$d;
         $gf.prior-A=False;
         $gf.prior-C=False;
         $gf.reconstruct-tree;
-        $gf.prior-B??$gf.tv.expand-all!!$gf.tv.collapse-all;
+        $gf.prior-B ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
         1
     }
     method option-prior-C {
@@ -549,7 +546,13 @@ note "date : ",$d;
         $gf.prior-A=False;
         $gf.prior-B=False;
         $gf.reconstruct-tree;
-        $gf.prior-C??$gf.tv.expand-all!!$gf.tv.collapse-all;
+        $gf.prior-C ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        1
+    }
+    method option-today-past {
+        $gf.today-past=!$gf.today-past;
+        $gf.reconstruct-tree;
+        $gf.today-past ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
         1
     }
     method view-fold-all {
@@ -589,7 +592,7 @@ note "date : ",$d;
         $gf.delete-branch($iter); 
         $task.level-move(1);
         push($task-parent.tasks,$task); 
-        $gf.create-task($task,$iter-parent);
+        $gf.create-task($task,$iter-parent,:cond(False));
         $task.darth-vader=$task-parent;
         $gf.expand-row($task-parent,0);
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
@@ -614,7 +617,7 @@ note "date : ",$d;
         }
         $task.darth-vader.darth-vader.tasks=@tasks;
         my @path-parent= $gf.ts.get-path($task.darth-vader.iter).get-indices.Array;
-        $gf.create-task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1);
+        $gf.create-task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1,False);
         $task.darth-vader=$task.darth-vader.darth-vader;
         $gf.expand-row($task,0);
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
@@ -639,11 +642,11 @@ note "date : ",$d;
         }
         1
     }
-    method scheduled ( :$t ) {
+    method scheduled ( :$task ) {
         $gf.change=1;
-        my $task=$t ?? $t !! $selected-task;
-        $task.scheduled=self.manage-date($task.scheduled);
-        $b-scheduled.set-label($task.scheduled ?? $task.scheduled.str !! "") if $b-scheduled;
+        my $t = $task ?? $task !! $selected-task;
+        $t.scheduled=self.manage-date($t.scheduled);
+        $b-scheduled.set-label($t.scheduled ?? $t.scheduled.str !! "-") if $b-scheduled;
         1
     }
     method clear-scheduled ( :$task, :$button ) {
@@ -652,11 +655,11 @@ note "date : ",$d;
         $button.set-label('-');
         1
     }
-    method deadline ( :$t ) {
+    method deadline ( :$task ) {
         $gf.change=1;
-        my $task=$t ?? $t !! $selected-task;
-        $task.deadline=self.manage-date($task.deadline);
-        $b-deadline.set-label($task.deadline ?? $task.deadline.str !! "") if $b-deadline;
+        my $t=$task ?? $task !! $selected-task;
+        $t.deadline=self.manage-date($t.deadline);
+        $b-deadline.set-label($t.deadline ?? $t.deadline.str !! "-") if $b-deadline;
         1
     }
     method clear-deadline ( :$task, :$button ) {
@@ -797,26 +800,28 @@ note "date : ",$d;
         my Gnome::Gtk3::RadioButton $rb-pr3 .= new( :group-from($rb-pr1), :label('B'));
         my Gnome::Gtk3::RadioButton $rb-pr4 .= new( :group-from($rb-pr1), :label('C'));
         if   !$task.priority         { $rb-pr1.set-active(1);}
-        elsif $task.priority eq '#A' { $rb-pr2.set-active(1);}
-        elsif $task.priority eq '#B' { $rb-pr3.set-active(1);} 
-        elsif $task.priority eq '#C' { $rb-pr4.set-active(1);} 
+        elsif $task.priority eq 'A' { $rb-pr2.set-active(1);}
+        elsif $task.priority eq 'B' { $rb-pr3.set-active(1);} 
+        elsif $task.priority eq 'C' { $rb-pr4.set-active(1);} 
         $g.gtk-grid-attach( $rb-pr2,                                                        0, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr3,                                                        1, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr4,                                                        2, 3, 1, 1);
         $g.gtk-grid-attach( $rb-pr1,                                                        3, 3, 1, 1);
 
+        # To manage Scheduled
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Scheduling')),                     0, 4, 1, 1);
-        $b-scheduled  .= new(:label($task.scheduled??$task.scheduled.str!!"-"));
-        $b-scheduled.register-signal(self, 'scheduled', 'clicked',:task($task));
+        $b-scheduled .= new(:label($task.scheduled ?? $task.scheduled.str !! "-"));
+        $b-scheduled.register-signal(self, 'scheduled', 'clicked', :task($task));
         $g.gtk-grid-attach($b-scheduled,                                                    1, 4, 2, 1);
 
         my Gnome::Gtk3::Button $b-cs  .= new(:label("X"));
         $b-cs.register-signal(self, 'clear-scheduled', 'clicked',:task($task),:button($b-scheduled));
         $g.gtk-grid-attach($b-cs,                                                           3, 4, 1, 1);
 
+        # To manage Deadline 
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Deadline')),                       0, 5, 1, 1);
-        $b-deadline  .= new(:label($task.deadline??$task.deadline.str!!"-"));
-        $b-deadline.register-signal(self, 'deadline', 'clicked',:task($task));
+        $b-deadline .= new(:label($task.deadline ?? $task.deadline.str !! "-"));
+        $b-deadline.register-signal(self, 'deadline', 'clicked', :task($task));
         $g.gtk-grid-attach($b-deadline,                                                     1, 5, 2, 1);
 
         my Gnome::Gtk3::Button $b-cd  .= new(:label("X"));
@@ -870,15 +875,15 @@ $tv.set-vexpand(1);
         $tvc.add-attribute( $crt2, 'text', 1);
         $tv.append-column($tvc);
 
-for $task.properties -> $row {
-note "Insert: ", $row.kv.join(', ');
-  $iter = $ls.gtk-list-store-append;
-  $ls.gtk-list-store-set( $iter, |$row.kv);
-}
+        for $task.properties -> $row {
+        note "Insert: ", $row.kv.join(', ');
+          $iter = $ls.gtk-list-store-append;
+          $ls.gtk-list-store-set( $iter, |$row.kv);
+        }
 
-$iter = $ls.gtk-list-store-append;
-$ls.set-value( $iter, 0, 'Test');
-$ls.set-value( $iter, 1, 'Suite');
+#        $iter = $ls.gtk-list-store-append;
+#        $ls.set-value( $iter, 0, 'Test');
+#        $ls.set-value( $iter, 1, 'Suite');
 
         
         # To edit text
@@ -903,7 +908,7 @@ $ls.set-value( $iter, 1, 'Suite');
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
             if !$task.iter {
-                $gf.create-task($task,$task.darth-vader.iter);
+                $gf.create-task($task,$task.darth-vader.iter,:cond(False));
                 push($task.darth-vader.tasks,$task);
             }
             if $task.header ne $e-edit.get-text {
@@ -962,7 +967,7 @@ $ls.set-value( $iter, 1, 'Suite');
     my @ctrl-keys;
 #    method tv-cursor-row (N-GtkTreePath $path, N-GObject $column , $a1 , $a2) {
     method tv-cursor-row () {
-        note 'ici : to remove';
+#        note 'ici : to remove';
         1
     }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
@@ -972,7 +977,7 @@ $ls.set-value( $iter, 1, 'Suite');
         # to edit task
         if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not (now) editable 
             $selected-task=$gf.search-task-from($gf.om,$iter); # TODO [#A] to memorize the current task
-            note 'task selected : ',$selected-task.header if $debug;
+            $l-info.set-text('task selected : ' ~ $selected-task.header);
             return if $is-return; # TODO To remove when tree-select is ok :0.1:
 
             my GtkTask $task=$gf.search-task-from($gf.om,$iter);
@@ -1061,8 +1066,8 @@ $ls.set-value( $iter, 1, 'Suite');
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                 given join('',@ctrl-keys) {
                     when  ""  {}
-                    when  "c" {say "c"}
-                    when  "x" {say "x"} # TODO Write in a info line
+                    when  "c" {$l-info.set-label("C-c")}
+                    when  "x" {$l-info.set-label("C-x")}
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k" {@ctrl-keys=''; $gf.delete-branch($clicked-task.iter); }
@@ -1071,7 +1076,7 @@ $ls.set-value( $iter, 1, 'Suite');
                     when "ct" {@ctrl-keys=''; self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; self.file-save}
                     when "xc" {@ctrl-keys=''; self.exit-gui}
-                    default   {@ctrl-keys=''; say "not use"}
+                    default   {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
             }
             # TODO Alt-Enter crée un frère après
@@ -1148,6 +1153,7 @@ sub make-menubar-list-option {
     create-sub-menu($menu,"#_A",$ash,"option-prior-A");
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
+    create-sub-menu($menu,"Today and past",$ash,"option-today-past");
     $menu
 }
 sub make-menubar-list-org {

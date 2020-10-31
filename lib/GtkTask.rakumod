@@ -12,14 +12,5 @@ class GtkTask is Task {
             }
         }
     }
-    method is-child-prior($prior) {
-        return True if $.priority && $.priority eq $prior; 
-        if $.tasks {
-            for $.tasks.Array {
-                return True if $_.is-child-prior($prior);
-            }
-        }
-        return False;
-    }
 }
 
