@@ -16,6 +16,11 @@ SCHEDULED: <2025-10-31 Fri>
 SCHEDULED: <2020-11-01 Son>
 ** DONE Scheduled 2019 and Done
 CLOSED: [2020-11-01 Son 12:14] SCHEDULED: <2019-11-01 Fri>
+* No Deadline
+** Deadline today (to update)
+DEADLINE: <2020-11-01 Son>
+** Deadline 2019
+DEADLINE: <2019-11-01 Fri>
 * No Properties
 ** One Property
 :PROPERTIES:
@@ -33,6 +38,8 @@ CLOSED: [2020-11-01 Son 12:14] SCHEDULED: <2019-11-01 Fri>
 :END:
 My text
 * TODO Todo
+DONE is hide by default.
+Use Option/Show DONE to display DONE tasks.
 ** DONE Done
 CLOSED: [2020-10-31 Sat 09:33]
 ** DONE Done without closed
@@ -41,8 +48,3 @@ CLOSED: [2020-10-31 Sat 09:33]
 *** [#B] Priority B
 ** Task with sub-task  with proority A
 *** [#A] Priority
-* No Deadline
-** Deadline today (to update)
-DEADLINE: <2020-11-01 Son>
-** Deadline 2019
-DEADLINE: <2019-11-01 Fri>

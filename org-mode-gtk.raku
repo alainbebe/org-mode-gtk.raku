@@ -520,8 +520,9 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.reconstruct-tree;
         1
     }
-    method option-no-done {
+    method option-no-done (:$widget) {
         $gf.no-done=!$gf.no-done;
+        $widget.set-label($gf.no-done  ?? 'Show _DONE' !! 'Hide _DONE');
         $gf.reconstruct-tree;
         1
     }
@@ -1149,11 +1150,11 @@ sub make-menubar-list-option {
     my Gnome::Gtk3::Menu $menu .= new;
     create-sub-menu($menu,"P_reface",$ash,'option-preface');
     create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
-    create-sub-menu($menu,"_Hide/Display DONE",$ash,'option-no-done');
+    create-sub-menu($menu,"Show _DONE",$ash,'option-no-done');
     create-sub-menu($menu,"#_A",$ash,"option-prior-A");
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
-    create-sub-menu($menu,"Today and past",$ash,"option-today-past");
+    create-sub-menu($menu,"_Today and past",$ash,"option-today-past");
     $menu
 }
 sub make-menubar-list-org {
