@@ -1071,12 +1071,12 @@ $tv.set-vexpand(1);
                     when  "x" {$l-info.set-label("C-x")}
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
-#                    when "k" {@ctrl-keys=''; $gf.delete-branch($clicked-task.iter); }
-                    when "cs" {@ctrl-keys=''; self.scheduled(:task($selected-task))}
-                    when "cd" {@ctrl-keys=''; self.deadline(:task($selected-task))}
-                    when "ct" {@ctrl-keys=''; self.edit-todo-done;}
-                    when "xs" {@ctrl-keys=''; self.file-save}
-                    when "xc" {@ctrl-keys=''; self.exit-gui}
+#                    when "k" {@ctrl-keys=''; $l-info.set-label('Delete branch'); $gf.delete-branch($clicked-task.iter); }
+                    when "cs" {@ctrl-keys=''; $l-info.set-label('Schedule'); self.scheduled(:task($selected-task))}
+                    when "cd" {@ctrl-keys=''; $l-info.set-label('Deadline'); self.deadline(:task($selected-task))}
+                    when "ct" {@ctrl-keys=''; $l-info.set-label('Save'); self.edit-todo-done;}
+                    when "xs" {@ctrl-keys=''; $l-info.set-label('Save'); self.file-save}
+                    when "xc" {@ctrl-keys=''; $l-info.set-label('Exit'); self.exit-gui}
                     default   {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
             }
