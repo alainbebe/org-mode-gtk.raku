@@ -1,6 +1,8 @@
 use Task;                       # TODO becasue use to-markup. To improve
 use GtkTask;
 use GramOrgMode;
+
+use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
 use Gnome::GObject::Value;
 use Gnome::Gtk3::TreeStore;
@@ -11,19 +13,36 @@ use Gnome::Gtk3::FileChooser;
 use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::MessageDialog;
+use Gnome::Gtk3::Box;
+use Gnome::Gtk3::ListStore;
+use Gnome::GObject::Value;
+use Gnome::Gtk3::TreeViewColumn;
+use Gnome::Gtk3::TreePath;
 
+use Data::Dump;
+
+my $g-tag; # TODO remove global value :refactoring:
+
+class AppSignalHandlers2 {
+    method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags) {
+        my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
+        my Gnome::Gtk3::TreeIter $iter = $ls.tree-model-get-iter($tree-path);
+        my $value = $ls.tree-model-get-value($iter,0);
+        $g-tag=@tags[$tree-path.to-string];
+    }
+}
 class GtkFile {
     has GtkTask                     $.om            is rw;
     has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
     has Gnome::Gtk3::ScrolledWindow $.sw            ; #.= new;
-    has                             $.i             is rw =0;          # for creation of level 1 in tree # TODO [#A] rename
-    has Int                         $.change        is rw =0;          # for ask question to save when quit
-    has                             $.no-done       is rw =True;       # display with no DONE
-    has                             $.prior-A       is rw =False;      # display #A          
-    has                             $.prior-B       is rw =False;      # display #B          
-    has                             $.prior-C       is rw =False;      # display #C          
-    has                             $.today-past    is rw =False;      # display only task in past and note Done          
+    has                             $.i             is rw =0;       # TODO [#A] for creation of level 1 in tree, rename :refactoring:
+    has Int                         $.change        is rw =0;       # for ask question to save when quit
+    has                             $.no-done       is rw =True;    # display with no DONE
+    has                             $.prior-A       is rw =False;   # display #A          
+    has                             $.prior-B       is rw =False;   # display #B          
+    has                             $.prior-C       is rw =False;   # display #C          
+    has                             $.today-past    is rw =False;   # display only task in past and note Done          
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -43,6 +62,9 @@ class GtkFile {
         $!tv.append-column($tvc);
     }
 
+    method clear-tag {
+        $g-tag=Nil;
+    }
     method iter-get-indices($task) { # find indices IN treestore, not tasks
         if $task.iter.defined && $task.iter.is-valid {
             return  $.ts.get-path($task.iter).get-indices
@@ -79,10 +101,11 @@ class GtkFile {
         if  !$cond || # if conditionnal, possibility to filter, else create all sub task
             $task.level==0 || (                                 # display always the base level
                 !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
-                && (!$.prior-A || $task.is-child-prior("A"))
-                && (!$.prior-B || $task.is-child-prior("B") || $task.is-child-prior("A"))
-                && (!$.prior-C || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
+                && (!$.prior-A    || $task.is-child-prior("A"))
+                && (!$.prior-B    || $task.is-child-prior("B") || $task.is-child-prior("A"))
+                && (!$.prior-C    || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.today-past || $task.is-in-past-and-no-done)
+                && (!$g-tag       || $task.content-tag($g-tag))
                 ) { 
             my Gnome::Gtk3::TreeIter $iter-task;
             my Gnome::Gtk3::TreeIter $parent-iter;
@@ -145,6 +168,43 @@ class GtkFile {
                 $lvl--;
             }
         }
+    }
+    method choice-tags (@tags,$top-window) {
+        my Gnome::Gtk3::Dialog $dialog .= new(
+            :title("Manage Date"), 
+            :parent($top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( [
+                "_Ok", GTK_RESPONSE_OK, 
+                "_Cancel", GTK_RESPONSE_CANCEL,
+            ] )
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        my Gnome::Gtk3::ListStore $ls .= new(:field-types( G_TYPE_STRING));
+
+        my Gnome::Gtk3::TreeView $tv .= new(:model($ls));
+$tv.set-hexpand(1);
+$tv.set-vexpand(1);
+        $tv.set-headers-visible(1);
+        $content-area.gtk_container_add($tv);
+
+        my Gnome::Gtk3::CellRendererText $crt1 .= new;
+        my Gnome::Gtk3::TreeViewColumn $tvc .= new;
+        $tvc.set-title('Tag');
+        $tvc.pack-end( $crt1, 1);
+        $tvc.add-attribute( $crt1, 'text', 0);
+        $tv.append-column($tvc);
+
+        for @tags -> $row { # TODO rewrite :0.1:
+          my $iter = $ls.gtk-list-store-append;
+          $ls.gtk-list-store-set( $iter, |$row.kv);
+        }
+
+        $dialog.show-all;
+        my AppSignalHandlers2 $ash .= new();
+        $tv.register-signal( $ash, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags));
+        my $response = $dialog.gtk-dialog-run;
+        $dialog.gtk_widget_destroy;
     }
     method verifiy-read($name) {
         self.save("test.org");

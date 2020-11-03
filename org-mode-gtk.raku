@@ -2,6 +2,13 @@
 
 use v6;
 
+use lib "lib";
+use DateOrg;
+use Task;
+use GtkTask;
+use GramOrgMode;
+use GtkFile;
+
 use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
 use Gnome::GObject::Value;
@@ -26,7 +33,6 @@ use Gnome::Gtk3::MenuItem;
 use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::MessageDialog;
 use Gnome::Gtk3::AboutDialog;
-use Gnome::Gtk3::Box;
 use Gnome::Gtk3::TextView;
 use Gnome::Gtk3::TextBuffer;
 use Gnome::Gtk3::FileChooser;
@@ -39,13 +45,6 @@ use Gnome::Gdk3::Keysyms;
 use NativeCall;
 
 use Data::Dump;
-
-use lib "lib";
-use DateOrg;
-use Task;
-use GtkTask;
-use GramOrgMode;
-use GtkFile;
 
 # global variable : to remove ?
 my $debug=1;            # to debug =1
@@ -554,6 +553,19 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.today-past=!$gf.today-past;
         $gf.reconstruct-tree;
         $gf.today-past ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        1
+    }
+    method option-search-tag {
+        my @tags=$gf.om.search-tags.flat;
+        $gf.choice-tags(@tags,$top-window);
+        $gf.reconstruct-tree;
+        $gf.tv.expand-all;
+        1
+    }
+    method option-clear-tag {
+        $gf.clear-tag;
+        $gf.reconstruct-tree;
+        $gf.tv.collapse-all;
         1
     }
     method view-fold-all {
@@ -1155,6 +1167,8 @@ sub make-menubar-list-option {
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Today and past",$ash,"option-today-past");
+    create-sub-menu($menu,"Search by _Tag",$ash,"option-search-tag");
+    create-sub-menu($menu,"Clear filter _Tag",$ash,"option-clear-tag");
     $menu
 }
 sub make-menubar-list-org {

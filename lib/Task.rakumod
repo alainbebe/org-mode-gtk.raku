@@ -132,6 +132,32 @@ class Task {
         }
         return False;
     }
+    method content-tag($tag) {
+#        note "tasks ",$.header;
+#        note "content-tag ",$tag, " ", $.tags.Array, " ",grep $tag, $.tags.Array; 
+        return True if
+            !($.todo && $.todo eq 'DONE')
+            && grep $tag, $.tags.Array; 
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.content-tag($tag);
+            }
+        }
+        return False;
+    }
+    method search-tags { # Todo :refactoring:
+        my @tags;
+        for $.tags.flat {
+            @tags.push($_) if $_;
+        }
+        if $.tasks {
+            for $.tasks.Array {
+                my @tags-child=$_.search-tags;
+                @tags.append(@tags-child);
+            }
+        }
+        return @tags.sort.unique;
+    }
     method inspect($task) {
         my $prefix=" " x $task.level*2;
         say $prefix,"level       ",$task.level;

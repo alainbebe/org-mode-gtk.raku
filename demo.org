@@ -48,3 +48,7 @@ CLOSED: [2020-10-31 Sat 09:33]
 *** [#B] Priority B
 ** Task with sub-task  with proority A
 *** [#A] Priority
+* Without tag
+** with tag                                                            :tag:
+** with tag version                                                    :0.1:
+** with 2 tags                                                         :tag:0.2:
