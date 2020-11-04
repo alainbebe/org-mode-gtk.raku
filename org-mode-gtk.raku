@@ -555,17 +555,19 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.today-past ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
         1
     }
-    method option-search-tag {
+    method option-search-tag (:$widget-clear){
         my @tags=$gf.om.search-tags.flat;
         $gf.choice-tags(@tags,$top-window);
         $gf.reconstruct-tree;
         $gf.tv.expand-all;
+        $widget-clear.set-sensitive(1);
         1
     }
-    method option-clear-tag {
+    method option-clear-tag (:$widget) {
         $gf.clear-tag;
         $gf.reconstruct-tree;
         $gf.tv.collapse-all;
+        $widget.set-sensitive(0);
         1
     }
     method view-fold-all {
@@ -1170,8 +1172,18 @@ sub make-menubar-list-option {
     create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
     create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
     create-sub-menu($menu,"_Today and past",$ash,"option-today-past");
-    create-sub-menu($menu,"Search by _Tag",$ash,"option-search-tag");
-    create-sub-menu($menu,"Clear filter _Tag",$ash,"option-clear-tag");
+
+    my Gnome::Gtk3::MenuItem $mi-search-tags .= new(:label('Search by _Tag'));
+    $mi-search-tags.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-search-tags);
+    my Gnome::Gtk3::MenuItem $mi-clear-tags .= new(:label("Clear filter _Tag"));
+    $mi-clear-tags.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-clear-tags);
+    $mi-clear-tags.set-sensitive(0);
+
+    $mi-search-tags.register-signal( $ash, "option-search-tag", 'activate',:widget-clear($mi-clear-tags));
+    $mi-clear-tags.register-signal( $ash, "option-clear-tag", 'activate');
+
     $menu
 }
 sub make-menubar-list-org {
