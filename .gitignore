@@ -3,5 +3,7 @@
 test.org
 test/*
 failed/*
+webdav/*
+myscp
 .precomp/*
 lib/.precomp

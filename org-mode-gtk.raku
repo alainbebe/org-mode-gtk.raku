@@ -970,7 +970,10 @@ $tv.set-vexpand(1);
             $new-text=$prop-buffer.get-text( $start, $end, 0);
             if ($new-text ne $task.properties.join("\n")) {
                 $gf.change=1;
-                $task.properties=map {$_.split(/" "/).cache},$new-text.split(/\n/);
+                $task.properties=map {
+                    $_ ~~ /^ (\w+) " " (.+)/; 
+                    ($0.Str,$1.Str)
+                }, $new-text.split(/\n/);
             }
         }
         $b-scheduled=Nil; # TODO to improve, pass as parameter

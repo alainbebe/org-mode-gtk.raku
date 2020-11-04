@@ -17,14 +17,14 @@ grammar Content {
     token property   { ^^ <!before ":END:" $$> ":" (\N+) \n }  # match
     token text       { .+ };
 }
-sub split-properties($properties) { # TO rewrite. ! split create Seq, use .cache
+sub split-properties($properties) {
     my List @result;
     my @properties;
     @properties.push($_) for split(/\n/,$properties);
     @properties.pop;
     for @properties {
-        $_ ~~ s/":"//;
-        push(@result,$_.split(/":"" "*/).cache);
+        $_ ~~ /^ ":" (\w+) ":" (.*) /; # structure ":key: value". 
+        push(@result,($0.Str,$1.Str));
     }
     return @result;
 }

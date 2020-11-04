@@ -233,8 +233,9 @@ $tv.set-vexpand(1);
             }
 #        } while self.om;
         self.om.header=$name;   # TODO [#B] to refactor
-    #    say Dump self.om;
-    #    say self.om.to-text;
+#        say Dump self.om;
+#        say self.om.to-text;
+#        self.om.inspect(self.om);
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:
         self.create-task(self.om);
         $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
