@@ -21,6 +21,9 @@ https://github.com/orgzly/orgzly-android/issues/529
 CLOSED: [2020-05-28 Thu 07:51]
 aligné sur Orgzly, en anglais
 ** TODO autcomplétion des tags
+** TODO An Image :0.x:
+To display C-c C-x C-v
+[[./img/test.png]] 
 * Bug
 ** DONE [#A] Save File ne fonctionne plus
 CLOSED: [2020-08-02 Son 11:20]
