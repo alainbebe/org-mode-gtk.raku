@@ -23,7 +23,7 @@ sub split-properties($properties) {
     @properties.push($_) for split(/\n/,$properties);
     @properties.pop;
     for @properties {
-        $_ ~~ /^ ":" (\w+) ":" (.*) /; # structure ":key: value". 
+        $_ ~~ /^ ":" (\w+) ":" " "* (.*) /; # structure ":key: value". 
         push(@result,($0.Str,$1.Str));
     }
     return @result;
