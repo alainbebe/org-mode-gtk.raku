@@ -50,10 +50,13 @@ class Task {
             if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$header~'</span>'}
             elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$header~'</span>'}
             else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
-
-            if $.tags {
-                $display~=' <span foreground="grey">'~$.tags~'</span>'; # TODO write "tag" in another column to align right
-            }
+        }
+        return $display;
+    }
+    method display-tags {
+        my $display='';
+        if $.tags {
+            $display~=' <span foreground="grey">'~$.tags~'</span>';
         }
         return $display;
     }

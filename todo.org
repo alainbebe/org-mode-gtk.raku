@@ -143,7 +143,6 @@ lancer si on click sur le lien et non sur la tache
 (iter ne sera alors plus quepour les headers mais aussi pour les textes, verifier si ça pose problème
 si plusieurs liens, ouvir une dialog box ?
 ** TODO Refactoring new file with GtkFile = .new
- ::
 ** DONE [#A] Fold All
 CLOSED: [2020-06-27 Sat 09:17]
 Option/fold all
@@ -169,7 +168,8 @@ créer une tache sans iter et la faire manager par method tv
  en fait, extraire de tv button la partie sans iter
 ** TODO Edit task in mode text                                         :0.x:
 Possibility to edit a task (ot child) in a text editor
-** TODO Tag : Have a second column to display "Tags"
+** DONE Tag : Have a second column to display "Tags"
+CLOSED: [2020-11-06 Fri 17:24]
 ** TODO Align shortcut of menu to right
 ** TODO Better manage Shift-^
 Work to change prioritiy, but change
@@ -247,7 +247,8 @@ Use Array, not Hash
 CLOSED: [2020-10-08 Thu 08:06]
 ** DONE rewriting inspect (2 files)                                    :0.1:
 CLOSED: [2020-11-06 Fri 12:06]
-** TODO Inspect : return string, no say                                ::
+** TODO Inspect : return string, no say
+ ::
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

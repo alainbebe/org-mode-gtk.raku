@@ -46,7 +46,7 @@ class GtkFile {
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
-        $!ts                  .= new(:field-types(G_TYPE_STRING));
+        $!ts                  .= new(:field-types(G_TYPE_STRING, G_TYPE_STRING));
         $!tv                  .= new(:model($!ts));
         $!tv.set-hexpand(1);
         $!tv.set-vexpand(1);
@@ -59,6 +59,12 @@ class GtkFile {
         my Gnome::Gtk3::CellRendererText $crt1 .= new;
         $tvc.pack-end( $crt1, 1);
         $tvc.add-attribute( $crt1, 'markup', 0);
+        $!tv.append-column($tvc);
+
+        $tvc .= new;
+        my Gnome::Gtk3::CellRendererText $crt2 .= new;
+        $tvc.pack-end( $crt2, 1);
+        $tvc.add-attribute( $crt2, 'markup', 1);
         $!tv.append-column($tvc);
     }
 
@@ -116,7 +122,7 @@ class GtkFile {
                 } else {
                     $parent-iter = $iter;
                 }
-                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header);
+                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header,1,$task.display-tags);
                 if $task.text {
                     for $task.text.Array {
                         my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 0, to-markup($_))

@@ -929,12 +929,16 @@ $tv.set-vexpand(1);
             if $task.header ne $e-edit.get-text {
                 $gf.change=1;
                 $task.header=$e-edit.get-text.trim;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                $gf.ts.set-value( $task.iter, 0, $task.display-header);
             }
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
                 $gf.change=1;
-                $task.tags=split(/" "/,$e-edit-tags.get-text);
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                if $e-edit-tags.get-text {
+                    $task.tags=split(/" "/,$e-edit-tags.get-text);
+                } else {
+                    $task.tags=();
+                }
+                $gf.ts.set-value( $task.iter, 1, $task.display-tags);
             }
             my $todo="";
             $todo="TODO" if $rb-td2.get-active();
@@ -1091,7 +1095,7 @@ $tv.set-vexpand(1);
 #                    when "k" {@ctrl-keys=''; $l-info.set-label('Delete branch'); $gf.delete-branch($clicked-task.iter); }
                     when "cs" {@ctrl-keys=''; $l-info.set-label('Schedule'); self.scheduled(:task($selected-task))}
                     when "cd" {@ctrl-keys=''; $l-info.set-label('Deadline'); self.deadline(:task($selected-task))}
-                    when "ct" {@ctrl-keys=''; $l-info.set-label('Save'); self.edit-todo-done;}
+                    when "ct" {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; $l-info.set-label('Save'); self.file-save}
                     when "xc" {@ctrl-keys=''; $l-info.set-label('Exit'); self.exit-gui}
                     default   {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
