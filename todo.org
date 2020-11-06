@@ -10,18 +10,19 @@ CLOSED: [2020-05-15 Fri 17:59]
 CLOSED: [2020-05-15 Fri 17:59]
 ** DONE pass to level 3 and more
 CLOSED: [2020-05-03 dim  07:51]
-** TODO Improve Scheduled et Deadline
+** DONE Improve Scheduled et Deadline
+CLOSED: [2020-11-06 Fri 07:57]
 repeat, delay, hms
 *** DONE Manage "Closed"                                               :0.1:
 CLOSED: [2020-10-24 Sat 13:47] SCHEDULED: <2020-05-09 Sat>
 Actuellement le scheduled est ignoré, car je supposais qu'il était au début.
-*** TODO Orgzly mode vs emacs mode                                     :0.x:
+** TODO Orgzly mode vs emacs mode                                      :0.x:
 https://github.com/orgzly/orgzly-android/issues/529
 ** DONE Emacs windows write "lun." , orgzly "Mon"
 CLOSED: [2020-05-28 Thu 07:51]
 aligné sur Orgzly, en anglais
 ** TODO autcomplétion des tags
-** TODO An Image :0.x:
+** TODO An Image                                                       :0.x:
 To display C-c C-x C-v
 [[./img/test.png]] 
 * Bug
@@ -41,6 +42,8 @@ CLOSED: [2020-05-10 dim  09:02]
 ** DONE [#A] Disable Markup for code
 CLOSED: [2020-05-12 mar  07:42]
 s/</&lt;/
+** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
+CLOSED: [2020-11-06 Fri 09:58]
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
@@ -68,10 +71,11 @@ Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Sort Priorities
 ** DONE Create a different display for README style or TODO style
-** TODO [#B] Use GdkEventKey for keyboard
+** TODO Use GdkEventKey for keyboard
 *** DONE Short-Cut  "Ctrl-s" forsave
 CLOSED: [2020-10-05 Mon 07:13]
-*** TODO link F11 to maximize the window
+*** DONE link F11 to maximize the window
+CLOSED: [2020-11-06 Fri 07:57]
 Me or Gnome::Gtk3
 *** TODO Shift-left unfold only current selection, not child
 or capture keyboard and redifine de Shift-right
@@ -145,12 +149,15 @@ CLOSED: [2020-06-27 Sat 09:17]
 Option/fold all
 ** DONE [#A] When Add-sub task unflod task, not sub-task
 CLOSED: [2020-06-27 Sat 09:31]
-** TODO Edit Properties
-** TODO Add Brother task
-** TODO [#A] Bug if view #A, and #A in DONE task
+** DONE Edit Properties
+CLOSED: [2020-11-06 Fri 07:57]
+** DONE Add Brother task
+CLOSED: [2020-11-06 Fri 07:57]
+** TODO [#A] Bug if view #A, and #A in DONE task                       :0.1:
 xx TODO Create Tab to edit 2 or more files
 xxx DONE [#A] put $change in GtkFile
-** TODO [#A] Display message (saved file,...) when use shortcut
+** DONE [#A] Display message (saved file,...) when use shortcut
+CLOSED: [2020-11-06 Fri 07:57]
 ** DONE Put shortcut on right of menu entries                          :0.1:
 CLOSED: [2020-10-10 Sat 13:53]
 ** TODO Indentation des tag
@@ -162,6 +169,20 @@ créer une tache sans iter et la faire manager par method tv
  en fait, extraire de tv button la partie sans iter
 ** TODO Edit task in mode text                                         :0.x:
 Possibility to edit a task (ot child) in a text editor
+** TODO Tag : Have a second column to display "Tags"
+** TODO Align shortcut of menu to right
+** TODO Better manage Shift-^
+Work to change prioritiy, but change
+also the highlighted line.
+2 Solution
+- désactivated in GTK this comportement
+- repositionned the higlighted on the task
+** TODO Sparse Tree
+Create an other mode of sprase tree
+As Emac, hide branch
+(and note reconstruct)
+Necessary to have Gtk.TreeModelFilter
+
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -224,6 +245,8 @@ Use Array, not Hash
 ** TODO Create a auto-save
 ** DONE Create a GtkFile.pm
 CLOSED: [2020-10-08 Thu 08:06]
+** TODO rewriting inspect (2 files)                                    :0.1:
+*** TODO return string, no say                                         :0.1:
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

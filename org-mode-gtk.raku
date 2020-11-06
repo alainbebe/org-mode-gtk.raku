@@ -632,7 +632,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         }
         $task.darth-vader.darth-vader.tasks=@tasks;
         my @path-parent= $gf.ts.get-path($task.darth-vader.iter).get-indices.Array;
-        $gf.create-task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1,False);
+        $gf.create-task($task,$task.darth-vader.darth-vader.iter,@path-parent[*-1]+1,:cond(False));
         $task.darth-vader=$task.darth-vader.darth-vader;
         $gf.expand-row($task,0);
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));

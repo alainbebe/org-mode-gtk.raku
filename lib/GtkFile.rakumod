@@ -97,7 +97,7 @@ class GtkFile {
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
-    method create-task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool $cond = True) {
+    method create-task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool :$cond = True) {
         if  !$cond || # if conditionnal, possibility to filter, else create all sub task
             $task.level==0 || (                                 # display always the base level
                 !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
