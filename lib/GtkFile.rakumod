@@ -157,18 +157,6 @@ class GtkFile {
         $!om.delete-iter;
         $.create-task($!om);
     }
-    my $lvl=0;
-    method inspect($task) {
-        say "ind : ",$.iter-get-indices($task), " lvl:",$lvl," ",$task.header, " lvl:",$task.level, " pr:",$task.priority;
-#        say $task.herite-properties('presentation');
-        if $task.tasks {
-            for $task.tasks.Array {
-                $lvl++;
-                $.inspect($_);
-                $lvl--;
-            }
-        }
-    }
     method choice-tags (@tags,$top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
             :title("Manage Date"), 
@@ -235,7 +223,7 @@ $tv.set-vexpand(1);
         self.om.header=$name;   # TODO [#B] to refactor
 #        say Dump self.om;
 #        say self.om.to-text;
-#        self.om.inspect(self.om);
+#        self.om.inspect;
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:
         self.create-task(self.om);
         $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;

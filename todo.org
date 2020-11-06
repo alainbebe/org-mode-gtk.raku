@@ -245,8 +245,9 @@ Use Array, not Hash
 ** TODO Create a auto-save
 ** DONE Create a GtkFile.pm
 CLOSED: [2020-10-08 Thu 08:06]
-** TODO rewriting inspect (2 files)                                    :0.1:
-*** TODO return string, no say                                         :0.1:
+** DONE rewriting inspect (2 files)                                    :0.1:
+CLOSED: [2020-11-06 Fri 12:06]
+** TODO Inspect : return string, no say                                ::
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

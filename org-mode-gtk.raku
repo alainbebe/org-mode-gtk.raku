@@ -506,7 +506,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         }
     }
     method debug-inspect {
-        $gf.om.inspect($gf.om);
+        $gf.om.inspect;
     }
     method option-presentation { # TODO do this by task and not only for the entire tree
         $gf.change=1;
@@ -1306,7 +1306,6 @@ sub make-menubar-list-help  {
 #-----------------------------------main--------------------------------
 sub MAIN($arg = '') {
     $gf.file-open($arg,$top-window);
-#    $gf.inspect($gf.om); # TODO create a method without param
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
     $gf.tv.register-signal( $ash, 'tv-cursor-row', 'cursor-changed');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');

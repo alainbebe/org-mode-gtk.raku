@@ -158,24 +158,23 @@ class Task {
         }
         return @tags.sort.unique;
     }
-    method inspect($task) {
-        my $prefix=" " x $task.level*2;
-        say $prefix,"level       ",$task.level;
-        say $prefix,"header      ",$task.header;
-        say $prefix,"todo        ",$task.todo if $task.todo;
-        say $prefix,"priority    ",$task.priority if $task.priority;
-        say $prefix,"tags        ",$_ for $task.tags;
-        say $prefix,"closed      ",$task.closed    if $task.closed   ;
-        say $prefix,"deadline    ",$task.deadline  if $task.deadline ;
-        say $prefix,"scheduled   ",$task.scheduled if $task.scheduled;
-        say $prefix,"properties  ",$_ for $task.properties;
-        say $prefix,"text        ",$_ for $task.text;
-        say $prefix,"darth-vader ",$task.darth-vader.header if $task.darth-vader;
-        if $task.tasks {
-            for $task.tasks.Array {
-                $.inspect($_);
+    method inspect {
+        my $prefix=" " x $.level*2;
+        say $prefix,"level       ",$.level;
+        say $prefix,"header      ",$.header;
+        say $prefix,"todo        ",$.todo if $.todo;
+        say $prefix,"priority    ",$.priority if $.priority;
+        { say $prefix,"tags        ",$_ for $.tags } if $.tags;
+        say $prefix,"closed      ",$.closed    if $.closed   ;
+        say $prefix,"deadline    ",$.deadline  if $.deadline ;
+        say $prefix,"scheduled   ",$.scheduled if $.scheduled;
+        { say $prefix,"properties  ",$_ for $.properties } if $.properties;
+        { say $prefix,"text        ",$_ for $.text } if $.text;
+        say $prefix,"darth-vader ",$.darth-vader.header if $.darth-vader;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.inspect;
             }
         }
-        say $prefix,"-----";
     }
 }
