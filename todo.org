@@ -254,8 +254,11 @@ CLOSED: [2020-11-06 Fri 12:06]
 SCHEDULED: <2020-11-07 Sat>
 ** TODO Display in local language
 French : sam 7 nov
-** TODO Find : Create a spase tree
+** DONE Find : Create a spase tree
+CLOSED: [2020-11-07 Sat 09:48]
 in finding in header and text
+** TODO Improve "find"
+with regex, case insensitive
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

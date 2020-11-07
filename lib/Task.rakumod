@@ -137,9 +137,19 @@ class Task {
         }
         return False;
     }
+    method find($word) {
+        return True if
+            !($.todo && $.todo eq 'DONE')
+            && ($.header ~~ /$word/
+                || $.text ~~ /$word/); 
+        if $.tasks {
+            for $.tasks.Array {
+                return True if $_.find($word);
+            }
+        }
+        return False;
+    }
     method content-tag($tag) {
-#        note "tasks ",$.header;
-#        note "content-tag ",$tag, " ", $.tags.Array, " ",grep $tag, $.tags.Array; 
         return True if
             !($.todo && $.todo eq 'DONE')
             && grep $tag, $.tags.Array; 

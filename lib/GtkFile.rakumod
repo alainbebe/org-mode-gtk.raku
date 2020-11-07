@@ -14,6 +14,7 @@ use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::MessageDialog;
 use Gnome::Gtk3::Box;
+use Gnome::Gtk3::Entry;
 use Gnome::Gtk3::ListStore;
 use Gnome::GObject::Value;
 use Gnome::Gtk3::TreeViewColumn;
@@ -21,7 +22,8 @@ use Gnome::Gtk3::TreePath;
 
 use Data::Dump;
 
-my $g-tag; # TODO remove global value :refactoring:
+my $g-tag;  # TODO remove global value :refactoring:
+my $g-find; # TODO remove global value :refactoring:
 
 class AppSignalHandlers2 {
     method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags) {
@@ -68,9 +70,6 @@ class GtkFile {
         $!tv.append-column($tvc);
     }
 
-    method clear-tag {
-        $g-tag=Nil;
-    }
     method iter-get-indices($task) { # find indices IN treestore, not tasks
         if $task.iter.defined && $task.iter.is-valid {
             return  $.ts.get-path($task.iter).get-indices
@@ -111,6 +110,7 @@ class GtkFile {
                 && (!$.prior-B    || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.prior-C    || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.today-past || $task.is-in-past-and-no-done)
+                && (!$g-find      || $task.find($g-find))
                 && (!$g-tag       || $task.content-tag($g-tag))
                 ) { 
             my Gnome::Gtk3::TreeIter $iter-task;
@@ -163,9 +163,36 @@ class GtkFile {
         $!om.delete-iter;
         $.create-task($!om);
     }
+    method clear-find {
+        $g-find=Nil;
+    }
+    method choice-find ($top-window) {
+        my Gnome::Gtk3::Dialog $dialog .= new(
+            :title("Enter a word"), 
+            :parent($top-window),
+            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
+            :button-spec( [
+                "_Ok", GTK_RESPONSE_OK, 
+                "_Cancel", GTK_RESPONSE_CANCEL,
+            ] )
+        );
+        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
+        my Gnome::Gtk3::Entry $e-edit .= new;
+        $content-area.gtk_container_add($e-edit);
+
+        $dialog.show-all;
+        my $response = $dialog.gtk-dialog-run;
+        if $response == GTK_RESPONSE_OK {
+            $g-find=$e-edit.get-text;
+        }
+        $dialog.gtk_widget_destroy;
+    }
+    method clear-tag {
+        $g-tag=Nil;
+    }
     method choice-tags (@tags,$top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
-            :title("Manage Date"), 
+            :title("Choice a tag (double-click, and ok)"), 
             :parent($top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
