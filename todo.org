@@ -152,7 +152,8 @@ CLOSED: [2020-06-27 Sat 09:31]
 CLOSED: [2020-11-06 Fri 07:57]
 ** DONE Add Brother task
 CLOSED: [2020-11-06 Fri 07:57]
-** TODO [#A] Bug if view #A, and #A in DONE task                       :0.1:
+** DONE [#A] Bug if view #A, and #A in DONE task                       :0.1:
+CLOSED: [2020-11-07 Sat 09:07]
 xx TODO Create Tab to edit 2 or more files
 xxx DONE [#A] put $change in GtkFile
 ** DONE [#A] Display message (saved file,...) when use shortcut
@@ -183,6 +184,7 @@ As Emac, hide branch
 (and note reconstruct)
 Necessary to have Gtk.TreeModelFilter
 
+** TODO Change size of char
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -229,9 +231,9 @@ better is
  * DONE
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
+** TODO Create copy/paste
 ** TODO Create Undo/Redo
 https://en.m.wikipedia.org/wiki/Undo
-** TODO Create copy/paste
 ** DONE Warning if Save as on an existent file                         :0.1:
 CLOSED: [2020-10-24 Sat 11:24]
 ** TODO Add white line as Orgzly
@@ -248,7 +250,12 @@ CLOSED: [2020-10-08 Thu 08:06]
 ** DONE rewriting inspect (2 files)                                    :0.1:
 CLOSED: [2020-11-06 Fri 12:06]
 ** TODO Inspect : return string, no say
- ::
+** TODO Not display year is current year
+SCHEDULED: <2020-11-07 Sat>
+** TODO Display in local language
+French : sam 7 nov
+** TODO Find : Create a spase tree
+in finding in header and text
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

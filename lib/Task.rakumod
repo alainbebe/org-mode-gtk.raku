@@ -114,7 +114,9 @@ class Task {
         return $orgmode;
     }
     method is-child-prior($prior) {
-        return True if $.priority && $.priority eq $prior; 
+        return True if 
+            !($.todo && $.todo eq 'DONE')
+            && $.priority && $.priority eq $prior; 
         if $.tasks {
             for $.tasks.Array {
                 return True if $_.is-child-prior($prior);
