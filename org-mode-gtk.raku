@@ -766,6 +766,18 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         }
         1
     }
+    method edit-cut (:$widget,:$widget-paste) {
+        $gf.cut-branch($selected-task.iter);
+        $widget.set-sensitive(0);
+        $widget-paste.set-sensitive(1);
+        1
+    }
+    method edit-paste (:$widget,:$widget-cut) {
+        $gf.paste-branch($selected-task.iter);
+        $widget.set-sensitive(0);
+        $widget-cut.set-sensitive(1);
+        1
+    }
     method fold-branch {
         $gf.fold-branch($selected-task);
         1
@@ -1179,6 +1191,18 @@ sub make-menubar-list-edit {
     create-sub-menu($menu,"Add child",$ash,'add-child');
     create-sub-menu($menu,"Delete task (and sub-tasks)",$ash,'del-button-click');
     create-sub-menu($menu,"Delete sub-tasks",$ash,'del-children-button-click');
+
+    my Gnome::Gtk3::MenuItem $mi-cut .= new(:label('_Cut'));
+    $mi-cut.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-cut);
+    my Gnome::Gtk3::MenuItem $mi-paste .= new(:label("_Paste"));
+    $mi-paste.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-paste);
+    $mi-paste.set-sensitive(0);
+
+    $mi-cut.register-signal( $ash, "edit-cut", 'activate',:widget-paste($mi-paste));
+    $mi-paste.register-signal( $ash, "edit-paste", 'activate',:widget-cut($mi-cut));
+
     $menu
 }
 sub make-menubar-list-option {

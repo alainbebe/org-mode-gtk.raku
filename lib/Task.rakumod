@@ -137,6 +137,16 @@ class Task {
         }
         return False;
     }
+    # use when paste a branch to a different level
+    method change-level($level) {
+        $.level=$level;
+        if $.tasks {
+            for $.tasks.Array {
+                $_.change-level($level+1);
+            }
+        }
+        return False;
+    }
     method find($word) {
         return True if
             !($.todo && $.todo eq 'DONE')

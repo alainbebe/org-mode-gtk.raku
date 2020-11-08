@@ -22,8 +22,9 @@ use Gnome::Gtk3::TreePath;
 
 use Data::Dump;
 
-my $g-tag;  # TODO remove global value :refactoring:
-my $g-find; # TODO remove global value :refactoring:
+my $g-tag;    # TODO remove global value :refactoring:
+my $g-find;   # TODO remove global value :refactoring:
+my $task-cut; # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
 
 class AppSignalHandlers2 {
     method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags) {
@@ -98,6 +99,21 @@ class GtkFile {
         my $task=$.search-task-from($.om,$iter);
         $task.darth-vader.tasks = grep { !$.is-my-iter($_,$iter) }, $task.darth-vader.tasks;
         $.ts.gtk-tree-store-remove($iter);
+    }
+    method cut-branch($iter) {
+        $.change=1;
+        $task-cut=$.search-task-from($.om,$iter);
+        $task-cut.darth-vader.tasks = grep { !$.is-my-iter($_,$iter) }, $task-cut.darth-vader.tasks;
+        $.ts.gtk-tree-store-remove($iter);
+    }
+    method paste-branch($iter) {
+        $.change=1;
+        my $task=$.search-task-from($.om,$iter);
+        $task-cut.darth-vader=$task;
+        $task-cut.change-level($task.level+1);
+        push($task.tasks,$task-cut);
+        self.reconstruct-tree;
+        $.unfold-branch($task); # TODO work for level 1, not sub-level. To correct when don't use "reconstruct-tree'
     }
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
