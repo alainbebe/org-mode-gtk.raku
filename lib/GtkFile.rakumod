@@ -19,6 +19,7 @@ use Gnome::Gtk3::ListStore;
 use Gnome::GObject::Value;
 use Gnome::Gtk3::TreeViewColumn;
 use Gnome::Gtk3::TreePath;
+use Gnome::Gtk3::TreeSelection;
 
 use Data::Dump;
 
@@ -178,6 +179,9 @@ class GtkFile {
         $.ts.clear;
         $!om.delete-iter;
         $.create-task($!om);
+        my Gnome::Gtk3::TreePath $tp .= new(:string("0"));
+        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
+        $tselect.select-path($tp);
     }
     method clear-find {
         $g-find=Nil;
@@ -270,7 +274,9 @@ $tv.set-vexpand(1);
             }
 #        } while self.om;
         self.om.header=$name;   # TODO [#B] to refactor
-#        say Dump self.om;
+#        say self.om;
+#        say Dump(self.om , :max-recursion(2));
+#        say Dump self.om; # doesn't work, probably because recursivity with darth-vader
 #        say self.om.to-text;
 #        self.om.inspect;
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:

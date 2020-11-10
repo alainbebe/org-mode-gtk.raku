@@ -83,7 +83,6 @@ my Gnome::Gtk3::Entry $e-edit-tags;
 my Gnome::Gtk3::Entry $e-edit-text;
 my Gnome::Gtk3::Dialog $dialog;
 my Gnome::Gtk3::TextBuffer $text-buffer;
-my GtkTask $selected-task;
 
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
@@ -495,13 +494,13 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         say "\n"; # yes, 2 lines.
     }
     method edit-todo-done {
-        if $selected-task {
-            if $selected-task.todo eq "TODO" {
-                self.todo-shortcut(:iter($selected-task.iter),:todo("DONE"));
-            } elsif $selected-task.todo eq "DONE" {
-                self.todo-shortcut(:iter($selected-task.iter),:todo(""))}
+        if $.highlighted-task {
+            if $.highlighted-task.todo eq "TODO" {
+                self.todo-shortcut(:iter($.highlighted-task.iter),:todo("DONE"));
+            } elsif $.highlighted-task.todo eq "DONE" {
+                self.todo-shortcut(:iter($.highlighted-task.iter),:todo(""))}
             else                                {
-                self.todo-shortcut(:iter($selected-task.iter),:todo("TODO"));
+                self.todo-shortcut(:iter($.highlighted-task.iter),:todo("TODO"));
             }
         }
     }
@@ -586,6 +585,20 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method view-fold-all {
         $gf.tv.collapse-all;
+        if !$.highlighted-task { # TODO better manage the absance of highlighted task 
+            # No highlighted task if 
+            # * un
+            # * deux
+            # * trois
+            # ** sub-trois
+            # hightlight sub-trois
+            # ctrl-^
+            # fold all
+            # no task selected
+            my Gnome::Gtk3::TreePath $tp .= new(:string("0"));
+            my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
+            $tselect.select-path($tp);
+        }
         1
     }
     method view-unfold-all {
@@ -598,19 +611,48 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method add-brother-down {
         $gf.change=1;
-        my $task=$selected-task;
+        my $task=$.highlighted-task;
         my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
         self.manage($child);
     }
+    method highlighted-task {
+        my Task $task;
+#        note 'edit gs: ', $gf.tv.gtk_tree_view_get_selection.perl;
+        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
+#        note 'edit sr: ', $tselect.get-selected-rows(N-GObject);
+        if $tselect.count-selected-rows {
+            my Gnome::Glib::List $selected-rows .= new(
+                :native-object($tselect.get-selected-rows(N-GObject))
+            );
+            # keep a eye at the front to remove the list later
+            my Gnome::Glib::List $copy = $selected-rows.copy;
+
+            if ?$selected-rows { # TODO Change in while where manage selected multi-line
+                my Gnome::Gtk3::TreePath $tp .= new(:native-object(
+                    nativecast( N-GObject, $selected-rows.data)
+                ));
+    #            note "tp ", $tp.to-string;
+                my Gnome::Gtk3::TreeIter $iter;
+    #            $iter = $gf.ts.get-iter($tp); # TODO expected Gnome::Gtk3::TreePath::N-GtkTreePath but got N-GObject (N-GObject.new)
+                $iter = $gf.ts.get-iter-from-string($tp.to-string);
+    #            note "it ",$iter;
+                $task=$gf.search-task-from($gf.om,$iter);
+    #            note "ta ",$task.header;
+                $selected-rows .= next;
+            }
+            $copy.clear-object;
+        } # TODO implemented "else", case of there are not task highlighted, that is possible if file is empty, improbable but...
+        return $task;
+    }
     method add-child {
-        $gf.change=1; # TODO to do if manage return OK
-        my $task=$selected-task;
+        $gf.change=1; # TODO to do if manage return OK and not Cancel
+        my $task=$.highlighted-task;
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         self.manage($child);
         $gf.unfold-branch($task);
     }
     method move-right-button-click {
-        my $iter=$selected-task.iter;
+        my $iter=$.highlighted-task.iter;
         my @path= $gf.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
         my $task=$gf.search-task-from($gf.om,$iter);
@@ -626,11 +668,10 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.expand-row($task-parent,0);
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
         $tselect.select-iter($task.iter);
-        $selected-task=$task;
         1
     }
     method move-left-button-click {
-        my $iter=$selected-task.iter;
+        my $iter=$.highlighted-task.iter;
         my $task=$gf.search-task-from($gf.om,$iter);
         return if $task.level <= 1; # level 0 and 1 don't go to left
         $task.level-move(-1);
@@ -651,11 +692,10 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.expand-row($task,0);
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($gf.tv));
         $tselect.select-iter($task.iter);
-        $selected-task=$task;
         1
     }
     method move-up-down-button-click ( :$inc --> Int ) { # TODO I don't pass iter as parameter. To improve
-        my $iter=$selected-task.iter;
+        my $iter=$.highlighted-task.iter;
         my @path= $gf.ts.get-path($iter).get-indices.Array;
         if !(@path[*-1] eq "0" && $inc==-1) {     # if is not the first child in treestore (because if have DONE hide) for up
             my $iter2=$gf.brother($iter,$inc);
@@ -673,7 +713,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method scheduled ( :$task ) {
         $gf.change=1;
-        my $t = $task ?? $task !! $selected-task;
+        my $t = $task ?? $task !! $.highlighted-task;
         $t.scheduled=self.manage-date($t.scheduled);
         $b-scheduled.set-label($t.scheduled ?? $t.scheduled.str !! "-") if $b-scheduled;
         1
@@ -686,7 +726,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method deadline ( :$task ) {
         $gf.change=1;
-        my $t=$task ?? $task !! $selected-task;
+        my $t=$task ?? $task !! $.highlighted-task;
         $t.deadline=self.manage-date($t.deadline);
         $b-deadline.set-label($t.deadline ?? $t.deadline.str !! "-") if $b-deadline;
         1
@@ -730,33 +770,33 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method priority-up {
         $gf.change=1;
-        given $selected-task.priority {
-            when  ""  {$selected-task.priority="C"}
-            when  "A"  {$selected-task.priority=""}
-            when  "B"  {$selected-task.priority="A"}
-            when  "C"  {$selected-task.priority="B"}
+        given $.highlighted-task.priority {
+            when  ""  {$.highlighted-task.priority="C"}
+            when  "A"  {$.highlighted-task.priority=""}
+            when  "B"  {$.highlighted-task.priority="A"}
+            when  "C"  {$.highlighted-task.priority="B"}
         }
-        $gf.ts.set_value( $selected-task.iter, 0,$selected-task.display-header); # TODO create $gf.ts-set-header($task)
+        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header); # TODO create $gf.ts-set-header($task)
     }
     method priority-down {
         $gf.change=1;
-        given $selected-task.priority {
-            when  ""  {$selected-task.priority="A"}
-            when  "A"  {$selected-task.priority="B"}
-            when  "B"  {$selected-task.priority="C"}
-            when  "C"  {$selected-task.priority=""}
+        given $.highlighted-task.priority {
+            when  ""  {$.highlighted-task.priority="A"}
+            when  "A"  {$.highlighted-task.priority="B"}
+            when  "B"  {$.highlighted-task.priority="C"}
+            when  "C"  {$.highlighted-task.priority=""}
         }
-        $gf.ts.set_value( $selected-task.iter, 0,$selected-task.display-header); # TODO create $gf.ts-set-header($task)
+        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header); # TODO create $gf.ts-set-header($task)
     }
     method del-button-click {
         $gf.change=1;
-        $gf.delete-branch($selected-task.iter);
+        $gf.delete-branch($.highlighted-task.iter);
         1
     }
     method del-children-button-click {
         $gf.change=1;
-        if $gf.search-task-from($gf.om,$selected-task.iter) {      # if not, it's a text not now() editable 
-            my $task=$gf.search-task-from($gf.om,$selected-task.iter);
+        if $gf.search-task-from($gf.om,$.highlighted-task.iter) {      # if not, it's a text not now() editable 
+            my $task=$gf.search-task-from($gf.om,$.highlighted-task.iter);
             if $task.tasks {
                 for $task.tasks.Array {
                     $gf.ts.gtk-tree-store-remove($_.iter) if $_.iter;
@@ -767,27 +807,27 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         1
     }
     method edit-cut (:$widget,:$widget-paste) {
-        $gf.cut-branch($selected-task.iter);
+        $gf.cut-branch($.highlighted-task.iter);
         $widget.set-sensitive(0);
         $widget-paste.set-sensitive(1);
         1
     }
     method edit-paste (:$widget,:$widget-cut) {
-        $gf.paste-branch($selected-task.iter);
+        $gf.paste-branch($.highlighted-task.iter);
         $widget.set-sensitive(0);
         $widget-cut.set-sensitive(1);
         1
     }
     method fold-branch {
-        $gf.fold-branch($selected-task);
+        $gf.fold-branch($.highlighted-task);
         1
     }
     method unfold-branch {
-        $gf.unfold-branch($selected-task);
+        $gf.unfold-branch($.highlighted-task);
         1
     }
     method unfold-branch-child {
-        $gf.unfold-branch-child($selected-task);
+        $gf.unfold-branch-child($.highlighted-task);
         1
     }
     method header-event-after ( N-GdkEventKey $event-key, :$widget ){
@@ -1024,10 +1064,6 @@ $tv.set-vexpand(1);
 
         # to edit task
         if $gf.search-task-from($gf.om,$iter) {      # if not, it's a text not (now) editable 
-            $selected-task=$gf.search-task-from($gf.om,$iter); # TODO [#A] to memorize the current task
-            $l-info.set-text('task selected : ' ~ $selected-task.header);
-            return if $is-return; # TODO To remove when tree-select is ok :0.1:
-
             my GtkTask $task=$gf.search-task-from($gf.om,$iter);
             self.manage($task);
         } else {  # text
@@ -1036,7 +1072,7 @@ $tv.set-vexpand(1);
         1
     }
     method move-header {
-        my Gnome::Gtk3::TreeIter $iter = $selected-task.iter;
+        my Gnome::Gtk3::TreeIter $iter = $.highlighted-task.iter;
 
         # Dialog to manage task
         my Gnome::Gtk3::Dialog $dialog .= new(
@@ -1119,8 +1155,8 @@ $tv.set-vexpand(1);
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k" {@ctrl-keys=''; $l-info.set-label('Delete branch'); $gf.delete-branch($clicked-task.iter); }
-                    when "cs" {@ctrl-keys=''; $l-info.set-label('Schedule'); self.scheduled(:task($selected-task))}
-                    when "cd" {@ctrl-keys=''; $l-info.set-label('Deadline'); self.deadline(:task($selected-task))}
+                    when "cs" {@ctrl-keys=''; $l-info.set-label('Schedule'); self.scheduled(:task($.highlighted-task))}
+                    when "cd" {@ctrl-keys=''; $l-info.set-label('Deadline'); self.deadline(:task($.highlighted-task))}
                     when "ct" {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); self.edit-todo-done;}
                     when "xs" {@ctrl-keys=''; $l-info.set-label('Save'); self.file-save}
                     when "xc" {@ctrl-keys=''; $l-info.set-label('Exit'); self.exit-gui}
@@ -1195,7 +1231,7 @@ sub make-menubar-list-edit {
     my Gnome::Gtk3::MenuItem $mi-cut .= new(:label('_Cut'));
     $mi-cut.set-use-underline(1);
     $menu.gtk-menu-shell-append($mi-cut);
-    my Gnome::Gtk3::MenuItem $mi-paste .= new(:label("_Paste"));
+    my Gnome::Gtk3::MenuItem $mi-paste .= new(:label("_Paste (as child)"));
     $mi-paste.set-use-underline(1);
     $menu.gtk-menu-shell-append($mi-paste);
     $mi-paste.set-sensitive(0);

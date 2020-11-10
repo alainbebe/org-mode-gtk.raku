@@ -21,7 +21,7 @@ https://github.com/orgzly/orgzly-android/issues/529
 ** DONE Emacs windows write "lun." , orgzly "Mon"
 CLOSED: [2020-05-28 Thu 07:51]
 aligné sur Orgzly, en anglais
-** TODO autcomplétion des tags
+** TODO auto-completion of tags
 ** TODO An Image                                                       :0.x:
 To display C-c C-x C-v
 [[./img/test.png]] 
@@ -161,7 +161,8 @@ CLOSED: [2020-11-06 Fri 07:57]
 ** DONE Put shortcut on right of menu entries                          :0.1:
 CLOSED: [2020-10-10 Sat 13:53]
 ** TODO Indentation des tag
-*** TODO to display (add column to tree ?)
+*** DONE to display (add column to tree ?)
+CLOSED: [2020-11-08 Son 16:56]
 *** TODO When save. Parameter as Orgzly or Emacs
 ** DONE Move "Add sub-task" to menu "Edit"                             :0.1:
 CLOSED: [2020-10-23 Fri 07:45]
@@ -231,12 +232,13 @@ better is
  * DONE
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
-** TODO Create copy/paste
-** TODO Create Undo/Redo
-https://en.m.wikipedia.org/wiki/Undo
+** DONE Create cut/paste
+CLOSED: [2020-11-08 Son 09:55]
+** TODO Create Copy and multi-Paste
 ** DONE Warning if Save as on an existent file                         :0.1:
 CLOSED: [2020-10-24 Sat 11:24]
-** TODO Add white line as Orgzly
+** TODO Create Undo/Redo
+https://en.m.wikipedia.org/wiki/Undo
 ** DONE [#A] Warning save diseable for demo.org
 CLOSED: [2020-05-12 mar  17:42]
 ** DONE compare .bak and original file, and create alert is different
@@ -244,19 +246,20 @@ CLOSED: [2020-05-18 Mon 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 CLOSED: [2020-05-23 Sat 09:10]
 Use Array, not Hash
-** TODO Create a auto-save
+** TODO Add white line as Orgzly
 ** DONE Create a GtkFile.pm
 CLOSED: [2020-10-08 Thu 08:06]
 ** DONE rewriting inspect (2 files)                                    :0.1:
 CLOSED: [2020-11-06 Fri 12:06]
+** TODO Create a auto-save
 ** TODO Inspect : return string, no say
 ** TODO Not display year is current year
 SCHEDULED: <2020-11-07 Sat>
-** TODO Display in local language
-French : sam 7 nov
 ** DONE Find : Create a spase tree
 CLOSED: [2020-11-07 Sat 09:48]
 in finding in header and text
+** TODO Display in local language
+French : sam 7 nov
 ** TODO Improve "find"
 with regex, case insensitive
 * git
