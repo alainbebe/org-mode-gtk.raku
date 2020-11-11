@@ -511,7 +511,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.change=1;
         if $gf.om.herite-properties('presentation') eq 'DEFAULT' || 
                $gf.om.herite-properties('presentation') eq 'TODO'  {
-            $gf.om.properties.push(('presentation','TEXT'));
+            $gf.om.properties.push(('presentation','TEXT')); # TODO bug when read the file after :0.1:
         } else {
             $gf.om.properties= map {$_[0] eq 'presentation' ?? ('presentation','TODO') !! $_}, $gf.om.properties;
         };
@@ -585,7 +585,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method view-fold-all {
         $gf.tv.collapse-all;
-        if !$.highlighted-task { # TODO better manage the absance of highlighted task 
+        if !$.highlighted-task { # TODO better manage the absence of highlighted task 
             # No highlighted task if 
             # * un
             # * deux
@@ -791,19 +791,6 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     method del-button-click {
         $gf.change=1;
         $gf.delete-branch($.highlighted-task.iter);
-        1
-    }
-    method del-children-button-click {
-        $gf.change=1;
-        if $gf.search-task-from($gf.om,$.highlighted-task.iter) {      # if not, it's a text not now() editable 
-            my $task=$gf.search-task-from($gf.om,$.highlighted-task.iter);
-            if $task.tasks {
-                for $task.tasks.Array {
-                    $gf.ts.gtk-tree-store-remove($_.iter) if $_.iter;
-                }
-                $task.tasks = [];
-            }
-        }
         1
     }
     method edit-cut (:$widget,:$widget-paste) {
@@ -1099,13 +1086,13 @@ $tv.set-vexpand(1);
     method option-preface {
         # Dialog to manage preface
         my Gnome::Gtk3::Dialog $dialog .= new(
-            :title("Manage preface"),
+            :title("Edit preface"),
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
             :button-spec( [
-                "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Ok", GTK_RESPONSE_OK,
+                "_Cancel", GTK_RESPONSE_CANCEL,
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
@@ -1187,10 +1174,9 @@ my AppSignalHandlers $ash .= new(:top-window($top-window));
 my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
+#$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
 $menu-bar.gtk-menu-shell-append(create-main-menu('O_ption',make-menubar-list-option));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Org',make-menubar-list-org));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_View',make-menubar-list-view));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
 
@@ -1214,74 +1200,43 @@ sub create-sub-menu($menu,$name,$ash,$method) {
 #} 
 sub make-menubar-list-file {
     my Gnome::Gtk3::Menu $menu .= new;
+
     create-sub-menu($menu,"_New",$ash,'file-new');
     create-sub-menu($menu,"_Open File ...",$ash,'file-open');
     create-sub-menu($menu,"_Save         C-x C-s",$ash,'file-save');
     create-sub-menu($menu,"Save _as ...",$ash,'file-save-as');
     create-sub-menu($menu,"Save to _test",$ash,'file-save-test') if $debug;
     create-sub-menu($menu,"_Quit         C-x C-c",$ash,'exit-gui');
+
     $menu
 }
 sub make-menubar-list-edit {
     my Gnome::Gtk3::Menu $menu .= new;
-    create-sub-menu($menu,"Add child",$ash,'add-child');
-    create-sub-menu($menu,"Delete task (and sub-tasks)",$ash,'del-button-click');
-    create-sub-menu($menu,"Delete sub-tasks",$ash,'del-children-button-click');
-
-    my Gnome::Gtk3::MenuItem $mi-cut .= new(:label('_Cut'));
-    $mi-cut.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-cut);
-    my Gnome::Gtk3::MenuItem $mi-paste .= new(:label("_Paste (as child)"));
-    $mi-paste.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-paste);
-    $mi-paste.set-sensitive(0);
-
-    $mi-cut.register-signal( $ash, "edit-cut", 'activate',:widget-paste($mi-paste));
-    $mi-paste.register-signal( $ash, "edit-paste", 'activate',:widget-cut($mi-cut));
 
     $menu
 }
 sub make-menubar-list-option {
     my Gnome::Gtk3::Menu $menu .= new;
-    create-sub-menu($menu,"P_reface",$ash,'option-preface');
-    create-sub-menu($menu,"_Presentation",$ash,'option-presentation');
-    create-sub-menu($menu,"Show _DONE",$ash,'option-no-done');
-    create-sub-menu($menu,"#_A",$ash,"option-prior-A");
-    create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
-    create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
-    create-sub-menu($menu,"_Today and past",$ash,"option-today-past");
 
-    my Gnome::Gtk3::MenuItem $mi-find .= new(:label('_Find ...'));
-    $mi-find.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-find);
-    my Gnome::Gtk3::MenuItem $mi-clear-find .= new(:label("Clear filter Find"));
-    $mi-clear-find.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-clear-find);
-    $mi-clear-find.set-sensitive(0);
-
-    $mi-find.register-signal( $ash, "option-find", 'activate',:widget-clear($mi-clear-find));
-    $mi-clear-find.register-signal( $ash, "option-clear-find", 'activate');
-
-    my Gnome::Gtk3::MenuItem $mi-search-tags .= new(:label('Search by _Tag ...'));
-    $mi-search-tags.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-search-tags);
-    my Gnome::Gtk3::MenuItem $mi-clear-tags .= new(:label("Clear filter Tag"));
-    $mi-clear-tags.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-clear-tags);
-    $mi-clear-tags.set-sensitive(0);
-
-    $mi-search-tags.register-signal( $ash, "option-search-tag", 'activate',:widget-clear($mi-clear-tags));
-    $mi-clear-tags.register-signal( $ash, "option-clear-tag", 'activate');
+    create-sub-menu($menu,"Edit P_reface",$ash,'option-preface');
+    create-sub-menu($menu,"Change _Presentation",$ash,'option-presentation');
 
     $menu
 }
 sub make-menubar-list-org {
     my Gnome::Gtk3::Menu $menu .= new;
 
+    my Gnome::Gtk3::Menu $sm-sh = make-menubar-sh($ash);
+    my Gnome::Gtk3::MenuItem $sh-root-menu .= new(:label('Show/Hide'));
+    $sh-root-menu.set-submenu($sm-sh);
+    $menu.gtk-menu-shell-append($sh-root-menu);
+
     my Gnome::Gtk3::MenuItem $menu-item .= new(:label('New Heading                M-Enter'));
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'add-brother-down', 'activate');
+
+    create-sub-menu($menu,"Add child",$ash,'add-child');
 
     my Gnome::Gtk3::Menu $sm-es = make-menubar-es($ash);
     my Gnome::Gtk3::MenuItem $es-root-menu .= new(:label('Edit Structure'));
@@ -1305,22 +1260,52 @@ sub make-menubar-list-org {
 
     $menu
 }   
-sub make-menubar-todo ( AppSignalHandlers $ash ) {
+sub make-menubar-sh ( AppSignalHandlers $ash ) {
     my Gnome::Gtk3::Menu $menu .= new;
 
-    create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$ash,'edit-todo-done');
+    my Gnome::Gtk3::Menu $sm-st = make-menubar-st($ash);
+    my Gnome::Gtk3::MenuItem $st-root-menu .= new(:label('Sparse Tree'));
+    $st-root-menu.set-submenu($sm-st);
+    $menu.gtk-menu-shell-append($st-root-menu);
 
-    # TODO add a menu separator
+    create-sub-menu($menu,"Fold All",$ash,'view-fold-all');
+    create-sub-menu($menu,"Show All",$ash,'view-unfold-all');
+    create-sub-menu($menu,"Fold branch",$ash,'fold-branch');
+    create-sub-menu($menu,"Unfold branch",$ash,'unfold-branch');
+    create-sub-menu($menu,"Unfold branch and child",$ash,'unfold-branch-child');
 
-    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Priority Up                  S-up'));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'priority-up', 'activate');
+    $menu
+}
+sub make-menubar-st ( AppSignalHandlers $ash ) {
+    my Gnome::Gtk3::Menu $menu .= new;
 
-    $menu-item .= new(:label('Priority Down                S-down'));
-    $menu-item.set-use-underline(1);
-    $menu.gtk-menu-shell-append($menu-item);
-    $menu-item.register-signal( $ash, 'priority-down', 'activate');
+    create-sub-menu($menu,"Show _DONE",$ash,'option-no-done'); # TODO replace Show All (or another name), Create Show TODO tree :0.1:
+    create-sub-menu($menu,"#_A",$ash,"option-prior-A");
+    create-sub-menu($menu,"#A #_B",$ash,"option-prior-B");
+    create-sub-menu($menu,"#A #B #_C",$ash,"option-prior-C");
+    create-sub-menu($menu,"_Today and past",$ash,"option-today-past");
+
+    my Gnome::Gtk3::MenuItem $mi-find .= new(:label('_Find ...'));
+    $mi-find.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-find);
+    my Gnome::Gtk3::MenuItem $mi-clear-find .= new(:label("Clear filter Find")); # TODO remove :0.1:
+    $mi-clear-find.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-clear-find);
+    $mi-clear-find.set-sensitive(0);
+
+    $mi-find.register-signal( $ash, "option-find", 'activate',:widget-clear($mi-clear-find));
+    $mi-clear-find.register-signal( $ash, "option-clear-find", 'activate');
+
+    my Gnome::Gtk3::MenuItem $mi-search-tags .= new(:label('Search by _Tag ...'));
+    $mi-search-tags.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-search-tags);
+    my Gnome::Gtk3::MenuItem $mi-clear-tags .= new(:label("Clear filter Tag"));
+    $mi-clear-tags.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-clear-tags);
+    $mi-clear-tags.set-sensitive(0);
+
+    $mi-search-tags.register-signal( $ash, "option-search-tag", 'activate',:widget-clear($mi-clear-tags));
+    $mi-clear-tags.register-signal( $ash, "option-clear-tag", 'activate');
 
     $menu
 }
@@ -1339,6 +1324,17 @@ sub make-menubar-es ( AppSignalHandlers $ash ) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'move-up-down-button-click', 'activate',:inc(1));
 
+    my Gnome::Gtk3::MenuItem $mi-cut .= new(:label('_Cut Subtree'));
+    $mi-cut.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-cut);
+    my Gnome::Gtk3::MenuItem $mi-paste .= new(:label("_Paste Subtree (as child)"));
+    $mi-paste.set-use-underline(1);
+    $menu.gtk-menu-shell-append($mi-paste);
+    $mi-paste.set-sensitive(0);
+
+    $mi-cut.register-signal( $ash, "edit-cut", 'activate',:widget-paste($mi-paste));
+    $mi-paste.register-signal( $ash, "edit-paste", 'activate',:widget-cut($mi-cut));
+
     $menu-item .= new(:label('Demote Subtree             M-S-right'));
     $menu-item.set-use-underline(1);
     $menu.gtk-menu-shell-append($menu-item);
@@ -1350,6 +1346,25 @@ sub make-menubar-es ( AppSignalHandlers $ash ) {
     $menu-item.register-signal( $ash, 'move-left-button-click', 'activate');
 
     create-sub-menu($menu,"Move Subtree ...",$ash,'move-header');
+
+    $menu
+}
+sub make-menubar-todo ( AppSignalHandlers $ash ) {
+    my Gnome::Gtk3::Menu $menu .= new;
+
+    create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$ash,'edit-todo-done');
+
+    # TODO add a menu separator
+
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Priority Up                  S-up'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-up', 'activate');
+
+    $menu-item .= new(:label('Priority Down                S-down'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ash, 'priority-down', 'activate');
 
     $menu
 }
@@ -1371,15 +1386,6 @@ sub make-menubar-ds ( AppSignalHandlers $ash ) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'deadline', 'activate');
 
-    $menu
-}
-sub make-menubar-list-view {
-    my Gnome::Gtk3::Menu $menu .= new;
-    create-sub-menu($menu,"_Fold All",$ash,'view-fold-all');
-    create-sub-menu($menu,"_Unfold All",$ash,'view-unfold-all');
-    create-sub-menu($menu,"Fold branch",$ash,'fold-branch');
-    create-sub-menu($menu,"Unfold branch",$ash,'unfold-branch');
-    create-sub-menu($menu,"Unfold branch and child",$ash,'unfold-branch-child');
     $menu
 }
 sub make-menubar-list-debug {

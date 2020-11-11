@@ -47,7 +47,7 @@ class GtkFile {
     has                             $.prior-A       is rw =False;   # display #A          
     has                             $.prior-B       is rw =False;   # display #B          
     has                             $.prior-C       is rw =False;   # display #C          
-    has                             $.today-past    is rw =False;   # display only task in past and note Done          
+    has                             $.today-past    is rw =False;   # display only task in past and not Done          
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
