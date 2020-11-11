@@ -555,7 +555,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         1
     }
     method option-find (:$widget-clear){
-        $gf.choice-find($top-window);
+        $gf.choice-find($top-window); # TODO manage return "Cancel"
         $gf.reconstruct-tree;
         $gf.tv.expand-all;
         $widget-clear.set-sensitive(1);
@@ -570,7 +570,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method option-search-tag (:$widget-clear){
         my @tags=$gf.om.search-tags.flat;
-        $gf.choice-tags(@tags,$top-window);
+        $gf.choice-tags(@tags,$top-window); # TODO manage return "Cancel"
         $gf.reconstruct-tree;
         $gf.tv.expand-all;
         $widget-clear.set-sensitive(1);

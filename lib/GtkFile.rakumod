@@ -28,11 +28,12 @@ my $g-find;   # TODO remove global value :refactoring:
 my $task-cut; # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
 
 class AppSignalHandlers2 {
-    method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags) {
+    method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags, :$dialog) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $ls.tree-model-get-iter($tree-path);
         my $value = $ls.tree-model-get-value($iter,0);
         $g-tag=@tags[$tree-path.to-string];
+        $dialog.gtk_widget_destroy;
     }
 }
 class GtkFile {
@@ -212,11 +213,10 @@ class GtkFile {
     }
     method choice-tags (@tags,$top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
-            :title("Choice a tag (double-click, and ok)"), 
+            :title("Choice a tag"), 
             :parent($top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK, 
                 "_Cancel", GTK_RESPONSE_CANCEL,
             ] )
         );
@@ -224,8 +224,9 @@ class GtkFile {
         my Gnome::Gtk3::ListStore $ls .= new(:field-types( G_TYPE_STRING));
 
         my Gnome::Gtk3::TreeView $tv .= new(:model($ls));
-$tv.set-hexpand(1);
-$tv.set-vexpand(1);
+        $tv.set-activate-on-single-click(1);
+        $tv.set-hexpand(1);
+        $tv.set-vexpand(1);
         $tv.set-headers-visible(1);
         $content-area.gtk_container_add($tv);
 
@@ -236,14 +237,14 @@ $tv.set-vexpand(1);
         $tvc.add-attribute( $crt1, 'text', 0);
         $tv.append-column($tvc);
 
-        for @tags -> $row { # TODO rewrite :0.1:
-          my $iter = $ls.gtk-list-store-append;
-          $ls.gtk-list-store-set( $iter, |$row.kv);
+        for @tags -> $row {
+            my $iter = $ls.gtk-list-store-append;
+            $ls.gtk-list-store-set( $iter, |$row.kv);
         }
 
         $dialog.show-all;
         my AppSignalHandlers2 $ash .= new();
-        $tv.register-signal( $ash, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags));
+        $tv.register-signal( $ash, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags),:dialog($dialog));
         my $response = $dialog.gtk-dialog-run;
         $dialog.gtk_widget_destroy;
     }
