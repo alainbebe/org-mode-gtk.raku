@@ -48,6 +48,7 @@ class GtkFile {
     has                             $.prior-B       is rw =False;   # display #B          
     has                             $.prior-C       is rw =False;   # display #C          
     has                             $.today-past    is rw =False;   # display only task in past and not Done          
+    has                             $.presentation  is rw ="TODO";  # Change presentation for display header          
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
@@ -140,7 +141,7 @@ class GtkFile {
                 } else {
                     $parent-iter = $iter;
                 }
-                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header,1,$task.display-tags);
+                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header($.presentation),1,$task.display-tags($.presentation));
                 if $task.text {
                     for $task.text.Array {
                         my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 0, to-markup($_))

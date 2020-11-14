@@ -507,14 +507,8 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     method debug-inspect {
         $gf.om.inspect;
     }
-    method option-presentation { # TODO do this by task and not only for the entire tree
-        $gf.change=1;
-        if $gf.om.herite-properties('presentation') eq 'DEFAULT' || 
-               $gf.om.herite-properties('presentation') eq 'TODO'  {
-            $gf.om.properties.push(('presentation','TEXT')); # TODO bug when read the file after :0.1:
-        } else {
-            $gf.om.properties= map {$_[0] eq 'presentation' ?? ('presentation','TODO') !! $_}, $gf.om.properties;
-        };
+    method option-presentation { # TODO to do this by task and not only for the entire tree
+        $gf.presentation =  $gf.presentation eq "TEXT" ?? "TODO" !! "TEXT";
         $gf.reconstruct-tree;
         1
     }
@@ -757,7 +751,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.change=1;
         my GtkTask $task=$gf.search-task-from($gf.om,$iter);
         $task.todo=$todo;
-        $gf.ts.set_value( $iter, 0,$task.display-header);
+        $gf.ts.set_value( $iter, 0,$task.display-header($gf.presentation));
         if $todo eq 'DONE' {
             my $ds=&d-now();
             if $ds ~~ /<dateorg>/ {
@@ -776,7 +770,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
             when  "B"  {$.highlighted-task.priority="A"}
             when  "C"  {$.highlighted-task.priority="B"}
         }
-        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header); # TODO create $gf.ts-set-header($task)
+        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($gf.presentation)); # TODO create $gf.ts-set-header($task)
     }
     method priority-down {
         $gf.change=1;
@@ -786,7 +780,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
             when  "B"  {$.highlighted-task.priority="C"}
             when  "C"  {$.highlighted-task.priority=""}
         }
-        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header); # TODO create $gf.ts-set-header($task)
+        $gf.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($gf.presentation)); # TODO create $gf.ts-set-header($task)
     }
     method del-button-click {
         $gf.change=1;
@@ -921,8 +915,8 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
 
         my Gnome::Gtk3::ListStore $ls .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
         my Gnome::Gtk3::TreeView $tv .= new(:model($ls));
-$tv.set-hexpand(1);
-$tv.set-vexpand(1);
+        $tv.set-hexpand(1);
+        $tv.set-vexpand(1);
         $tv.set-headers-visible(1);
         $content-area.gtk_container_add($tv);
 
@@ -982,7 +976,7 @@ $tv.set-vexpand(1);
             if $task.header ne $e-edit.get-text {
                 $gf.change=1;
                 $task.header=$e-edit.get-text.trim;
-                $gf.ts.set-value( $task.iter, 0, $task.display-header);
+                $gf.ts.set-value( $task.iter, 0, $task.display-header($gf.presentation));
             }
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
                 $gf.change=1;
@@ -991,7 +985,7 @@ $tv.set-vexpand(1);
                 } else {
                     $task.tags=();
                 }
-                $gf.ts.set-value( $task.iter, 1, $task.display-tags);
+                $gf.ts.set-value( $task.iter, 1, $task.display-tags($gf.presentation));
             }
             my $todo="";
             $todo="TODO" if $rb-td2.get-active();
@@ -999,7 +993,7 @@ $tv.set-vexpand(1);
             if $task.todo ne $todo {
                 $gf.change=1;
                 $task.todo=$todo;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header);
+                $gf.ts.set_value( $task.iter, 0,$task.display-header($gf.presentation));
                 if $todo eq 'DONE' {
                     my $ds=&d-now();
                     if $ds ~~ /<dateorg>/ {
@@ -1015,7 +1009,7 @@ $tv.set-vexpand(1);
             $prior="C" if $rb-pr4.get-active();
             if $task.priority ne $prior {
                 $task.priority=$prior;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header); # TODO create $gf.ts-set-header($task)
+                $gf.ts.set_value( $task.iter, 0,$task.display-header($gf.presentation)); # TODO create $gf.ts-set-header($task)
             }
             my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
@@ -1030,7 +1024,7 @@ $tv.set-vexpand(1);
             if ($new-text ne $task.properties.join("\n")) {
                 $gf.change=1;
                 $task.properties=map {
-                    $_ ~~ /^ (\w+) " " (.+)/; 
+                    $_ ~~ /^ (\w+) " "* (.*)/; 
                     ($0.Str,$1.Str)
                 }, $new-text.split(/\n/);
             }

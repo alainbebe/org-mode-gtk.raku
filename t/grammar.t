@@ -3,7 +3,7 @@ use lib “lib”;
 use GramOrgMode;
 
 use Test;
-plan 52; # TODO write other type of test, writing,... :0.x:
+plan 55; # TODO write other type of test, writing,... :0.x:
 
 my $file = 
 "* header";
@@ -105,6 +105,15 @@ ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].scheduled.str    eq "
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][0] eq "color"          , "color";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][1] eq "red"            , "red";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].text             eq "little text"    , "little text";
+
+$file = 
+"* header
+:PROPERTIES:
+:just_key:
+:END:t";
+ok OrgMode.parse($file), 'parses';
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][0] eq "just_key"          , "just_key";
+ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][1] eq ""                  , "no value";
 
 $file = 
 "* header

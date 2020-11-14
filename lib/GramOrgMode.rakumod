@@ -23,7 +23,7 @@ sub split-properties($properties) {
     @properties.push($_) for split(/\n/,$properties);
     @properties.pop;
     for @properties {
-        $_ ~~ /^ ":" (\w+) ":" " "* (.*) /; # structure ":key: value". 
+        $_ ~~ /^ ":" (\w+) ":" " "* (.*) /; # structure ":key: value" or ":key:" (value missing)
         push(@result,($0.Str,$1.Str));
     }
     return @result;
@@ -80,8 +80,7 @@ class Content-actions {
 
 my $level="";
 grammar OrgMode {
-    rule  TOP       { ^ <properties>? <preface>? <tasks> $ }
-    token properties { ^^ ":PROPERTIES:\n" (.*?\n) ":END:" $$ }
+    rule  TOP       { ^ <preface>? <tasks> $ }
 #    rule  preface   {  ^^ <!after ^^"*"> .*  <?before ^^"*"> } 
 #    rule  preface   {  [^"*"]+? <?before ^^"*"> } 
     rule  preface   {  .*? <?before ^^"*"> } 
@@ -100,7 +99,6 @@ sub analyse-content($content) {
 class OM-actions {
     method TOP($/) {
         my GtkTask $task.=new(:level(0));
-        $task.properties.push($<properties>.made) if $<properties>;
         $task.text = $<preface>.made if $<preface> && $<preface>.made.chars>0;
         $task.tasks=$<tasks>.made if $<tasks>;
         $_.darth-vader=$task for $task.tasks;

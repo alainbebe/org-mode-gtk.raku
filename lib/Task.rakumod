@@ -29,10 +29,10 @@ class Task {
         return $.darth-vader.herite-properties($key) if $.darth-vader;
         return "DEFAULT";
     }
-    method display-header {
+    method display-header ($presentation) {
         my $display;
         my $header=to-markup($.header);
-        if $.herite-properties('presentation') eq 'TEXT' {
+        if $presentation eq 'TEXT' {
             if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
             elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
             else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
@@ -53,10 +53,12 @@ class Task {
         }
         return $display;
     }
-    method display-tags {
+    method display-tags ($presentation) {
         my $display='';
-        if $.tags {
-            $display~=' <span foreground="grey">'~$.tags~'</span>';
+        if $presentation ne 'TEXT' {
+            if $.tags {
+                $display~=' <span foreground="grey">'~$.tags~'</span>';
+            }
         }
         return $display;
     }
