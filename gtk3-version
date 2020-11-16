@@ -1,5 +1,5 @@
-- Identity: Gnome::Gtk3:ver<0.32.0>
-- Identity: Gnome::Cairo:ver<0.1.1.1>
+- Identity: Gnome::Gtk3:ver<0.33.0>
+- Identity: Gnome::Cairo:ver<0.2.0>
 - Identity: Gnome::N:ver<0.17.13>
 - Identity: Gnome::Glib:ver<0.17.2>
 - Identity: Gnome::Gio:ver<0.5.1.1>

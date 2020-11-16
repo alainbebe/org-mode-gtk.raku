@@ -154,6 +154,7 @@ class GtkFile {
                     $.create-task($_,$iter-task,:cond($cond));
                 }
             }
+            $.unfold-branch($task.darth-vader) if $task.level>1;
         }
     }
     method swap($task1,$task2) {
@@ -176,14 +177,24 @@ class GtkFile {
         $.create-task($task,:cond(False));
         $!om.tasks.push($task);
     }
+    multi method highlighted(Gnome::Gtk3::TreePath $tp) {
+        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
+        $tselect.select-path($tp);
+    }
+    multi method highlighted(Task $child) {
+        my Gnome::Gtk3::TreePath $tp = $.ts.get-path($child.iter);
+        $.highlighted($tp);
+    }
+    multi method highlighted(Str $path) {
+        my Gnome::Gtk3::TreePath $tp .= new(:string($path));
+        $.highlighted($tp);
+    }
     method reconstruct-tree { # not good practice, not abuse 
         $.i=0; # TODO [#B] to remove ?
         $.ts.clear;
         $!om.delete-iter;
         $.create-task($!om);
-        my Gnome::Gtk3::TreePath $tp .= new(:string("0"));
-        my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
-        $tselect.select-path($tp);
+        $.highlighted("0");
     }
     method clear-find {
         $g-find=Nil;

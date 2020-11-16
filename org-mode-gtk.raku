@@ -566,7 +566,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         my @tags=$gf.om.search-tags.flat;
         $gf.choice-tags(@tags,$top-window); # TODO manage return "Cancel"
         $gf.reconstruct-tree;
-        $gf.tv.expand-all;
+#        $gf.tv.expand-all;
         $widget-clear.set-sensitive(1);
         1
     }
@@ -606,8 +606,9 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     method add-brother-down {
         $gf.change=1;
         my $task=$.highlighted-task;
-        my GtkTask $child.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
-        self.manage($child);
+        my GtkTask $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
+        self.manage($brother);
+        $gf.highlighted($brother);
     }
     method highlighted-task {
         my Task $task;
@@ -644,6 +645,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         self.manage($child);
         $gf.unfold-branch($task);
+        $gf.highlighted($child);
     }
     method move-right-button-click {
         my $iter=$.highlighted-task.iter;
@@ -1169,7 +1171,7 @@ my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
 #$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
-$menu-bar.gtk-menu-shell-append(create-main-menu('O_ption',make-menubar-list-option));
+$menu-bar.gtk-menu-shell-append(create-main-menu('D_ivers',make-menubar-list-divers));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Org',make-menubar-list-org));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
@@ -1209,7 +1211,7 @@ sub make-menubar-list-edit {
 
     $menu
 }
-sub make-menubar-list-option {
+sub make-menubar-list-divers {
     my Gnome::Gtk3::Menu $menu .= new;
 
     create-sub-menu($menu,"Edit P_reface",$ash,'option-preface');
@@ -1230,7 +1232,7 @@ sub make-menubar-list-org {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, 'add-brother-down', 'activate');
 
-    create-sub-menu($menu,"Add child",$ash,'add-child');
+    create-sub-menu($menu,"New Child",$ash,'add-child');
 
     my Gnome::Gtk3::Menu $sm-es = make-menubar-es($ash);
     my Gnome::Gtk3::MenuItem $es-root-menu .= new(:label('Edit Structure'));

@@ -49,6 +49,7 @@ class Task {
 
             if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$header~'</span>'}
             elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$header~'</span>'}
+            elsif ($.level==3) {$display~='<span weight="bold" foreground="green"> '~$header~'</span>'}
             else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
         }
         return $display;
