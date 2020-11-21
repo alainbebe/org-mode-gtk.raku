@@ -190,6 +190,8 @@ Necessary to have Gtk.TreeModelFilter
 ** TODO si enter dans Edit Header, active OK :0.1:
 ** TODO si enter dans Find, active OK :0.1:
 ** TODO Tab dans Texte fait passer le focus à OK
+** TODO Use clipboard
+https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

@@ -57,3 +57,5 @@ CLOSED: [2020-11-07 Sat 08:56]
 ** with tag                                                            :tag:
 ** with tag version                                                    :0.1:
 ** with 2 tags                                                         :tag:0.2:
+* With an image
+OrgMode [[./img/orgmode.png]] 

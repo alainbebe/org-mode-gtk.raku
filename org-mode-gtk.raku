@@ -507,6 +507,11 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     method debug-inspect {
         $gf.om.inspect;
     }
+    method view-hide-image {
+        $gf.view-hide-image =  !$gf.view-hide-image;
+        $gf.reconstruct-tree;
+        1
+    }
     method option-presentation { # TODO to do this by task and not only for the entire tree
         $gf.presentation =  $gf.presentation eq "TEXT" ?? "TODO" !! "TEXT";
         $gf.reconstruct-tree;
@@ -1133,23 +1138,25 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                 given join('',@ctrl-keys) {
                     when  ""  {}
-                    when  "c" {$l-info.set-label("C-c")}
-                    when  "x" {$l-info.set-label("C-x")}
+                    when  "c"  {$l-info.set-label("C-c")}
+                    when  "x"  {$l-info.set-label("C-x")}
+                    when  "cx" {$l-info.set-label("C-c C-x")}
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
-#                    when "k" {@ctrl-keys=''; $l-info.set-label('Delete branch'); $gf.delete-branch($clicked-task.iter); }
-                    when "cs" {@ctrl-keys=''; $l-info.set-label('Schedule'); self.scheduled(:task($.highlighted-task))}
-                    when "cd" {@ctrl-keys=''; $l-info.set-label('Deadline'); self.deadline(:task($.highlighted-task))}
-                    when "ct" {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); self.edit-todo-done;}
-                    when "xs" {@ctrl-keys=''; $l-info.set-label('Save'); self.file-save}
-                    when "xc" {@ctrl-keys=''; $l-info.set-label('Exit'); self.exit-gui}
-                    default   {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
+#                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $gf.delete-branch($clicked-task.iter); }
+                    when "cs"  {@ctrl-keys=''; $l-info.set-label('Schedule');           self.scheduled(:task($.highlighted-task))}
+                    when "cd"  {@ctrl-keys=''; $l-info.set-label('Deadline');           self.deadline(:task($.highlighted-task))}
+                    when "ct"  {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); self.edit-todo-done;}
+                    when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $.view-hide-image;}
+                    when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               self.file-save}
+                    when "xc"  {@ctrl-keys=''; $l-info.set-label('Exit');               self.exit-gui}
+                    default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
             }
             # TODO Alt-Enter crée un frère après
             # TODO M-S-Enter crée un fils avec TODO
             # TODO Home suivi de Alt-Enter crée un frère avant
-            if $event-key.state == 8 { # alt push # TODO write with "given"
+            if $event-key.state == 8 { # alt push # TODO write with "given" :refactoring:
                 self.move-up-down-button-click(:inc(-1)) 
                     if $event-key.keyval.fmt('0x%08x') == 0xff52; # Alt-Up
                 self.move-up-down-button-click(:inc( 1)) 
@@ -1216,6 +1223,7 @@ sub make-menubar-list-divers {
 
     create-sub-menu($menu,"Edit P_reface",$ash,'option-preface');
     create-sub-menu($menu,"Change _Presentation",$ash,'option-presentation');
+    create-sub-menu($menu,"View/Hide _Image       C-c C-x C-v",$ash,'view-hide-image');
 
     $menu
 }

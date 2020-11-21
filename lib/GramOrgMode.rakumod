@@ -75,6 +75,7 @@ class Content-actions {
     }
     method text($/) {
         make chomp($/.Str);   # TODO rewrite to accept one blank line after text
+        # TODO text is presently a Str, but before Array of Str (line). Choice the good representation a day :refactoring:O.x:
     }
 }
 

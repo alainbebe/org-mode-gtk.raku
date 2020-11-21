@@ -1,6 +1,6 @@
 git log
 git diff
 vim org-mode-gtk.raku lib/GtkFile.rakumod lib/Task.rakumod
-git diff
+git diff -w
 grep -s :0.1: todo.org org-mode-gtk.raku lib/* t/* | grep -v DONE
 

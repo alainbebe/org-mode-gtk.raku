@@ -9,6 +9,8 @@ use Gnome::Gtk3::TreeStore;
 use Gnome::Gtk3::TreeView;
 use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::CellRendererText;
+use Gnome::Gdk3::Pixbuf;
+use Gnome::Gtk3::CellRendererPixbuf;
 use Gnome::Gtk3::FileChooser;
 use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::Dialog;
@@ -37,22 +39,28 @@ class AppSignalHandlers2 {
     }
 }
 class GtkFile {
-    has GtkTask                     $.om            is rw;
-    has Gnome::Gtk3::TreeStore      $.ts            ; #.= new(:field-types(G_TYPE_STRING));
-    has Gnome::Gtk3::TreeView       $.tv            ; #.= new(:model($!ts));
-    has Gnome::Gtk3::ScrolledWindow $.sw            ; #.= new;
-    has                             $.i             is rw =0;       # TODO [#A] for creation of level 1 in tree, rename :refactoring:
-    has Int                         $.change        is rw =0;       # for ask question to save when quit
-    has                             $.no-done       is rw =True;    # display with no DONE
-    has                             $.prior-A       is rw =False;   # display #A          
-    has                             $.prior-B       is rw =False;   # display #B          
-    has                             $.prior-C       is rw =False;   # display #C          
-    has                             $.today-past    is rw =False;   # display only task in past and not Done          
-    has                             $.presentation  is rw ="TODO";  # Change presentation for display header          
+    has GtkTask                     $.om              is rw;
+    has Gnome::Gtk3::TreeStore      $.ts              ; #.= new(:field-types(G_TYPE_STRING));
+    has Gnome::Gtk3::TreeView       $.tv              ; #.= new(:model($!ts));
+    has Gnome::Gtk3::ScrolledWindow $.sw              ; #.= new;
+    has                             $.i               is rw =0;       # TODO for creation of level 1 in tree, rename :refactoring:
+    has Int                         $.change          is rw =0;       # for ask question to save when quit
+    has                             $.no-done         is rw =True;    # display with no DONE
+    has                             $.prior-A         is rw =False;   # display #A          
+    has                             $.prior-B         is rw =False;   # display #B          
+    has                             $.prior-C         is rw =False;   # display #C          
+    has                             $.today-past      is rw =False;   # display only task in past and not Done          
+    has                             $.presentation    is rw ="TODO";  # Change presentation for display header          
+    has                             $.view-hide-image is rw =0;
+
+    enum list-field-columns < TITLE-CODE PICT TITLE >;
+    my Gnome::Gdk3::Pixbuf $pb .= new(:file<img/test.png>);
+    my Int $pb-type = $pb.get-class-gtype;
+    #note "Pixbuf type: $pb-type";
 
     submethod BUILD {
         $!om                  .= new(:level(0)) ; 
-        $!ts                  .= new(:field-types(G_TYPE_STRING, G_TYPE_STRING));
+        $!ts                  .= new(:field-types(G_TYPE_STRING, $pb-type, G_TYPE_STRING));
         $!tv                  .= new(:model($!ts));
         $!tv.set-hexpand(1);
         $!tv.set-vexpand(1);
@@ -68,9 +76,15 @@ class GtkFile {
         $!tv.append-column($tvc);
 
         $tvc .= new;
+        my Gnome::Gtk3::CellRendererPixbuf $crt3 .= new;
+        $tvc.pack-end( $crt3, 1);
+        $tvc.add-attribute( $crt3, 'pixbuf', PICT);
+        $!tv.append-column($tvc);
+
+        $tvc .= new;
         my Gnome::Gtk3::CellRendererText $crt2 .= new;
         $tvc.pack-end( $crt2, 1);
-        $tvc.add-attribute( $crt2, 'markup', 1);
+        $tvc.add-attribute( $crt2, 'markup', 2);
         $!tv.append-column($tvc);
     }
 
@@ -141,10 +155,23 @@ class GtkFile {
                 } else {
                     $parent-iter = $iter;
                 }
-                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 0, $task.display-header($.presentation),1,$task.display-tags($.presentation));
+                $iter-task = $.ts.insert-with-values($parent-iter, $pos, 
+                                        0, $task.display-header($.presentation),
+                                        2, $task.display-tags($.presentation),
+                                        );
                 if $task.text {
                     for $task.text.Array {
-                        my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 0, to-markup($_))
+                        if $.view-hide-image && $_ ~~ s/ "[[" ("./img/" .+ ) "]]" // {
+                            $pb .= new(:file($0.Str));
+                            my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 
+                                                                                        0, to-markup($_),
+                                                                                        1, $pb
+                                                                                        )
+                        } else {
+                            my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 
+                                                                                        0, to-markup($_),
+                                                                                        )
+                        }
                     }
                 }
                 $task.iter=$iter-task;
@@ -154,7 +181,6 @@ class GtkFile {
                     $.create-task($_,$iter-task,:cond($cond));
                 }
             }
-            $.unfold-branch($task.darth-vader) if $task.level>1;
         }
     }
     method swap($task1,$task2) {
@@ -223,7 +249,7 @@ class GtkFile {
     method clear-tag {
         $g-tag=Nil;
     }
-    method choice-tags (@tags,$top-window) {
+    method choice-tags (@tags,$top-window) { # TODO to finalize :0.1:
         my Gnome::Gtk3::Dialog $dialog .= new(
             :title("Choice a tag"), 
             :parent($top-window),
@@ -379,8 +405,18 @@ class GtkFile {
             $iter_child=$.ts.iter-children($iter);
         }
         if $task.text && $task.text.chars>0 {
-            for $task.text.Array.reverse {
-                my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, 0, 0, to-markup($_)) 
+            for $task.text.Array.reverse { # TODO create method in GtkTask ? :refactoring:
+                if $.view-hide-image && $_ ~~ s/ "[[" ("./img/" .+ ) "]]" // {
+                    $pb .= new(:file($0.Str));
+                    my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, -1, 
+                                                                                0, to-markup($_),
+                                                                                1, $pb
+                                                                                )
+                } else {
+                    my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, -1, 
+                                                                                0, to-markup($_),
+                                                                                )
+                }
             }
             $.expand-row($task,0);
         }
