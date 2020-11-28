@@ -524,64 +524,60 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         1
     }
     method option-prior-A {
-        $gf.prior-A=!$gf.prior-A;
+        $gf.clear-sparse;
+        $gf.prior-A=True;
         $gf.prior-B=False;
         $gf.prior-C=False;
         $gf.reconstruct-tree;
-        $gf.prior-A ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        $gf.tv.expand-all;
         1
     }
     method option-prior-B {
-        $gf.prior-B=!$gf.prior-B;
+        $gf.clear-sparse;
         $gf.prior-A=False;
+        $gf.prior-B=True;
         $gf.prior-C=False;
         $gf.reconstruct-tree;
-        $gf.prior-B ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        $gf.tv.expand-all;
         1
     }
     method option-prior-C {
-        $gf.prior-C=!$gf.prior-C;
+        $gf.clear-sparse;
         $gf.prior-A=False;
         $gf.prior-B=False;
+        $gf.prior-C=True;
         $gf.reconstruct-tree;
-        $gf.prior-C ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        $gf.tv.expand-all;
         1
     }
     method option-today-past {
-        $gf.today-past=!$gf.today-past;
+        $gf.clear-sparse;
+        $gf.today-past=True;
         $gf.reconstruct-tree;
-        $gf.today-past ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
+        $gf.tv.expand-all;
         1
     }
-    method option-find (:$widget-clear) {
+    method option-find {
+        $gf.clear-sparse;
         if $gf.choice-find($top-window) == GTK_RESPONSE_OK {
             $gf.reconstruct-tree;
             $gf.tv.expand-all;
-            $widget-clear.set-sensitive(1);
         }
         1
     }
-    method option-clear-find (:$widget) {
-        $gf.clear-find;
-        $gf.reconstruct-tree;
-        $gf.tv.collapse-all;
-        $widget.set-sensitive(0);
-        1
-    }
-    method option-search-tag (:$widget-clear){
+    method option-search-tag {
+        $gf.clear-sparse;
         my @tags=$gf.om.search-tags.flat;
         if $gf.choice-tags(@tags,$top-window) == GTK_RESPONSE_OK {
             $gf.reconstruct-tree;
             $gf.tv.expand-all;
-            $widget-clear.set-sensitive(1);
         }
         1
     }
-    method option-clear-tag (:$widget) {
-        $gf.clear-tag;
+    method option-clear {
+        $gf.clear-sparse;
         $gf.reconstruct-tree;
         $gf.tv.collapse-all;
-        $widget.set-sensitive(0);
         1
     }
     method view-fold-all {
@@ -1297,24 +1293,18 @@ sub make-menubar-st ( AppSignalHandlers $ash ) {
     my Gnome::Gtk3::MenuItem $mi-find .= new(:label('_Find ...'));
     $mi-find.set-use-underline(1);
     $menu.gtk-menu-shell-append($mi-find);
-    my Gnome::Gtk3::MenuItem $mi-clear-find .= new(:label("Clear filter Find")); # TODO remove :0.1:
-    $mi-clear-find.set-use-underline(1);
-    $menu.gtk-menu-shell-append($mi-clear-find);
-    $mi-clear-find.set-sensitive(0);
 
-    $mi-find.register-signal( $ash, "option-find", 'activate',:widget-clear($mi-clear-find));
-    $mi-clear-find.register-signal( $ash, "option-clear-find", 'activate');
+    $mi-find.register-signal( $ash, "option-find", 'activate');
 
     my Gnome::Gtk3::MenuItem $mi-search-tags .= new(:label('Search by _Tag ...'));
     $mi-search-tags.set-use-underline(1);
     $menu.gtk-menu-shell-append($mi-search-tags);
-    my Gnome::Gtk3::MenuItem $mi-clear-tags .= new(:label("Clear filter Tag"));
+    $mi-search-tags.register-signal( $ash, "option-search-tag", 'activate');
+
+    my Gnome::Gtk3::MenuItem $mi-clear-tags .= new(:label("Clear filter (but hide DONE)"));
     $mi-clear-tags.set-use-underline(1);
     $menu.gtk-menu-shell-append($mi-clear-tags);
-    $mi-clear-tags.set-sensitive(0);
-
-    $mi-search-tags.register-signal( $ash, "option-search-tag", 'activate',:widget-clear($mi-clear-tags));
-    $mi-clear-tags.register-signal( $ash, "option-clear-tag", 'activate');
+    $mi-clear-tags.register-signal( $ash, "option-clear", 'activate');
 
     $menu
 }

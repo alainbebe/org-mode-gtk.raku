@@ -229,9 +229,6 @@ class GtkFile {
         $.create-task($!om);
         $.highlighted("0");
     }
-    method clear-find {
-        $g-find=Nil;
-    }
     method choice-find ($top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
             :title("Enter a word"), 
@@ -256,7 +253,13 @@ class GtkFile {
         $dialog.gtk_widget_destroy;
         $g-find.chars>0 ?? $response !! GTK_RESPONSE_CANCEL;
     }
-    method clear-tag {
+    method clear-sparse {
+        $.no-done=True;
+        $.prior-A=False;
+        $.prior-B=False;
+        $.prior-C=False;
+        $.today-past=False;
+        $g-find=Nil;
         $g-tag=Nil;
     }
     method choice-tags (@tags,$top-window) { # TODO to finalize :0.1:
