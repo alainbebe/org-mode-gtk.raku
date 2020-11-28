@@ -186,9 +186,10 @@ As Emac, hide branch
 Necessary to have Gtk.TreeModelFilter
 
 ** TODO Change size of char
-
-** TODO si enter dans Edit Header, active OK :0.1:
-** TODO si enter dans Find, active OK :0.1:
+** DONE si enter dans Edit Header, active OK                           :0.1:
+   CLOSED: [2020-11-28 sam 12:59]
+** DONE si enter dans Find, active OK                                  :0.1:
+CLOSED: [2020-11-28 Sat 09:46]
 ** TODO Tab dans Texte fait passer le focus à OK
 ** TODO Use clipboard
 https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html

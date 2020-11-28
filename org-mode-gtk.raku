@@ -257,8 +257,8 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
 #                "Clear", 1, # TODO to manage 0.x
-                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK,
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
@@ -553,11 +553,12 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.today-past ?? $gf.tv.expand-all !! $gf.tv.collapse-all;
         1
     }
-    method option-find (:$widget-clear){
-        $gf.choice-find($top-window); # TODO manage return "Cancel"
-        $gf.reconstruct-tree;
-        $gf.tv.expand-all;
-        $widget-clear.set-sensitive(1);
+    method option-find (:$widget-clear) {
+        if $gf.choice-find($top-window) == GTK_RESPONSE_OK {
+            $gf.reconstruct-tree;
+            $gf.tv.expand-all;
+            $widget-clear.set-sensitive(1);
+        }
         1
     }
     method option-clear-find (:$widget) {
@@ -569,10 +570,11 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method option-search-tag (:$widget-clear){
         my @tags=$gf.om.search-tags.flat;
-        $gf.choice-tags(@tags,$top-window); # TODO manage return "Cancel"
-        $gf.reconstruct-tree;
-#        $gf.tv.expand-all;
-        $widget-clear.set-sensitive(1);
+        if $gf.choice-tags(@tags,$top-window) == GTK_RESPONSE_OK {
+            $gf.reconstruct-tree;
+            $gf.tv.expand-all;
+            $widget-clear.set-sensitive(1);
+        }
         1
     }
     method option-clear-tag (:$widget) {
@@ -820,6 +822,9 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
     }
     method header-event-after ( N-GdkEventKey $event-key, :$widget ){
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
+        $dialog.response(GTK_RESPONSE_OK)
+            if $event-key.keyval.fmt('0x%08x')==0xff0d 
+                && $widget.get-text.trim.chars>0;
         1
     }
     method manage($task) {
@@ -829,8 +834,8 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,     # TODO OK by default if "enter"
                 "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK,     # TODO OK by default if "enter"
                 ] )                    # TODO Add a button "Apply"
         );
         $dialog.set-default-response(GTK_RESPONSE_OK);
@@ -1092,8 +1097,8 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Cancel", GTK_RESPONSE_NONE)
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK,
                 "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK,
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));

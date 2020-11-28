@@ -46,7 +46,7 @@ CLOSED: [2020-10-31 Sat 09:33]
 * [#A] Priority
 ** Task with sub-task with priority B
 *** [#B] Priority B
-** Task with sub-task  with proority A
+** Task with sub-task  with priority A
 *** [#A] Priority
 ** No priority but sub-task have priority with Done
 This task will not display 

@@ -22,20 +22,25 @@ use Gnome::GObject::Value;
 use Gnome::Gtk3::TreeViewColumn;
 use Gnome::Gtk3::TreePath;
 use Gnome::Gtk3::TreeSelection;
+use Gnome::Gdk3::Events;
 
 use Data::Dump;
 
 my $g-tag;    # TODO remove global value :refactoring:
-my $g-find;   # TODO remove global value :refactoring:
+my $g-find='';   # TODO remove global value :refactoring:
 my $task-cut; # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
 
 class AppSignalHandlers2 {
+    # When click on a tag, accept immediatly the choice 
     method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags, :$dialog) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
-        my Gnome::Gtk3::TreeIter $iter = $ls.tree-model-get-iter($tree-path);
-        my $value = $ls.tree-model-get-value($iter,0);
         $g-tag=@tags[$tree-path.to-string];
-        $dialog.gtk_widget_destroy;
+        $dialog.response(GTK_RESPONSE_OK);
+    }
+    # When push "enter" in window find, accept the entry immediatly 
+    method find-edit (N-GdkEventKey $event-key, :$dialog) {
+        $dialog.response(GTK_RESPONSE_OK)
+            if $event-key.keyval.fmt('0x%08x')==0xff0d;
     }
 }
 class GtkFile {
@@ -52,6 +57,8 @@ class GtkFile {
     has                             $.today-past      is rw =False;   # display only task in past and not Done          
     has                             $.presentation    is rw ="TODO";  # Change presentation for display header          
     has                             $.view-hide-image is rw =0;
+
+    my AppSignalHandlers2 $ash .= new();
 
     enum list-field-columns < TITLE-CODE PICT TITLE >;
     my Gnome::Gdk3::Pixbuf $pb .= new(:file<img/test.png>);
@@ -231,20 +238,23 @@ class GtkFile {
             :parent($top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
-                "_Ok", GTK_RESPONSE_OK, 
                 "_Cancel", GTK_RESPONSE_CANCEL,
+                "_Ok", GTK_RESPONSE_OK, 
             ] )
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
-        my Gnome::Gtk3::Entry $e-edit .= new;
-        $content-area.gtk_container_add($e-edit);
+        my Gnome::Gtk3::Entry $find-edit .= new;
+        $find-edit.register-signal( $ash, 'find-edit', 'key-press-event', :dialog($dialog));
+        $content-area.gtk_container_add($find-edit);
 
         $dialog.show-all;
+        $dialog.set-default-response(GTK_RESPONSE_OK);
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
-            $g-find=$e-edit.get-text;
+            $g-find=$find-edit.get-text;
         }
         $dialog.gtk_widget_destroy;
+        $g-find.chars>0 ?? $response !! GTK_RESPONSE_CANCEL;
     }
     method clear-tag {
         $g-tag=Nil;
@@ -281,10 +291,10 @@ class GtkFile {
         }
 
         $dialog.show-all;
-        my AppSignalHandlers2 $ash .= new();
         $tv.register-signal( $ash, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags),:dialog($dialog));
         my $response = $dialog.gtk-dialog-run;
         $dialog.gtk_widget_destroy;
+        $response;
     }
     method verifiy-read($name) {
         self.save("test.org");
