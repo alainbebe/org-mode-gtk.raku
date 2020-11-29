@@ -816,23 +816,41 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         $gf.unfold-branch-child($.highlighted-task);
         1
     }
-    method header-event-after ( N-GdkEventKey $event-key, :$widget ){
+    method header-event-after ( N-GdkEventKey $event-key, :$widget ) {
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
         $dialog.response(GTK_RESPONSE_OK)
             if $event-key.keyval.fmt('0x%08x')==0xff0d 
                 && $widget.get-text.trim.chars>0;
         1
     }
+    method property-edited (Str $path, Str $new-text, :$ls, :$col) {
+        my @path=($path.Int);
+        my Gnome::Gtk3::TreePath $tp .= new(:indices(@path));
+        my Gnome::Gtk3::TreeIter $iter = $ls.tree-model-get-iter($tp);
+        $ls.set-value( $iter, $col, $new-text);
+        1
+    }
+    method properties-row-activated (N-GtkTreePath $path, N-GObject $column, :$ls) {
+        my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
+        my Gnome::Gtk3::TreeIter $iter = $ls.get-iter($tree-path);
+        $ls.remove($iter);
+        1
+    }
+    method new-property (:$ls) {
+        my $iter=$ls.list-store-append;
+        $ls.set-value( $iter, 2, 'X');
+        1
+    }
     method manage($task) {
         # Dialog to manage task
-        $dialog .= new(             # TODO try to pass dialog as parameter
-            :title("Manage task"),  # TODO doesn't work if multi-tab. Very strange. Fix in :0.x:
+        $dialog .= new(                   # TODO try to pass dialog as parameter
+            :title("Edit task"),          # TODO doesn't work if multi-tab. Very strange. Fix in :0.x:
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
                 "_Cancel", GTK_RESPONSE_CANCEL,
-                "_Ok", GTK_RESPONSE_OK,     # TODO OK by default if "enter"
-                ] )                    # TODO Add a button "Apply"
+                "_Ok", GTK_RESPONSE_OK,   # TODO OK by default if "enter"
+                ] )                       # TODO Add a button "Apply"
         );
         $dialog.set-default-response(GTK_RESPONSE_OK);
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
@@ -911,26 +929,19 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
         
         # To edit properties
         $content-area.gtk_container_add(Gnome::Gtk3::Label.new(:text('Properties')));
-        my Gnome::Gtk3::TextView $tev-edit-prop .= new;
-        my Gnome::Gtk3::TextBuffer $prop-buffer .= new(:native-object($tev-edit-prop.get-buffer));
-        if $task.properties {
-            my $text=$task.properties.join("\n");
-            $prop-buffer.set-text($text);
-        }
-        my Gnome::Gtk3::ScrolledWindow $swp .= new;
-        $swp.gtk-container-add($tev-edit-prop);
-        $content-area.gtk_container_add($swp);
-
-        my Gnome::Gtk3::ListStore $ls .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING));
-        my Gnome::Gtk3::TreeView $tv .= new(:model($ls));
+        my Gnome::Gtk3::ListStore $properties .= new(:field-types( G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING));
+        my Gnome::Gtk3::TreeView $tv .= new(:model($properties));
         $tv.set-hexpand(1);
         $tv.set-vexpand(1);
         $tv.set-headers-visible(1);
-        $content-area.gtk_container_add($tv);
+        my Gnome::Gtk3::ScrolledWindow $swp .= new;
+        $swp.gtk-container-add($tv);
+        $content-area.gtk_container_add($swp);
 
         my Gnome::Gtk3::CellRendererText $crt1 .= new;
         my Gnome::GObject::Value $v .= new( :type(G_TYPE_BOOLEAN), :value<1>);
         $crt1.set-property( 'editable', $v);
+        $crt1.register-signal(self, 'property-edited', 'edited', :ls($properties), :col(0));
         my Gnome::Gtk3::TreeViewColumn $tvc .= new;
         $tvc.set-title('Key');
         $tvc.pack-end( $crt1, 1);
@@ -939,21 +950,28 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
 
         my Gnome::Gtk3::CellRendererText $crt2 .= new;
         $crt2.set-property( 'editable', $v);
+        $crt2.register-signal(self, 'property-edited', 'edited', :ls($properties), :col(1));
         $tvc .= new;
         $tvc.set-title('Value');
         $tvc.pack-end( $crt2, 1);
         $tvc.add-attribute( $crt2, 'text', 1);
         $tv.append-column($tvc);
 
+        my Gnome::Gtk3::CellRendererText $crt3 .= new;
+        $tvc .= new;
+        $tvc.pack-end( $crt3, 1);
+        $tvc.add-attribute( $crt3, 'text', 2);
+        $tv.append-column($tvc);
+        $tv.register-signal( self, 'properties-row-activated', 'row-activated',:ls($properties));
+
         for $task.properties -> $row {
-        note "Insert: ", $row.kv.join(', ');
-          $iter = $ls.gtk-list-store-append;
-          $ls.gtk-list-store-set( $iter, |$row.kv);
+            $iter = $properties.gtk-list-store-append;
+            $properties.gtk-list-store-set( $iter, |$row.kv,2,"X");
         }
 
-#        $iter = $ls.gtk-list-store-append;
-#        $ls.set-value( $iter, 0, 'Test');
-#        $ls.set-value( $iter, 1, 'Suite');
+        my Gnome::Gtk3::Button $b-prop  .= new(:label("Add Property"));
+        $b-prop.register-signal(self, 'new-property', 'clicked',:ls($properties));
+        $content-area.gtk_container_add($b-prop);
 
         
         # To edit text
@@ -981,11 +999,13 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                 $gf.create-task($task,$task.darth-vader.iter,:cond(False));
                 push($task.darth-vader.tasks,$task);
             }
+
             if $task.header ne $e-edit.get-text {
                 $gf.change=1;
                 $task.header=$e-edit.get-text.trim;
                 $gf.ts.set-value( $task.iter, 0, $task.display-header($gf.presentation));
             }
+
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
                 $gf.change=1;
                 if $e-edit-tags.get-text {
@@ -995,6 +1015,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                 }
                 $gf.ts.set-value( $task.iter, 1, $task.display-tags($gf.presentation));
             }
+
             my $todo="";
             $todo="TODO" if $rb-td2.get-active();
             $todo="DONE" if $rb-td3.get-active();
@@ -1011,6 +1032,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                     $task.closed=DateOrg;
                 }
             }
+
             my $prior="";
             $prior="A" if $rb-pr2.get-active();
             $prior="B" if $rb-pr3.get-active();
@@ -1019,6 +1041,21 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                 $task.priority=$prior;
                 $gf.ts.set_value( $task.iter, 0,$task.display-header($gf.presentation)); # TODO create $gf.ts-set-header($task)
             }
+
+            my @properties;
+            my Gnome::Gtk3::TreeIter $iter = $properties.get-iter-first;
+            my $valid=$iter.is-valid;
+            while ($valid) {
+                if $properties.get-value( $iter, 0)[0].get-string.trim.chars>0 {
+                    @properties.push(($properties.get-value( $iter, 0)[0].get-string,$properties.get-value( $iter, 1)[0].get-string));
+                }
+                $valid=$properties.iter-next($iter);
+            }
+            if (@properties ne $task.properties) {
+                $gf.change=1;
+                $task.properties=@properties;
+            }
+
             my Gnome::Gtk3::TextIter $start = $text-buffer2.get-start-iter;
             my Gnome::Gtk3::TextIter $end = $text-buffer2.get-end-iter;
             my $new-text=$text-buffer2.get-text( $start, $end, 0);
@@ -1026,27 +1063,12 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg
                 $gf.change=1;
                 $gf.update-text($task.iter,$new-text);
             }
-            $start = $prop-buffer.get-start-iter;
-            $end = $prop-buffer.get-end-iter;
-            $new-text=$prop-buffer.get-text( $start, $end, 0);
-            if ($new-text ne $task.properties.join("\n")) {
-                $gf.change=1;
-                $task.properties=map {
-                    $_ ~~ /^ (\w+) " "* (.*)/; 
-                    ($0.Str,$1.Str)
-                }, $new-text.split(/\n/);
-            }
         }
         $b-scheduled=Nil; # TODO to improve, pass as parameter
         $b-deadline=Nil;
         $dialog.gtk_widget_destroy;
     }
     my @ctrl-keys;
-#    method tv-cursor-row (N-GtkTreePath $path, N-GObject $column , $a1 , $a2) {
-    method tv-cursor-row () {
-#        note 'ici : to remove';
-        1
-    }
     method tv-button-click (N-GtkTreePath $path, N-GObject $column ) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
         my Gnome::Gtk3::TreeIter $iter = $gf.ts.tree-model-get-iter($tree-path);
@@ -1401,7 +1423,6 @@ sub make-menubar-list-help  {
 sub MAIN($arg = '') {
     $gf.file-open($arg,$top-window);
     $gf.tv.register-signal( $ash, 'tv-button-click', 'row-activated');
-    $gf.tv.register-signal( $ash, 'tv-cursor-row', 'cursor-changed');
     $top-window.register-signal( $ash, 'exit-gui', 'destroy');
     $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
     $top-window.show-all;

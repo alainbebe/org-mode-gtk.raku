@@ -262,7 +262,7 @@ class GtkFile {
         $g-find=Nil;
         $g-tag=Nil;
     }
-    method choice-tags (@tags,$top-window) { # TODO to finalize :0.1:
+    method choice-tags (@tags,$top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
             :title("Choice a tag"), 
             :parent($top-window),
