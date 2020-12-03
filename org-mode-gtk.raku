@@ -8,6 +8,7 @@ use Task;
 use GtkTask;
 use GtkFile;
 use GtkEditTask;
+use GtkEditPreface;
 
 use Gnome::N::N-GObject;
 use Gnome::Gtk3::Main;
@@ -262,10 +263,6 @@ class AppSignalHandlers {
         }
         1
     }
-    method view-unfold-all {
-        $gf.tv.expand-all;
-        1
-    }
     method help-about {
         $about.gtk-dialog-run;
         $about.gtk-widget-hide;
@@ -480,41 +477,6 @@ class AppSignalHandlers {
         $dialog.gtk_widget_destroy;
         1
     }
-    method option-preface {
-        # Dialog to manage preface
-        my Gnome::Gtk3::Dialog $dialog .= new(
-            :title("Edit preface"),
-            :parent($!top-window),
-            :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
-            :button-spec( "Cancel", GTK_RESPONSE_NONE)
-            :button-spec( [
-                "_Cancel", GTK_RESPONSE_CANCEL,
-                "_Ok", GTK_RESPONSE_OK,
-            ] )
-        );
-        my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
-
-        my Gnome::Gtk3::TextView $tev-edit-text .= new;
-        my Gnome::Gtk3::TextBuffer $text-buffer .= new(:native-object($tev-edit-text.get-buffer));
-        if $gf.om.text {
-            my $text=$gf.om.text.join("\n");
-            $text-buffer.set-text($text);
-        }
-        my Gnome::Gtk3::ScrolledWindow $swt .= new;
-        $swt.gtk-container-add($tev-edit-text);
-        $content-area.gtk_container_add($swt);
-        $dialog.show-all;
-        my $response=$dialog.gtk-dialog-run;
-        if $response == GTK_RESPONSE_OK {
-            $gf.change=1;
-            my Gnome::Gtk3::TextIter $start = $text-buffer.get-start-iter;
-            my Gnome::Gtk3::TextIter $end = $text-buffer.get-end-iter;
-            my $new-text=$text-buffer.get-text( $start, $end, 0);
-            $gf.om.text=$new-text.split(/\n/);
-        }
-        $dialog.gtk_widget_destroy;
-        1
-    }
     method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
 #        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
         $is-return=$event-key.keyval.fmt('0x%08x')==0xff0d; 
@@ -540,7 +502,7 @@ class AppSignalHandlers {
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $gf.delete-branch($clicked-task.iter); }
-                    when "cs"  {@ctrl-keys=''; $l-info.set-label('Schedule');           self.scheduled(:task($.highlighted-task))}
+                    when "cs"  {@ctrl-keys=''; $l-info.set-label('Schedule');           self.scheduled(:task($.highlighted-task))} # TODO doesn't work :0.1:
                     when "cd"  {@ctrl-keys=''; $l-info.set-label('Deadline');           self.deadline(:task($.highlighted-task))}
                     when "ct"  {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); self.edit-todo-done;}
                     when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $.view-hide-image;}
@@ -574,9 +536,9 @@ my Gnome::Gtk3::MenuBar $menu-bar .= new;
 $g.gtk_grid_attach( $menu-bar, 0, 0, 1, 1);
 $menu-bar.gtk-menu-shell-append(create-main-menu('_File',make-menubar-list-file));
 #$menu-bar.gtk-menu-shell-append(create-main-menu('_Edit',make-menubar-list-edit));
-$menu-bar.gtk-menu-shell-append(create-main-menu('D_ivers',make-menubar-list-divers));
+$menu-bar.gtk-menu-shell-append(create-main-menu('_Divers',make-menubar-list-divers));
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Org',make-menubar-list-org));
-$menu-bar.gtk-menu-shell-append(create-main-menu('_Debug',make-menubar-list-debug)) if $debug;
+$menu-bar.gtk-menu-shell-append(create-main-menu('De_bug',make-menubar-list-debug)) if $debug;
 $menu-bar.gtk-menu-shell-append(create-main-menu('_Help',make-menubar-list-help));
 
 sub create-main-menu($title,Gnome::Gtk3::Menu $sub-menu) {
@@ -591,11 +553,11 @@ sub create-sub-menu($menu,$name,$ash,$method) {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $ash, $method, 'activate');
 } 
-#sub create-sub-menu2($menu,$name,$ash,$method,$int) {
+#sub create-sub-menu2($menu,$name,$ash,$method,$divers) {
 #    my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
 #    $menu-item.set-use-underline(1);
 #    $menu.gtk-menu-shell-append($menu-item);
-#    $menu-item.register-signal( $ash, $method, 'activate', $int);
+#    $menu-item.register-signal( $ash, $method, 'activate', $divers);
 #} 
 sub make-menubar-list-file {
     my Gnome::Gtk3::Menu $menu .= new;
@@ -617,7 +579,12 @@ sub make-menubar-list-edit {
 sub make-menubar-list-divers {
     my Gnome::Gtk3::Menu $menu .= new;
 
-    create-sub-menu($menu,"Edit P_reface",$ash,'option-preface');
+    my GtkEditPreface $ep .=new(:top-window($top-window));
+    my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Edit P_reface'));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $ep, 'edit-preface', 'activate', :gf($gf));
+
     create-sub-menu($menu,"Change _Presentation",$ash,'option-presentation');
     create-sub-menu($menu,"View/Hide _Image       C-c C-x C-v",$ash,'view-hide-image');
 
@@ -669,7 +636,7 @@ sub make-menubar-sh ( AppSignalHandlers $ash ) {
     $menu.gtk-menu-shell-append($st-root-menu);
 
     create-sub-menu($menu,"Fold All",$ash,'view-fold-all');
-    create-sub-menu($menu,"Show All",$ash,'view-unfold-all');
+    create-sub-menu($menu,"Show All",$gf,'show-all');
     create-sub-menu($menu,"Fold branch",$ash,'fold-branch');
     create-sub-menu($menu,"Unfold branch",$ash,'unfold-branch');
     create-sub-menu($menu,"Unfold branch and child",$ash,'unfold-branch-child');

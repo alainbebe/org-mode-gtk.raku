@@ -187,12 +187,16 @@ Necessary to have Gtk.TreeModelFilter
 
 ** TODO Change size of char
 ** DONE si enter dans Edit Header, active OK                           :0.1:
-   CLOSED: [2020-11-28 sam 12:59]
+CLOSED: [2020-11-28 Sat 12:59]
 ** DONE si enter dans Find, active OK                                  :0.1:
 CLOSED: [2020-11-28 Sat 09:46]
 ** TODO Tab dans Texte fait passer le focus à OK
 ** TODO Use clipboard
 https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html
+** TODO Ctrl-enter in text send OK to dialog and save and close        :0.1:
+** TODO Enter in tag edit send OK                                      :0.1:
+** TODO Bug when display text after moifiy                             :0.1:
+inverse line
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

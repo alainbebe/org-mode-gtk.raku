@@ -95,6 +95,10 @@ class GtkFile {
         $!tv.append-column($tvc);
     }
 
+    method show-all {
+        $.tv.expand-all;
+        1
+    }
     method iter-get-indices($task) { # find indices IN treestore, not tasks
         if $task.iter.defined && $task.iter.is-valid {
             return  $.ts.get-path($task.iter).get-indices
