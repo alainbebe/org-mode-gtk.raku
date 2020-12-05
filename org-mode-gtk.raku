@@ -3,45 +3,25 @@
 use v6;
 
 use lib "lib";
-use DateOrg;
-use Task;
-use GtkTask;
 use GtkFile;
 use GtkEditPreface;
 use GtkMoveTask;
+use GtkKeyEvent;
 
 use Gnome::N::N-GObject;
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Grid;
-use Gnome::Gtk3::Button;
-use Gnome::Gtk3::CheckButton;
 use Gnome::Gtk3::Label;
-use Gnome::Gtk3::TreePath;
-use Gnome::Gtk3::TreeView;
-use Gnome::Gtk3::TreeIter;
 use Gnome::Gtk3::MenuBar;
 use Gnome::Gtk3::Menu;
 use Gnome::Gtk3::MenuItem;
-use Gnome::Gtk3::Dialog;
-use Gnome::Gtk3::MessageDialog;
 use Gnome::Gtk3::AboutDialog;
-use Gnome::Gtk3::TextView;
-use Gnome::Gtk3::TextBuffer;
-use Gnome::Gtk3::FileChooser;
-use Gnome::Gtk3::FileChooserDialog;
 use Gnome::Gtk3::ScrolledWindow;
-use Gnome::Gtk3::TreeSelection;
-use Gnome::Gtk3::ComboBoxText;
-use Gnome::Gdk3::Events;
-use Gnome::Gdk3::Keysyms;
 use NativeCall;
-
-use Data::Dump;
 
 # global variable : to remove ?
 my $debug=1;            # to debug =1
-my $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 
 my Gnome::Gtk3::Main $m .= new;
 
@@ -66,75 +46,15 @@ $about.set-website("http://www.barbason.be");
 $about.set-website-label("http://www.barbason.be");
 $about.set-authors(CArray[Str].new('Alain BarBason'));
 
+my GtkKeyEvent $gke .= new(:gf($gf), :m($m), :top-window($top-window));
+
 class AppSignalHandlers {
     has Gnome::Gtk3::Window $!top-window;
     submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }
 
-    method exit-gui ( --> Int ) {
-        my $button=$gf.try-save($!top-window);
-        $m.gtk-main-quit if $button != GTK_RESPONSE_CANCEL;
-        1
-    }
-    method go-to-link ( :$iter ) { # TODO it's not iter, but text. To refactoring
-#        my $proc = run '/opt/firefox/firefox', '--new-tab', $edit;
-        shell "/opt/firefox/firefox --new-tab $iter";
-        1
-    }
     method help-about {
         $about.gtk-dialog-run;
         $about.gtk-widget-hide;
-    }
-    my @ctrl-keys;
-    method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
-#        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
-        if $event-key.type ~~ GDK_KEY_PRESS {
-            if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
-                $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
-                $is-maximized=!$is-maximized; 
-            }
-            if $event-key.state == 1 { # shift push
-                given $event-key.keyval.fmt('0x%08x') {
-                    when 0xff52 {$gf.priority-up}
-                    when 0xff54 {$gf.priority-down}
-                }
-            }
-            if $event-key.state == 4 { # ctrl push
-                #note "Key ",Buf.new($event-key.keyval).decode;
-                @ctrl-keys.push(Buf.new($event-key.keyval).decode);
-                given join('',@ctrl-keys) {
-                    when  ""  {}
-                    when  "c"  {$l-info.set-label("C-c")}
-                    when  "x"  {$l-info.set-label("C-x")}
-                    when  "cx" {$l-info.set-label("C-c C-x")}
-#                    when "cc" {@ctrl-keys=''; say "cc"}
-#                    when "cq" {@ctrl-keys=''; say "edit tag"}
-#                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $gf.delete-branch($clicked-task.iter); }
-                    when "cs"  {@ctrl-keys=''; $l-info.set-label('Schedule');           self.scheduled(:task($gf.highlighted-task))} # TODO doesn't work :0.1:
-                    when "cd"  {@ctrl-keys=''; $l-info.set-label('Deadline');           self.deadline(:task($gf.highlighted-task))}
-                    when "ct"  {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); $gf.edit-todo-done;}
-                    when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $gf.m-view-hide-image;}
-                    when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               $gf.file-save1}
-                    when "xc"  {@ctrl-keys=''; $l-info.set-label('Exit');               self.exit-gui}
-                    default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
-                }
-            }
-            # TODO Alt-Enter crée un frère après
-            # TODO M-S-Enter crée un fils avec TODO
-            # TODO Home suivi de Alt-Enter crée un frère avant
-            if $event-key.state == 8 { # alt push # TODO write with "given" :refactoring:
-                $gf.move-up-down-button-click(:inc(-1)) 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff52; # Alt-Up
-                $gf.move-up-down-button-click(:inc( 1)) 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff54; # Alt-Down
-            }
-            if $event-key.state == 9 { # alt shift push
-                $gf.move-left-button-click() 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff51; # Alt-Shift-left
-                $gf.move-right-button-click() 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff53; # Alt-Shift-right
-            }
-        }
-        1
     }
 } # end Class AppSiganlHandlers
 my AppSignalHandlers $ash .= new(:top-window($top-window));
@@ -194,7 +114,10 @@ sub make-menubar-list-file {
     $menu.gtk-menu-shell-append($menu-item);
     $menu-item.register-signal( $gf, 'file-save-test', 'activate');
     
-    create-sub-menu($menu,"_Quit         C-x C-c",$ash,'exit-gui');
+    $menu-item .= new(:label("_Quit         C-x C-c"));
+    $menu-item.set-use-underline(1);
+    $menu.gtk-menu-shell-append($menu-item);
+    $menu-item.register-signal( $gke, 'exit-gui', 'activate', :gf($gf), :m($m));
 
     $menu
 }
@@ -395,8 +318,8 @@ sub make-menubar-list-help  {
 sub MAIN($arg = '') {
     $gf.file-open($arg,$top-window);
     $gf.tv.register-signal( $gf, 'tv-button-click', 'row-activated');
-    $top-window.register-signal( $ash, 'exit-gui', 'destroy');
-    $top-window.register-signal( $ash, 'handle-keypress', 'key-press-event');
+    $top-window.register-signal( $gke, 'exit-gui', 'destroy', :gf($gf), :m($m)); # TODO doesn't work :refactoring:
+    $top-window.register-signal( $gke, 'handle-keypress', 'key-press-event', :gf($gf), :l-info($l-info));
     $top-window.show-all;
     $m.gtk-main;
 }
