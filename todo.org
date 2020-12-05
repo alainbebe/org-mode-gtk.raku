@@ -44,6 +44,7 @@ CLOSED: [2020-05-12 mar  07:42]
 s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
+** Enter on task, open EditTask and close imediatly                    :0.1:
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
@@ -273,6 +274,7 @@ in finding in header and text
 French : sam 7 nov
 ** TODO Improve "find"
 with regex, case insensitive
+** TODO in edit tag, remove (or forbidden) ":"  :0.1:
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

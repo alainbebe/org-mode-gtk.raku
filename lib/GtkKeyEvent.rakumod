@@ -54,7 +54,7 @@ class GtkKeyEvent {
                     when "cd"  {@ctrl-keys=''; $l-info.set-label('Deadline');           $.get.deadline(:gf($gf))}
                     when "ct"  {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); $gf.edit-todo-done;}
                     when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $gf.m-view-hide-image;}
-                    when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               $gf.file-save1}
+                    when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               $gf.file-save}
                     when "xc"  {@ctrl-keys=''; $l-info.set-label('Exit');               self.exit-gui}
                     default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
