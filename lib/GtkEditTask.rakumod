@@ -47,6 +47,11 @@ class GtkEditTask {
         $b.register-signal(self, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
+    method go-to-link ( :$iter ) { # TODO it's not iter, but text. To refactoring
+#        my $proc = run '/opt/firefox/firefox', '--new-tab', $edit;
+        shell "/opt/firefox/firefox --new-tab $iter";
+        1
+    }
     method clear-tags-button-click ( :$iter ) {
         $e-edit-tags.set-text("");
         1
@@ -60,7 +65,7 @@ class GtkEditTask {
     }
     method scheduled ( :$widget, :$task , :$gf) {
         $gf.change=1;
-        my $t = $task ?? $task !! $.highlighted-task;
+        my $t = $task ?? $task !! $gf.highlighted-task;
         my GtkManageDate $md .=new(:top-window($!top-window));
         $t.scheduled=$md.manage-date($t.scheduled);
         $widget.set-label($t.scheduled ?? $t.scheduled.str !! "-") if $widget;
@@ -74,7 +79,7 @@ class GtkEditTask {
     }
     method deadline ( :$widget, :$task , :$gf) {
         $gf.change=1;
-        my $t=$task ?? $task !! $.highlighted-task;
+        my $t=$task ?? $task !! $gf.highlighted-task;
         my GtkManageDate $md .=new(:top-window($!top-window));
         $t.deadline=$md.manage-date($t.deadline);
         $widget.set-label($t.deadline ?? $t.deadline.str !! "-") if $widget;
@@ -261,11 +266,11 @@ class GtkEditTask {
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);
-        if $task.text {
-            my $text=$task.text.join("\n");
-            $text ~~ /(http:..\S*)/;
-            $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
-        }
+#        if $task.text { # TODO enable this if tere are a config.ini to put path browser (see go-to-link') :0.x:
+#            my $text=$task.text.join("\n");
+#            $text ~~ /(http:..\S*)/;
+#            $content-area.gtk_container_add($.create-button('Goto to link','go-to-link',$0.Str)) if $0;
+#        }
         
         # Show the dialog.
         $dialog.show-all;

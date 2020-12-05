@@ -100,7 +100,7 @@ class GtkFile {
     }
 
     method file-new ( --> Int ) {
-        if $.try-save($!top-window) != GTK_RESPONSE_CANCEL {
+        if $.try-save != GTK_RESPONSE_CANCEL {
             $.ts.clear;
             $.om.tasks=[]; 
             $.om.text=[]; 
@@ -112,7 +112,7 @@ class GtkFile {
         1
     }
     method file-open1 ( --> Int ) { # TODO :refactoring:
-        if $.try-save($!top-window) != GTK_RESPONSE_CANCEL {
+        if $.try-save != GTK_RESPONSE_CANCEL {
             my Gnome::Gtk3::FileChooserDialog $dialog .= new(
                 :title("Open File"), 
                 :action(GTK_FILE_CHOOSER_ACTION_SAVE),
@@ -224,7 +224,7 @@ class GtkFile {
         if $.search-task-from($.om,$iter) {      # if not, it's a text not (now) editable 
             my GtkTask $task=$.search-task-from($.om,$iter);
             my GtkEditTask $et .=new(:top-window($!top-window));
-            $et.edit-task($task,$);
+            $et.edit-task($task,self);
         } else {  # text
             # manage via dialog task
         }
@@ -721,7 +721,7 @@ class GtkFile {
         $.change=0 if !$name;
         spurt $name ?? $name !! $!om.header, $!om.to-text;
     }
-    method try-save($top-window) {
+    method try-save {
         if $.change && (!$!om.header || $!om.header ne "demo.org") {
             my Gnome::Gtk3::MessageDialog $md .=new(
                                 :message('Do you like save your file ?'),
@@ -735,7 +735,7 @@ class GtkFile {
                 if $!om.header { 
                     $.save 
                 } else {
-                    $button = $.file-save-as($top-window);
+                    $button = $.file-save-as($!top-window);
                 }
             }
             $md.destroy;
