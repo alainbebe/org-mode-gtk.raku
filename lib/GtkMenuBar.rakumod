@@ -2,6 +2,7 @@ use GtkEditPreface;
 use GtkKeyEvent;
 use GtkFile;
 use GtkMoveTask;
+use AboutDialog;
 
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
@@ -275,8 +276,12 @@ class GtkMenuBar {
     }
     method make-menubar-list-help  {
         my Gnome::Gtk3::Menu $menu .= new;
-        $.create-sub-menu($menu,"_About",$.gf,'help-about'); # TODO :0.1:
+        $.create-sub-menu($menu,"_About",self,'help-about');
         $menu
+    }
+    method help-about {
+        my AboutDialog $ad .= new;
+        $ad.create-ad;
     }
 }
 

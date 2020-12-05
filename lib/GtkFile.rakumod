@@ -33,19 +33,6 @@ my $g-tag;    # TODO remove global value :refactoring:
 my $g-find='';   # TODO remove global value :refactoring:
 my $task-cut; # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
 
-class AppSignalHandlers2 {
-    # When click on a tag, accept immediatly the choice 
-    method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags, :$dialog) {
-        my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
-        $g-tag=@tags[$tree-path.to-string];
-        $dialog.response(GTK_RESPONSE_OK);
-    }
-    # When push "enter" in window find, accept the entry immediatly 
-    method find-edit (N-GdkEventKey $event-key, :$dialog) {
-        $dialog.response(GTK_RESPONSE_OK)
-            if $event-key.keyval.fmt('0x%08x')==0xff0d;
-    }
-}
 class GtkFile {
     has GtkTask                     $.om              is rw;
     has Gnome::Gtk3::TreeStore      $.ts              ; #.= new(:field-types(G_TYPE_STRING));
@@ -61,8 +48,6 @@ class GtkFile {
     has                             $.today-past      is rw =False;   # display only task in past and not Done          
     has                             $.presentation    is rw ="TODO";  # Change presentation for display header          
     has                             $.view-hide-image is rw =0;
-
-    my AppSignalHandlers2 $ash .= new();
 
     enum list-field-columns < TITLE-CODE PICT TITLE >;
     my Gnome::Gdk3::Pixbuf $pb .= new(:file<img/test.png>);
@@ -99,6 +84,17 @@ class GtkFile {
         $!tv.append-column($tvc);
     }
 
+    # When click on a tag, accept immediatly the choice 
+    method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags, :$dialog) {
+        my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
+        $g-tag=@tags[$tree-path.to-string];
+        $dialog.response(GTK_RESPONSE_OK);
+    }
+    # When push "enter" in window find, accept the entry immediatly 
+    method find-edit (N-GdkEventKey $event-key, :$dialog) { # TODO bug if 'enter' (and not double clickk)  on a task, open and close edit task.
+        $dialog.response(GTK_RESPONSE_OK)
+            if $event-key.keyval.fmt('0x%08x')==0xff0d;
+    }
     method file-new ( --> Int ) {
         if $.try-save != GTK_RESPONSE_CANCEL {
             $.ts.clear;
@@ -263,7 +259,7 @@ class GtkFile {
         $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($.presentation)); # TODO create $.ts-set-header($task)
     }
     method add-brother-down {
-        $.change=1;
+        $.change=1; # TODO to do if manage return OK and not Cancel :0.1:
         my $task=$.highlighted-task;
         my GtkTask $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
         my GtkEditTask $et .=new(:top-window($!top-window));
@@ -271,7 +267,7 @@ class GtkFile {
         $.highlighted($brother);
     }
     method add-child {
-        $.change=1; # TODO to do if manage return OK and not Cancel
+        $.change=1; # TODO to do if manage return OK and not Cancel :0.1:
         my $task=$.highlighted-task;
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         my GtkEditTask $et .=new(:top-window($!top-window));
@@ -575,7 +571,7 @@ class GtkFile {
         );
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
         my Gnome::Gtk3::Entry $find-edit .= new;
-        $find-edit.register-signal( $ash, 'find-edit', 'key-press-event', :dialog($dialog));
+        $find-edit.register-signal( self, 'find-edit', 'key-press-event', :dialog($dialog));
         $content-area.gtk_container_add($find-edit);
 
         $dialog.show-all;
@@ -628,7 +624,7 @@ class GtkFile {
         }
 
         $dialog.show-all;
-        $tv.register-signal( $ash, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags),:dialog($dialog));
+        $tv.register-signal( self, 'tv-tag-click', 'row-activated',:ls($ls),:tags(@tags),:dialog($dialog));
         my $response = $dialog.gtk-dialog-run;
         $dialog.gtk_widget_destroy;
         $response;
