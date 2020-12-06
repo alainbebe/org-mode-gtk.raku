@@ -44,6 +44,7 @@ CLOSED: [2020-05-12 mar  07:42]
 s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
+** Enter on task, open EditTask and close imediatly                    :0.1:
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
@@ -187,12 +188,16 @@ Necessary to have Gtk.TreeModelFilter
 
 ** TODO Change size of char
 ** DONE si enter dans Edit Header, active OK                           :0.1:
-   CLOSED: [2020-11-28 sam 12:59]
+CLOSED: [2020-11-28 Sat 12:59]
 ** DONE si enter dans Find, active OK                                  :0.1:
 CLOSED: [2020-11-28 Sat 09:46]
-** TODO Tab dans Texte fait passer le focus à OK
 ** TODO Use clipboard
 https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html
+** TODO Ctrl-enter in text send OK to dialog and save and close        :0.1:
+** DONE Enter in tag edit send OK                                      :0.1:
+CLOSED: [2020-12-06 Son 13:14]
+** TODO Bug when display text after moifiy                             :0.1:
+inverse line
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]
@@ -269,6 +274,20 @@ in finding in header and text
 French : sam 7 nov
 ** TODO Improve "find"
 with regex, case insensitive
+** DONE in edit tag, remove (or forbidden) ":"                         :0.1:
+CLOSED: [2020-12-06 Son 13:14]
+** TODO Move DateOrg to OrgMode/DAteOrg
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/./org-mode-gtk.raku
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Main.rakumod (Main)
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/GtkFile.rakumod (GtkFile)
+===SORRY!===
+Type 'OrgMode::DateOrg' is not declared
+at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
+------>     has OrgMode::DateOrg⏏  $.closed      is rw;
+Malformed has
+at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
+------>     has OrgMode::⏏DateOrg  $.closed      is rw;
+
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]
