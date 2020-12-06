@@ -280,8 +280,7 @@ class GtkMenuBar {
         $menu
     }
     method help-about {
-        my AboutDialog $ad .= new;
-        $ad.create-ad;
+        AboutDialog.new.run;
     }
 }
 
