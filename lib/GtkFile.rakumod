@@ -259,21 +259,23 @@ class GtkFile {
         $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($.presentation)); # TODO create $.ts-set-header($task)
     }
     method add-brother-down {
-        $.change=1; # TODO to do if manage return OK and not Cancel :0.1:
         my $task=$.highlighted-task;
         my GtkTask $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
         my GtkEditTask $et .=new(:top-window($!top-window));
-        $et.edit-task($brother,self);
-        $.highlighted($brother);
+        if $et.edit-task($brother,self) == GTK_RESPONSE_OK {
+            $.change=1;
+            $.highlighted($brother);
+        }
     }
     method add-child {
-        $.change=1; # TODO to do if manage return OK and not Cancel :0.1:
         my $task=$.highlighted-task;
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         my GtkEditTask $et .=new(:top-window($!top-window));
-        $et.edit-task($child,self);
-        $.unfold-branch;
-        $.highlighted($child);
+        if $et.edit-task($child,self) == GTK_RESPONSE_OK {
+            $.change=1;
+#            $.unfold-branch; # TODO unfold de good branch :0.2:
+            $.highlighted($child);
+        }
     }
     method option-prior-A {
         $.clear-sparse;

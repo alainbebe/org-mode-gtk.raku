@@ -193,10 +193,11 @@ CLOSED: [2020-11-28 Sat 12:59]
 CLOSED: [2020-11-28 Sat 09:46]
 ** TODO Use clipboard
 https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html
-** TODO Ctrl-enter in text send OK to dialog and save and close        :0.1:
+** DONE Ctrl-enter in text send OK to dialog and save and close        :0.1:
+CLOSED: [2020-12-06 Son 16:08]
 ** DONE Enter in tag edit send OK                                      :0.1:
 CLOSED: [2020-12-06 Son 13:14]
-** TODO Bug when display text after moifiy                             :0.1:
+** TODO Bug when display text after modify                             :0.1:
 inverse line
 * raku improve
 ** DONE create Class Task

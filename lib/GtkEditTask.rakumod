@@ -69,6 +69,13 @@ class GtkEditTask {
                 && $widget-header.get-text.trim.chars>0;
         1
     }
+    method text-event-after ( N-GdkEventKey $event-key, :$widget-header ) {
+        $dialog.response(GTK_RESPONSE_OK)
+            if $event-key.state == 4 # ctrl push
+                && $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return
+                    && $widget-header.get-text.trim.chars>0;
+        1
+    }
     method scheduled ( :$widget, :$task , :$gf) {
         $gf.change=1;
         my $t = $task ?? $task !! $gf.highlighted-task;
@@ -270,6 +277,7 @@ class GtkEditTask {
             my $text=$task.text.join("\n");
             $text-buffer2.set-text($text);
         }
+        $tev-edit-text.register-signal( self, 'text-event-after', 'event-after',:widget-header($e-edit));
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);
@@ -360,6 +368,7 @@ class GtkEditTask {
         $b-scheduled=Nil; # TODO to improve, pass as parameter
         $b-deadline=Nil;
         $dialog.gtk_widget_destroy;
+        $response;
     }
 }
 

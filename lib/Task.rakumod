@@ -33,9 +33,9 @@ class Task {
         my $display;
         my $header=to-markup($.header);
         if $presentation eq 'TEXT' {
-            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"      >'~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="x-large">'~$header~'</span>'}
-            else               {$display~='<span foreground="black" size="x-large"      >'~$header~'</span>'}
+            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"       >'~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="xx-large">'~$header~'</span>'}
+            else               {$display~='<span foreground="black" size="xx-large"      >'~$header~'</span>'}
         } else { # DEFAULT TODO
             if (!$.todo)             {$display~=' '}
             elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
