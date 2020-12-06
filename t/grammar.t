@@ -1,6 +1,6 @@
 use v6;
 use lib “lib”;
-use GramOrgMode;
+use OrgMode::Grammar;
 
 use Test;
 plan 55; # TODO write other type of test, writing,... :0.x:

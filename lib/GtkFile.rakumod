@@ -1,7 +1,7 @@
 use DateOrg;
 use Task;                       # TODO becasue use to-markup. To improve
 use GtkTask;
-use GramOrgMode;
+use OrgMode::Grammar;
 use GtkEditTask;
 
 use Gnome::N::N-GObject;

@@ -274,7 +274,19 @@ in finding in header and text
 French : sam 7 nov
 ** TODO Improve "find"
 with regex, case insensitive
-** TODO in edit tag, remove (or forbidden) ":"  :0.1:
+** TODO in edit tag, remove (or forbidden) ":"                         :0.1:
+** TODO Move DateOrg to OrgMode/DAteOrg
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/./org-mode-gtk.raku
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Main.rakumod (Main)
+===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/GtkFile.rakumod (GtkFile)
+===SORRY!===
+Type 'OrgMode::DateOrg' is not declared
+at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
+------>     has OrgMode::DateOrg⏏  $.closed      is rw;
+Malformed has
+at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
+------>     has OrgMode::⏏DateOrg  $.closed      is rw;
+
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]
