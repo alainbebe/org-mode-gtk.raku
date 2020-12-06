@@ -272,7 +272,7 @@ class GtkFile {
         my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
         my GtkEditTask $et .=new(:top-window($!top-window));
         $et.edit-task($child,self);
-        $.unfold-branch($task);
+        $.unfold-branch;
         $.highlighted($child);
     }
     method option-prior-A {
@@ -467,7 +467,7 @@ class GtkFile {
         $task-cut.change-level($task.level+1);
         push($task.tasks,$task-cut);
         self.reconstruct-tree;
-        $.unfold-branch($task); # TODO work for level 1, not sub-level. To correct when don't use "reconstruct-tree'
+        #$.unfold-branch; # TODO work for level 1, not sub-level. To correct when don't use "reconstruct-tree'
     }
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
