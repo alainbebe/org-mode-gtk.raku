@@ -34,7 +34,7 @@ class Main {
         my GtkKeyEvent $gke .= new(:gf($gf), :m($m), :top-window($top-window));
 
         $gf.tv.register-signal( $gf, 'tv-button-click', 'row-activated');
-        $top-window.register-signal( $gke, 'exit-gui', 'destroy', :gf($gf), :m($m)); # TODO doesn't work :refactoring:0.1:
+        $top-window.register-signal( $gke, 'exit-gui', 'destroy', :gf($gf), :m($m));
         $top-window.register-signal( $gke, 'handle-keypress', 'key-press-event', :gf($gf), :l-info($l-info));
         
         $m;

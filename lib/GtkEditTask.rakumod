@@ -59,8 +59,14 @@ class GtkEditTask {
     method header-event-after ( N-GdkEventKey $event-key, :$widget ) {
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
         $dialog.response(GTK_RESPONSE_OK)
-            if $event-key.keyval.fmt('0x%08x')==0xff0d 
+            if $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return 
                 && $widget.get-text.trim.chars>0;
+        1
+    }
+    method tag-event-after ( N-GdkEventKey $event-key, :$widget-header ) {
+        $dialog.response(GTK_RESPONSE_OK)
+            if $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return
+                && $widget-header.get-text.trim.chars>0;
         1
     }
     method scheduled ( :$widget, :$task , :$gf) {
@@ -150,6 +156,7 @@ class GtkEditTask {
         $e-edit-tags.set-text(join(" ",$task.tags));
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Tag')),                          0, 1, 1, 1);
         $g.gtk-grid-attach($e-edit-tags,                                                  1, 1, 2, 1);
+        $e-edit-tags.register-signal( self, 'tag-event-after', 'event-after',:widget-header($e-edit));
         $g.gtk-grid-attach($.create-button('X','clear-tags-button-click',$task.iter),     3, 1, 1, 1);
         
         # To manage TODO/DONE
@@ -289,8 +296,12 @@ class GtkEditTask {
 
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
                 $gf.change=1;
-                if $e-edit-tags.get-text {
-                    $task.tags=split(/" "/,$e-edit-tags.get-text);
+                my $tags=$e-edit-tags.get-text;
+                $tags ~~ s:g/":"/ /;
+                $tags ~~ s:g/" "+/ /;
+                $tags = $tags.trim;
+                if $tags {
+                    $task.tags=split(/" "/,$tags);
                 } else {
                     $task.tags=();
                 }
