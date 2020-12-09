@@ -18,7 +18,7 @@ class GtkMenuBar {
     has GtkFile $.gf;
     has Gnome::Gtk3::Main $.m ;
 
-    submethod BUILD ( :$gf, :$m, Gnome::Gtk3::Window:D :$!top-window!) { 
+    submethod BUILD ( :$gf, :$m, Gnome::Gtk3::Window:D :$!top-window!) { # TODO :refactoring:
         $!gf=$gf;
     }
 
@@ -47,7 +47,7 @@ class GtkMenuBar {
     method make-menubar-list-file {
         my Gnome::Gtk3::Menu $menu .= new;
 
-    #    .create-sub-menu($menu,"_New",$gf,'file-new'); # TODO doesn't work. Why ? :refactoroing:
+    #    .create-sub-menu($menu,"_New",$gf,'file-new'); # TODO doesn't work. Why ? :refactoring:
     #    .create-sub-menu($menu,"_Open File ...",$gf,'file-open');
     #    .create-sub-menu($menu,"_Save         C-x C-s",$gf,'file-save');
     #    .create-sub-menu($menu,"Save _as ...",$gf,'file-save-as');
@@ -102,6 +102,9 @@ class GtkMenuBar {
 
         $.create-sub-menu($menu,"Change _Presentation",$.gf,'option-presentation');
         $.create-sub-menu($menu,"View/Hide _Image       C-c C-x C-v",$.gf,'m-view-hide-image');
+        $.create-sub-menu($menu,"Zoom +",$.gf,'zoom-plus');
+        $.create-sub-menu($menu,"Zoom -",$.gf,'zoom-minus');
+        $.create-sub-menu($menu,"Normal size",$.gf,'zoom-reset');
 
         $menu
     }
@@ -150,7 +153,7 @@ class GtkMenuBar {
         $st-root-menu.set-submenu($sm-st);
         $menu.gtk-menu-shell-append($st-root-menu);
 
-        $.create-sub-menu($menu,"Fold All",$ash,'view-fold-all'); # TODO :0.1:
+        $.create-sub-menu($menu,"Fold All",$ash,'view-fold-all'); # TODO keep $ash or $.gf ? :refactroing:
         $.create-sub-menu($menu,"Show All",$.gf,'show-all');
         $.create-sub-menu($menu,"Fold branch",$.gf,'fold-branch');
         $.create-sub-menu($menu,"Unfold branch",$.gf,'unfold-branch');
@@ -161,7 +164,7 @@ class GtkMenuBar {
     method make-menubar-st ( $ash ) {
         my Gnome::Gtk3::Menu $menu .= new;
 
-        $.create-sub-menu($menu,"Show _DONE",$.gf,'option-no-done'); # TODO replace Show All (or another name), Create Show TODO tree :0.1:
+        $.create-sub-menu($menu,"Show All (and DONE)",$.gf,'option-no-done');
         $.create-sub-menu($menu,"#_A",$.gf,"option-prior-A");
         $.create-sub-menu($menu,"#A #_B",$.gf,"option-prior-B");
         $.create-sub-menu($menu,"#A #B #_C",$.gf,"option-prior-C");

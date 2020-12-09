@@ -39,7 +39,7 @@ DEADLINE: <2019-11-01 Fri>
 My text
 * TODO Todo
 DONE is hide by default.
-Use Option/Show DONE to display DONE tasks.
+Use Option/Show All  to display DONE tasks.
 ** DONE Done
 CLOSED: [2020-10-31 Sat 09:33]
 ** DONE Done without closed

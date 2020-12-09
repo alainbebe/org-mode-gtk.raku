@@ -1,5 +1,5 @@
 use DateOrg;
-use Task;                       # TODO becasue use to-markup. To improve
+use Task;
 use GtkTask;
 use OrgMode::Grammar;
 use GtkEditTask;
@@ -499,19 +499,18 @@ class GtkFile {
                                         2, $task.display-tags($.presentation),
                                         );
                 if $task.text {
-                    for $task.text.Array {
-                        if $.view-hide-image && $_ ~~ s/ "[[" ("./img/" .+ ) "]]" // {
-                            $pb .= new(:file($0.Str));
-                            my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 
-                                                                                        0, to-markup($_),
-                                                                                        1, $pb
-                                                                                        )
+#                    for $task.text.Array { # TODO presently, text is not really array, juste one multi-line string :refactoring:
+                        if $.view-hide-image && $task.text[0] ~~ / "[[" ("./img/" .+ ) "]]" / {
+                            $.ts.insert-with-values($iter-task, -1, 
+                                                    0, $task.display-text-without-image($.presentation),
+                                                    1, $task.get-image
+                                                    )
                         } else {
-                            my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter-task, -1, 
-                                                                                        0, to-markup($_),
-                                                                                        )
+                            $.ts.insert-with-values($iter-task, -1, 
+                                                    0, $task.display-text($.presentation),
+                                                    )
                         }
-                    }
+#                    }
                 }
                 $task.iter=$iter-task;
             }
@@ -742,7 +741,7 @@ class GtkFile {
     }
     method update-text($iter,$new-text) {
         my $task=$.search-task-from($.om,$iter);
-        $task.text=$new-text.split(/\n/);
+        $task.text=$new-text; #.split(/\n/); # TODO old version use one row for one line, to reactivate :0.x:
         my $iter_child=$.ts.iter-children($iter);
         # remove all lines "text"
         while $iter_child.is-valid && !$.search-task-from($.om,$iter_child) { # if no task associate to a task, it's a "text"
@@ -750,19 +749,18 @@ class GtkFile {
             $iter_child=$.ts.iter-children($iter);
         }
         if $task.text && $task.text.chars>0 {
-            for $task.text.Array.reverse { # TODO create method in GtkTask ? :refactoring:
-                if $.view-hide-image && $_ ~~ s/ "[[" ("./img/" .+ ) "]]" // {
-                    $pb .= new(:file($0.Str));
-                    my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, -1, 
-                                                                                0, to-markup($_),
-                                                                                1, $pb
-                                                                                )
+#            for $task.text.Array.reverse {
+                if $.view-hide-image && $task.text[0] ~~ / "[[" ("./img/" .+ ) "]]" / {
+                    $.ts.insert-with-values($iter, -1, 
+                                                    0, $task.display-text-without-image($.presentation),
+                                                    1, $task.get-image
+                                                    )
                 } else {
-                    my Gnome::Gtk3::TreeIter $iter_t2 = $.ts.insert-with-values($iter, -1, 
-                                                                                0, to-markup($_),
-                                                                                )
+                    $.ts.insert-with-values($iter, -1, 
+                                                0, $task.display-text($.presentation),
+                                                )
                 }
-            }
+#            }
             $.expand-row($task,0);
         }
     }
@@ -785,6 +783,19 @@ class GtkFile {
     }
     method unfold-branch-child {
         $.tv.expand-row($.ts.get-path($.highlighted-task.iter),1); # 1 unfold all branch
+    }
+    method zoom-plus {
+        $.om.zoom-plus;
+        $.reconstruct-tree;
+#        $.om.refresh(self); # doesn't work
+    }
+    method zoom-minus {
+        $.om.zoom-minus;
+        $.reconstruct-tree;
+    }
+    method zoom-reset {
+        $.om.normal-size;
+        $.reconstruct-tree;
     }
 }
 

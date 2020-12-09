@@ -277,7 +277,7 @@ class GtkEditTask {
             my $text=$task.text.join("\n");
             $text-buffer2.set-text($text);
         }
-        $tev-edit-text.register-signal( self, 'text-event-after', 'event-after',:widget-header($e-edit));
+#        $tev-edit-text.register-signal( self, 'text-event-after', 'event-after',:widget-header($e-edit)); # TODO create a new line before send signal, to refactoring :0.2:
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);

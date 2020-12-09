@@ -27,8 +27,9 @@ class GtkKeyEvent {
         1
     }
     method handle-keypress ( N-GdkEventKey $event-key, :$widget , :$gf, :$l-info) {
-#        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x') if $debug;
+#        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
         if $event-key.type ~~ GDK_KEY_PRESS {
+#            note "State : ", $event-key.state;
             if $event-key.keyval.fmt('0x%08x') == GDK_KEY_F11 {
                 $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
                 $is-maximized=!$is-maximized; 
@@ -40,13 +41,16 @@ class GtkKeyEvent {
                 }
             }
             if $event-key.state == 4 { # ctrl push
-                #note "Key ",Buf.new($event-key.keyval).decode;
+#                note "ekv : ",$event-key.keyval;
+                return 1 if $event-key.keyval == 65505; # "ctrl-shift" witout other key
+#                note "Key ",Buf.new($event-key.keyval).decode;
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                 given join('',@ctrl-keys) {
                     when  ""  {}
                     when  "c"  {$l-info.set-label("C-c")}
                     when  "x"  {$l-info.set-label("C-x")}
                     when  "cx" {$l-info.set-label("C-c C-x")}
+                    when "-"   {@ctrl-keys=''; $l-info.set-label('Zoom -');             $gf.zoom-minus} 
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $gf.delete-branch($clicked-task.iter); }
@@ -56,6 +60,16 @@ class GtkKeyEvent {
                     when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $gf.m-view-hide-image;}
                     when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               $gf.file-save}
                     when "xc"  {@ctrl-keys=''; $l-info.set-label('Exit');               self.exit-gui}
+                    default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
+                }
+            }
+            if $event-key.state == 5 { # shift ctrl push  # TODO french keyboard :0.1:
+#                note "Key ",Buf.new($event-key.keyval).decode;
+                @ctrl-keys.push(Buf.new($event-key.keyval).decode);
+                given join('',@ctrl-keys) {
+                    when  ""  {}
+                    when "+"   {@ctrl-keys=''; $l-info.set-label('Zoom +');             $gf.zoom-plus} 
+                    when "0"   {@ctrl-keys=''; $l-info.set-label('Normal Size');        $gf.zoom-reset} 
                     default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
             }

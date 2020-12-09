@@ -197,8 +197,16 @@ https://python-gtk-3-tutorial.readthedocs.io/en/latest/clipboard.html
 CLOSED: [2020-12-06 Son 16:08]
 ** DONE Enter in tag edit send OK                                      :0.1:
 CLOSED: [2020-12-06 Son 13:14]
-** TODO Bug when display text after modify                             :0.1:
+** DONE Bug when display text after modify                             :0.1:
+CLOSED: [2020-12-06 Son 19:14]
 inverse line
+** TODO Agenda Alert
+A l’ouverture, faire une fenetre avec la liste des taches en attente 
++ bouton OK + bouton sparse tree + double click close window, higligthed task, unfold
+** TODO Tag                                                            :0.1:
+New Tag : C-c C-q
+** TODO Tag : Display
+display tags   : C-c / m
 * raku improve
 ** DONE create Class Task
 CLOSED: [2020-04-21 mar  18:35]

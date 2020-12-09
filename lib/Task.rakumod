@@ -1,6 +1,10 @@
 use DateOrg;
+use Gnome::Gdk3::Pixbuf;
 
-sub to-markup ($text is rw) is export {    # TODO create a class inheriting of string ?
+my $normal-size=12000; # size of text
+my $size=$normal-size; # size of text
+
+sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
     $text ~~ s:g/"&"/&amp;/;
     $text ~~ s:g/"<"/&lt;/;
     $text ~~ s:g/">"/&gt;/;
@@ -33,35 +37,68 @@ class Task {
         my $display;
         my $header=to-markup($.header);
         if $presentation eq 'TEXT' {
-            if    ($.level==1) {$display~='<span foreground="blue" size="xx-large"       >'~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="xx-large">'~$header~'</span>'}
-            else               {$display~='<span foreground="black" size="xx-large"      >'~$header~'</span>'}
+            if    ($.level==1) {$display~='<span foreground="blue" size="'~round($size*8/6)~'"       >'~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="'~round($size*7/6)~'">'~$header~'</span>'}
+            else               {$display~='<span foreground="black" size="'~round($size)~'"          >'~$header~'</span>'}
         } else { # DEFAULT TODO
+            my $zoom= ' size="'~round($size)~'" ';          
             if (!$.todo)             {$display~=' '}
-            elsif ($.todo eq "TODO") {$display~='<span foreground="red"  > TODO</span>'}
-            elsif ($.todo eq "DONE") {$display~='<span foreground="green"> DONE</span>'}
+            elsif ($.todo eq "TODO") {$display~='<span foreground="red"  '~$zoom~'> TODO</span>'}
+            elsif ($.todo eq "DONE") {$display~='<span foreground="green"'~$zoom~'> DONE</span>'}
 
             if $.priority {
-                if    $.priority ~~ /A/ {$display~=' <span foreground="fuchsia">'~$.priority~'</span>'}
-                elsif $.priority ~~ /B/ {$display~=' <span foreground="grey">'~$.priority~'</span>'}
-                elsif $.priority ~~ /C/ {$display~=' <span foreground="lime">'~$.priority~'</span>'}
+                if    $.priority ~~ /A/ {$display~=' <span foreground="fuchsia"'~$zoom~'>'~$.priority~'</span>'}
+                elsif $.priority ~~ /B/ {$display~=' <span foreground="grey"'~$zoom~'>'~$.priority~'</span>'}
+                elsif $.priority ~~ /C/ {$display~=' <span foreground="lime"'~$zoom~'>'~$.priority~'</span>'}
             }
 
-            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" > '~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"> '~$header~'</span>'}
-            elsif ($.level==3) {$display~='<span weight="bold" foreground="green"> '~$header~'</span>'}
-            else               {$display~='<span weight="bold" foreground="black"> '~$header~'</span>'}
+            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" '~$zoom~'> '~$header~'</span>'}
+            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"'~$zoom~'> '~$header~'</span>'}
+            elsif ($.level==3) {$display~='<span weight="bold" foreground="green"'~$zoom~'> '~$header~'</span>'}
+            else               {$display~='<span weight="bold" foreground="black"'~$zoom~'> '~$header~'</span>'}
         }
         return $display;
     }
     method display-tags ($presentation) {
+        my $zoom= ' size="'~round($size)~'" ';          
         my $display='';
         if $presentation ne 'TEXT' {
             if $.tags {
-                $display~=' <span foreground="grey">'~$.tags~'</span>';
+                $display~=' <span foreground="grey"'~$zoom~'>'~$.tags~'</span>';
             }
         }
         return $display;
+    }
+    method display-text ($presentation) {
+        my $display='';
+        if $.text {
+            my $text=to-markup($.text[0]);  # TODO because "text" is an array of 1 multiline string. Change one day to real array
+            if $presentation eq 'TEXT' {
+                $display~='<span foreground="black" size="'~round($size)~'"          >'~$text~'</span>';
+            } else {    
+                $display~='<span size="'~round($size)~'"          >'~$text~'</span>';
+            }
+        }
+        return $display;
+    }
+    method display-text-without-image ($presentation) {
+        my $display='';
+        if $.text {
+            my $text=to-markup($.text[0]);  # TODO because "text" is an array of 1 multiline string. Change one day to real array
+            $text ~~ s/ "[[" ("./img/" .+ ) "]]" //;
+            if $presentation eq 'TEXT' {
+                $display~='<span foreground="black" size="'~round($size*2)~'"          >'~$text~'</span>';
+            } else {    
+                $display~=$text;
+            }
+        }
+        return $display;
+    }
+    method get-image {
+        my Gnome::Gdk3::Pixbuf $pb;
+        $.text ~~ / "[[" ("./img/" .+ ) "]]" /;
+        $pb .= new(:file($0.Str));
+        return $pb;
     }
     method level-move($change) {
         $.level+=$change;
@@ -204,5 +241,25 @@ class Task {
                 $_.inspect;
             }
         }
+    }
+    method refresh ($gf) { # TODO doesn't work. To improve
+note "t ",$.header;
+        $gf.ts.set-value( $.iter, 0, $.display-header($gf.presentation)) if $.iter;
+        $gf.ts.set-value( $.iter, 2, $.display-tags($gf.presentation)) if $.tags;
+        $gf.update-text($.iter,$.text[0]) if $.iter && $.text.trim.chars>0; # TODO text has no iter, necessary destroy/recreate :refactoring:
+        if $.tasks {
+            for $.tasks.Array {
+                $_.refresh($gf);
+            }
+        }
+    }
+    method zoom-plus {
+        $size*=1.1;
+    }
+    method zoom-minus {
+        $size*=0.9;
+    }
+    method normal-size {
+        $size=$normal-size;
     }
 }
