@@ -50,7 +50,7 @@ class GtkKeyEvent {
                     when  "c"  {$l-info.set-label("C-c")}
                     when  "x"  {$l-info.set-label("C-x")}
                     when  "cx" {$l-info.set-label("C-c C-x")}
-                    when "-"   {@ctrl-keys=''; $l-info.set-label('Zoom -');             $gf.zoom-minus} 
+                    when "-"   {@ctrl-keys=''; $l-info.set-label('Zoom -');             $gf.zoom(:choice(-1))} 
 #                    when "cc" {@ctrl-keys=''; say "cc"}
 #                    when "cq" {@ctrl-keys=''; say "edit tag"}
 #                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $gf.delete-branch($clicked-task.iter); }
@@ -68,8 +68,8 @@ class GtkKeyEvent {
                 @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                 given join('',@ctrl-keys) {
                     when  ""  {}
-                    when "+"   {@ctrl-keys=''; $l-info.set-label('Zoom +');             $gf.zoom-plus} 
-                    when "0"   {@ctrl-keys=''; $l-info.set-label('Normal Size');        $gf.zoom-reset} 
+                    when "+"   {@ctrl-keys=''; $l-info.set-label('Zoom +');             $gf.zoom(:choice(1))} 
+                    when "0"   {@ctrl-keys=''; $l-info.set-label('Normal Size');        $gf.zoom(:choice(0))} 
                     default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                 }
             }

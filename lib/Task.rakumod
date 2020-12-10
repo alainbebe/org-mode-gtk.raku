@@ -243,23 +243,20 @@ class Task {
         }
     }
     method refresh ($gf) { # TODO doesn't work. To improve
-note "t ",$.header;
         $gf.ts.set-value( $.iter, 0, $.display-header($gf.presentation)) if $.iter;
         $gf.ts.set-value( $.iter, 2, $.display-tags($gf.presentation)) if $.tags;
-        $gf.update-text($.iter,$.text[0]) if $.iter && $.text.trim.chars>0; # TODO text has no iter, necessary destroy/recreate :refactoring:
+        $gf.ts.set-value( $gf.ts.iter-children($.iter), 0, $.display-text($gf.presentation)) if $.iter && $.text.trim.chars>0;
         if $.tasks {
             for $.tasks.Array {
                 $_.refresh($gf);
             }
         }
     }
-    method zoom-plus {
-        $size*=1.1;
-    }
-    method zoom-minus {
-        $size*=0.9;
-    }
-    method normal-size {
-        $size=$normal-size;
+    method zoom($choice) {
+        given $choice {
+            when -1 {$size*=0.9}
+            when  0 {$size=$normal-size}
+            when  1 {$size*=1.1}
+        }
     }
 }

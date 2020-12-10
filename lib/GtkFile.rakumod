@@ -360,7 +360,7 @@ class GtkFile {
     }
     method option-presentation { # TODO to do this by task and not only for the entire tree
         $.presentation =  $.presentation eq "TEXT" ?? "TODO" !! "TEXT";
-        $.reconstruct-tree;
+        $.om.refresh(self);
         1
     }
     method m-view-hide-image {
@@ -558,6 +558,7 @@ class GtkFile {
         $.ts.clear;
         $!om.delete-iter;
         $.create-task($!om);
+        $!om.iter=Nil; # TODO Why it's necessary. Analyze and fix :refactoring:
         $.highlighted("0");
     }
     method choice-find ($top-window) {
@@ -784,18 +785,12 @@ class GtkFile {
     method unfold-branch-child {
         $.tv.expand-row($.ts.get-path($.highlighted-task.iter),1); # 1 unfold all branch
     }
-    method zoom-plus {
-        $.om.zoom-plus;
-        $.reconstruct-tree;
-#        $.om.refresh(self); # doesn't work
+    method zoom (:$choice) {
+        $.om.zoom($choice);
+        $.om.refresh(self);
     }
-    method zoom-minus {
-        $.om.zoom-minus;
-        $.reconstruct-tree;
-    }
-    method zoom-reset {
-        $.om.normal-size;
-        $.reconstruct-tree;
+    method inspect {
+        $.om.inspect;
     }
 }
 

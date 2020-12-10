@@ -102,9 +102,11 @@ class GtkMenuBar {
 
         $.create-sub-menu($menu,"Change _Presentation",$.gf,'option-presentation');
         $.create-sub-menu($menu,"View/Hide _Image       C-c C-x C-v",$.gf,'m-view-hide-image');
-        $.create-sub-menu($menu,"Zoom +",$.gf,'zoom-plus');
-        $.create-sub-menu($menu,"Zoom -",$.gf,'zoom-minus');
-        $.create-sub-menu($menu,"Normal size",$.gf,'zoom-reset');
+
+        my Gnome::Gtk3::Menu $sm-zoom = $.make-menubar-zoom($.gf);
+        my Gnome::Gtk3::MenuItem $zoom-root-menu .= new(:label('Zoom'));
+        $zoom-root-menu.set-submenu($sm-zoom);
+        $menu.gtk-menu-shell-append($zoom-root-menu);
 
         $menu
     }
@@ -145,6 +147,13 @@ class GtkMenuBar {
 
         $menu
     }   
+    method make-menubar-zoom ( $ash ){
+        my Gnome::Gtk3::Menu $menu .= new;
+        $.create-sub-menu($menu,"Zoom +"     ,$.gf,'zoom',:choice( 1));
+        $.create-sub-menu($menu,"Zoom -"     ,$.gf,'zoom',:choice(-1));
+        $.create-sub-menu($menu,"Normal size",$.gf,'zoom',:choice( 0));
+        $menu
+    }
     method make-menubar-sh ( $ash ) {
         my Gnome::Gtk3::Menu $menu .= new;
 
@@ -274,7 +283,7 @@ class GtkMenuBar {
     }
     method make-menubar-list-debug {
         my Gnome::Gtk3::Menu $menu .= new;
-        $.create-sub-menu($menu,"_Inspect",$.gf.om,'inspect');
+        $.create-sub-menu($menu,"_Inspect",$.gf,'inspect');
         $menu
     }
     method make-menubar-list-help  {
