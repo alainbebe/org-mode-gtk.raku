@@ -22,7 +22,8 @@ https://github.com/orgzly/orgzly-android/issues/529
 CLOSED: [2020-05-28 Thu 07:51]
 aligné sur Orgzly, en anglais
 ** TODO auto-completion of tags
-** TODO An Image                                                       :0.x:
+** DONE An Image                                                       :0.x:
+CLOSED: [2020-12-12 Sat 08:02]
 To display C-c C-x C-v
 [[./img/test.png]] 
 * Bug
@@ -45,6 +46,8 @@ s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
 ** Enter on task, open EditTask and close imediatly                    :0.1:
+** String parse by markup is bad saving
+Special char si saved also
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
 enlever de l'arbre les lignes textes
@@ -133,7 +136,7 @@ Top of treesi déjà au Top, save si déja sauvé,...
 CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO Griser les boutons non-utilisables
-<, ^, v,..
+&amp;lt;, ^, v,..
 ** DONE Add Cancel when warning for save file                          :0.1:
 CLOSED: [2020-10-24 Sat 11:24]
 ** DONE [#A] When display only #A, unfold all
@@ -186,7 +189,8 @@ As Emac, hide branch
 (and note reconstruct)
 Necessary to have Gtk.TreeModelFilter
 
-** TODO Change size of char
+** DONE Change size of char
+CLOSED: [2020-12-12 Sat 08:02]
 ** DONE si enter dans Edit Header, active OK                           :0.1:
 CLOSED: [2020-11-28 Sat 12:59]
 ** DONE si enter dans Find, active OK                                  :0.1:
@@ -292,11 +296,15 @@ CLOSED: [2020-12-06 Son 13:14]
 ===SORRY!===
 Type 'OrgMode::DateOrg' is not declared
 at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
------->     has OrgMode::DateOrg⏏  $.closed      is rw;
+------&amp;gt;     has OrgMode::DateOrg⏏  $.closed      is rw;
 Malformed has
 at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
------->     has OrgMode::⏏DateOrg  $.closed      is rw;
+------&amp;gt;     has OrgMode::⏏DateOrg  $.closed      is rw;
 
+** TODO Git
+Lors d’une sauvegarde faire un git avec message par defaut
+** TODO Git message
+Rajouter un menu de sauvegarde avec message pour le Git
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]

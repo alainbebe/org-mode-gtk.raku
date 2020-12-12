@@ -29,9 +29,7 @@ use NativeCall;
 
 use Data::Dump;
 
-my $g-tag;    # TODO remove global value :refactoring:
-my $g-find='';   # TODO remove global value :refactoring:
-my $task-cut; # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
+my $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
 
 class GtkFile {
     has GtkTask                     $.om              is rw;
@@ -39,7 +37,7 @@ class GtkFile {
     has Gnome::Gtk3::TreeView       $.tv              ; #.= new(:model($!ts));
     has Gnome::Gtk3::ScrolledWindow $.sw              ; #.= new;
     has Gnome::Gtk3::Window         $!top-window      ;
-    has                             $.i               is rw =0;       # TODO for creation of level 1 in tree, rename :refactoring:
+    has                             $.count-row       is rw =0;
     has Int                         $.change          is rw =0;       # for ask question to save when quit
     has                             $.no-done         is rw =True;    # display with no DONE
     has                             $.prior-A         is rw =False;   # display #A          
@@ -48,6 +46,8 @@ class GtkFile {
     has                             $.today-past      is rw =False;   # display only task in past and not Done          
     has                             $.presentation    is rw ="TODO";  # Change presentation for display header          
     has                             $.view-hide-image is rw =0;
+    has                             $.g-tag           is rw;          # Memorize tag to find, nil is no find
+    has                             $.g-find          is rw ='';      # Memorize string to find, nil is no find
 
     enum list-field-columns < TITLE-CODE PICT TITLE >;
     my Gnome::Gdk3::Pixbuf $pb .= new(:file<img/test.png>);
@@ -87,7 +87,7 @@ class GtkFile {
     # When click on a tag, accept immediatly the choice 
     method tv-tag-click (N-GtkTreePath $path, N-GObject $column , :$ls, :@tags, :$dialog) {
         my Gnome::Gtk3::TreePath $tree-path .= new(:native-object($path));
-        $g-tag=@tags[$tree-path.to-string];
+        $.g-tag=@tags[$tree-path.to-string];
         $dialog.response(GTK_RESPONSE_OK);
     }
     # When push "enter" in window find, accept the entry immediatly 
@@ -107,7 +107,7 @@ class GtkFile {
         }
         1
     }
-    method file-open1 ( --> Int ) { # TODO :refactoring:
+    method file-open ( --> Int ) {
         if $.try-save != GTK_RESPONSE_CANCEL {
             my Gnome::Gtk3::FileChooserDialog $dialog .= new(
                 :title("Open File"), 
@@ -126,7 +126,7 @@ class GtkFile {
                     $.om.text=[]; 
                     $.om.properties=(); # TODO use undefined ?
                     $.om.header = $filename;
-                    $.file-open($.om.header,$!top-window) if $.om.header;
+                    $.file-read($.om.header) if $.om.header;
                 } else {
                     my Gnome::Gtk3::MessageDialog $md .=new(
                                         :message("File doesn't exist !"),
@@ -141,11 +141,7 @@ class GtkFile {
         1
     }
     method file-save {
-        $.om.header ?? $.save !! $.file-save-as($!top-window);
-    }
-    method file-save-as1 { # TODO remove this method and call directly with top-window
-        $.file-save-as($!top-window);
-        1
+        $.om.header ?? $.save !! $.file-save-as;
     }
     method file-save-test {
         $.save("test.org");
@@ -312,7 +308,7 @@ class GtkFile {
         1
     }
     method option-find {
-        $.clear-sparse;
+        $.clear-sparse; # TODO put this line in "if" but save $.g-find before and set after;
         if $.choice-find($!top-window) == GTK_RESPONSE_OK {
             $.reconstruct-tree;
             $.tv.expand-all;
@@ -482,14 +478,14 @@ class GtkFile {
                 && (!$.prior-B    || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.prior-C    || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.today-past || $task.is-in-past-and-no-done)
-                && (!$g-find      || $task.find($g-find))
-                && (!$g-tag       || $task.content-tag($g-tag))
+                && (!$.g-find      || $task.find($.g-find))
+                && (!$.g-tag       || $task.content-tag($.g-tag))
                 ) { 
             my Gnome::Gtk3::TreeIter $iter-task;
             my Gnome::Gtk3::TreeIter $parent-iter;
             if ($task.level>0) {
                 if ($task.level==1) { 
-                    my Gnome::Gtk3::TreePath $tp .= new(:string($.i++.Str));
+                    my Gnome::Gtk3::TreePath $tp .= new(:string($.count-row++.Str));
                     $parent-iter = $.ts.get-iter($tp);
                 } else {
                     $parent-iter = $iter;
@@ -554,7 +550,7 @@ class GtkFile {
         $.highlighted($tp);
     }
     method reconstruct-tree { # not good practice, not abuse 
-        $.i=0; # TODO [#B] to remove ?
+        $.count-row=0;
         $.ts.clear;
         $!om.delete-iter;
         $.create-task($!om);
@@ -580,10 +576,10 @@ class GtkFile {
         $dialog.set-default-response(GTK_RESPONSE_OK);
         my $response = $dialog.gtk-dialog-run;
         if $response == GTK_RESPONSE_OK {
-            $g-find=$find-edit.get-text;
+            $.g-find=$find-edit.get-text;
         }
         $dialog.gtk_widget_destroy;
-        $g-find.chars>0 ?? $response !! GTK_RESPONSE_CANCEL;
+        $.g-find.chars>0 ?? $response !! GTK_RESPONSE_CANCEL;
     }
     method clear-sparse {
         $.no-done=True;
@@ -591,8 +587,8 @@ class GtkFile {
         $.prior-B=False;
         $.prior-C=False;
         $.today-past=False;
-        $g-find=Nil;
-        $g-tag=Nil;
+        $.g-find=Nil;
+        $.g-tag=Nil;
     }
     method choice-tags (@tags,$top-window) {
         my Gnome::Gtk3::Dialog $dialog .= new(
@@ -638,7 +634,7 @@ class GtkFile {
             You can view and edit the file, but it's may be wrong.
             Don't save if not sure." if $proc.exitcode; 
     }
-    multi method file-open-with-name($name,$top-window) {
+    method file-read-with-name($name) {
         spurt $name~".bak",slurp $name; # fast backup
 #        my $i=1;                                                   # TODO finalize to :0.2:
 #        repeat {
@@ -657,7 +653,7 @@ class GtkFile {
                 exit;
             }
 #        } while self.om;
-        self.om.header=$name;   # TODO [#B] to refactor
+        self.om.header=$name;   # TODO to refactor
 #        say self.om;
 #        say Dump(self.om , :max-recursion(2));
 #        say Dump self.om; # doesn't work, probably because recursivity with darth-vader
@@ -665,19 +661,19 @@ class GtkFile {
 #        self.om.inspect;
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:
         self.create-task(self.om);
-        $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
+        $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
     }
-    method file-open($filename,$top-window) {
+    method file-read($filename) {
         if $filename {
-            self.file-open-with-name($filename,$top-window);
+            $.file-read-with-name($filename);
         } else {
-            self.default;
+            $.default;
         }
     }
-    method file-save-as($top-window) {
+    method file-save-as {
         my Gnome::Gtk3::FileChooserDialog $dialog .= new(
             :title("Choose File"), 
-            :parent($top-window),
+            :parent($!top-window),
             :action(GTK_FILE_CHOOSER_ACTION_SAVE),
             :button-spec( [
                 "_Cancel", GTK_RESPONSE_CANCEL,
@@ -701,7 +697,7 @@ class GtkFile {
                 if $button==GTK_RESPONSE_YES {
                     $!om.header = $filename;
                     $.save;
-                    $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
+                    $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
                 } else {
                     $response=GTK_RESPONSE_CANCEL; # TODO if no, no close dialog file-save-as
                 }
@@ -709,7 +705,7 @@ class GtkFile {
             } else {
                 $!om.header = $filename;
                 $.save;
-                $top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header; # TODO rewrite with module File::Utils
+                $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header; # TODO rewrite with module File::Utils
             }
         }
         $dialog.gtk-widget-hide; # TODO destroy ?
@@ -733,7 +729,7 @@ class GtkFile {
                 if $!om.header { 
                     $.save 
                 } else {
-                    $button = $.file-save-as($!top-window);
+                    $button = $.file-save-as;
                 }
             }
             $md.destroy;

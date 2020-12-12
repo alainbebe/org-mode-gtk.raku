@@ -40,7 +40,7 @@ class Main {
         $m;
     }
     method show($arg) {
-        $gf.file-open($arg,$top-window);
+        $gf.file-read($arg);
         $top-window.show-all;
         $m.gtk-main;
     }

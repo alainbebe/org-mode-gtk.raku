@@ -1,8 +1,8 @@
 use DateOrg;
 use Gnome::Gdk3::Pixbuf;
 
-my $normal-size=12000; # size of text
-my $size=$normal-size; # size of text
+my $normal-size=14000; # original size of text
+my $size=$normal-size; # current size of text, change with "zoom"
 
 sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
     $text ~~ s:g/"&"/&amp;/;
@@ -242,7 +242,7 @@ class Task {
             }
         }
     }
-    method refresh ($gf) { # TODO doesn't work. To improve
+    method refresh ($gf) {
         $gf.ts.set-value( $.iter, 0, $.display-header($gf.presentation)) if $.iter;
         $gf.ts.set-value( $.iter, 2, $.display-tags($gf.presentation)) if $.tags;
         $gf.ts.set-value( $gf.ts.iter-children($.iter), 0, $.display-text($gf.presentation)) if $.iter && $.text.trim.chars>0;

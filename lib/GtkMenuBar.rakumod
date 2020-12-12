@@ -47,41 +47,16 @@ class GtkMenuBar {
     method make-menubar-list-file {
         my Gnome::Gtk3::Menu $menu .= new;
 
-    #    .create-sub-menu($menu,"_New",$gf,'file-new'); # TODO doesn't work. Why ? :refactoring:
-    #    .create-sub-menu($menu,"_Open File ...",$gf,'file-open');
-    #    .create-sub-menu($menu,"_Save         C-x C-s",$gf,'file-save');
-    #    .create-sub-menu($menu,"Save _as ...",$gf,'file-save-as');
-    #    .create-sub-menu($menu,"Save to _test",$gf,'file-save-test') if $debug;
+        $.create-sub-menu($menu,"_New",                 $.gf,'file-new');
+        $.create-sub-menu($menu,"_Open File ...",       $.gf,'file-open');
+        $.create-sub-menu($menu,"_Save         C-x C-s",$.gf,'file-save');
+        $.create-sub-menu($menu,"Save _as ...",         $.gf,'file-save-as');
+        $.create-sub-menu($menu,"Save to _test",        $.gf,'file-save-test') if $debug;
 
-        my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_New"));
+        my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Quit         C-x C-c"));
         $menu-item.set-use-underline(1);
         $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $.gf, 'file-new', 'activate');
-
-        $menu-item .= new(:label("_Open File ..."));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $.gf, 'file-open1', 'activate');
-
-        $menu-item .= new(:label("_Save         C-x C-s"));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $.gf, 'file-save', 'activate');
-
-        $menu-item .= new(:label("Save _as ..."));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $.gf, 'file-save-as1', 'activate');
-
-        $menu-item .= new(:label("Save to _test"));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $.gf, 'file-save-test', 'activate');
-        
-        $menu-item .= new(:label("_Quit         C-x C-c"));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        my GtkKeyEvent $gke .= new(:gf($.gf), :m($.m), :top-window($!top-window));
+        my GtkKeyEvent $gke .= new(:gf($.gf), :m($.m), :top-window($!top-window)); # TODO bad implementation :refactoring:
         $menu-item.register-signal( $gke, 'exit-gui', 'activate', :gf($.gf), :m($.m));
 
         $menu
