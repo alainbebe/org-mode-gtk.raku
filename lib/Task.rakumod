@@ -4,7 +4,8 @@ use Gnome::Gdk3::Pixbuf;
 my $normal-size=14000; # original size of text
 my $size=$normal-size; # current size of text, change with "zoom"
 
-sub to-markup ($text is rw) {    # TODO create a class inheriting of string ?
+sub to-markup ($text-ori) {    # TODO create a class inheriting of string ?
+    my $text=$text-ori;
     $text ~~ s:g/"&"/&amp;/;
     $text ~~ s:g/"<"/&lt;/;
     $text ~~ s:g/">"/&gt;/;

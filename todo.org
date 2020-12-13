@@ -136,7 +136,7 @@ Top of treesi déjà au Top, save si déja sauvé,...
 CLOSED: [2020-05-14 jeu  07:10]
 *** TODO or manage return ?
 ** TODO Griser les boutons non-utilisables
-&amp;lt;, ^, v,..
+<, ^, v,..
 ** DONE Add Cancel when warning for save file                          :0.1:
 CLOSED: [2020-10-24 Sat 11:24]
 ** DONE [#A] When display only #A, unfold all
@@ -207,7 +207,7 @@ inverse line
 ** TODO Agenda Alert
 A l’ouverture, faire une fenetre avec la liste des taches en attente 
 + bouton OK + bouton sparse tree + double click close window, higligthed task, unfold
-** TODO Tag                                                            :0.1:
+** TODO Add Tag
 New Tag : C-c C-q
 ** TODO Tag : Display
 display tags   : C-c / m
@@ -218,7 +218,7 @@ CLOSED: [2020-04-21 mar  18:35]
 CLOSED: [2020-04-21 mar  19:29]
 ** DONE create a task.pm
 CLOSED: [2020-08-09 Son 09:23]
-** DONE TODO -&gt; DONE add line with date
+** DONE TODO -> DONE add line with date
 ** DONE Read filename on the command line
 ** DONE DONE to TODO, remove date but exist a blank line if no text
 CLOSED: [2020-06-23 Tue 07:50]
@@ -296,10 +296,10 @@ CLOSED: [2020-12-06 Son 13:14]
 ===SORRY!===
 Type 'OrgMode::DateOrg' is not declared
 at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
-------&amp;gt;     has OrgMode::DateOrg⏏  $.closed      is rw;
+------>     has OrgMode::DateOrg⏏  $.closed      is rw;
 Malformed has
 at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Task):14
-------&amp;gt;     has OrgMode::⏏DateOrg  $.closed      is rw;
+------>     has OrgMode::⏏DateOrg  $.closed      is rw;
 
 ** TODO Git
 Lors d’une sauvegarde faire un git avec message par defaut

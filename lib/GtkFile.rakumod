@@ -497,12 +497,12 @@ class GtkFile {
                 if $task.text {
 #                    for $task.text.Array { # TODO presently, text is not really array, juste one multi-line string :refactoring:
                         if $.view-hide-image && $task.text[0] ~~ / "[[" ("./img/" .+ ) "]]" / {
-                            $.ts.insert-with-values($iter-task, -1, 
+                            $.ts.insert-with-values($iter-task,  0, 
                                                     0, $task.display-text-without-image($.presentation),
                                                     1, $task.get-image
                                                     )
                         } else {
-                            $.ts.insert-with-values($iter-task, -1, 
+                            $.ts.insert-with-values($iter-task,  0, 
                                                     0, $task.display-text($.presentation),
                                                     )
                         }
@@ -748,12 +748,12 @@ class GtkFile {
         if $task.text && $task.text.chars>0 {
 #            for $task.text.Array.reverse {
                 if $.view-hide-image && $task.text[0] ~~ / "[[" ("./img/" .+ ) "]]" / {
-                    $.ts.insert-with-values($iter, -1, 
+                    $.ts.insert-with-values($iter,  0, 
                                                     0, $task.display-text-without-image($.presentation),
                                                     1, $task.get-image
                                                     )
                 } else {
-                    $.ts.insert-with-values($iter, -1, 
+                    $.ts.insert-with-values($iter,  0, 
                                                 0, $task.display-text($.presentation),
                                                 )
                 }
