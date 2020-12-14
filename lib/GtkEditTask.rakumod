@@ -33,8 +33,6 @@ class GtkEditTask {
     has Gnome::Gtk3::Entry $e-edit-tags;
     has Gnome::Gtk3::Entry $e-edit-text;
     has Gnome::Gtk3::TextBuffer $text-buffer;
-    has Gnome::Gtk3::Button $b-scheduled;
-    has Gnome::Gtk3::Button $b-deadline;
     has Gnome::Gtk3::Button $b-closed;
     has Gnome::Gtk3::TreeIter $iter;
 
@@ -137,14 +135,14 @@ class GtkEditTask {
     }
     method edit-task($task,$gf) {
         # Dialog to edit task
-        $dialog .= new(                   # TODO try to pass dialog as parameter
+        $dialog .= new(
             :title("Edit task"),          # TODO doesn't work if multi-tab. Very strange. Fix in :0.x:
             :parent($!top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( [
                 "_Cancel", GTK_RESPONSE_CANCEL,
                 "_Ok", GTK_RESPONSE_OK,   # TODO OK by default if "enter"
-                ] )                       # TODO Add a button "Apply"
+                ] )
         );
         $dialog.set-default-response(GTK_RESPONSE_OK);
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog.get-content-area));
@@ -193,7 +191,7 @@ class GtkEditTask {
 
         # To manage Scheduled
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Scheduling')),                     0, 4, 1, 1);
-        $b-scheduled .= new(:label($task.scheduled ?? $task.scheduled.str !! "-"));
+        my Gnome::Gtk3::Button $b-scheduled .= new(:label($task.scheduled ?? $task.scheduled.str !! "-"));
         $b-scheduled.register-signal(self, 'scheduled', 'clicked', :task($task), :gf($gf));
         $g.gtk-grid-attach($b-scheduled,                                                    1, 4, 2, 1);
 
@@ -203,7 +201,7 @@ class GtkEditTask {
 
         # To manage Deadline 
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Deadline')),                       0, 5, 1, 1);
-        $b-deadline .= new(:label($task.deadline ?? $task.deadline.str !! "-"));
+        my Gnome::Gtk3::Button $b-deadline .= new(:label($task.deadline ?? $task.deadline.str !! "-"));
         $b-deadline.register-signal(self, 'deadline', 'clicked', :task($task), :gf($gf));
         $g.gtk-grid-attach($b-deadline,                                                     1, 5, 2, 1);
 
@@ -365,8 +363,6 @@ class GtkEditTask {
                 $gf.update-text($task.iter,$new-text);
             }
         }
-        $b-scheduled=Nil; # TODO to improve, pass as parameter
-        $b-deadline=Nil;
         $dialog.gtk_widget_destroy;
         $response;
     }

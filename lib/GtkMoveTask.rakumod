@@ -20,7 +20,7 @@ class GtkMoveTask {
     }
 
     method move-task (:$gf) {
-        $gf1=$gf;                                                           # TODO :refactoring:
+        $gf1=$gf;                                                           # TODO :refactoring:0.1:
         my Gnome::Gtk3::TreeIter $iter = $gf.highlighted-task.iter;
 
         # Dialog to manage task

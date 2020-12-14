@@ -15,7 +15,7 @@ class GtkKeyEvent {
     has @ctrl-keys;
     has $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 
-    submethod BUILD ( :$gf, :$m, Gnome::Gtk3::Window:D :$!top-window!) { 
+    submethod BUILD ( :$gf, :$m, Gnome::Gtk3::Window:D :$!top-window!) {  # TODO improve :refactoring:0.1:
         $!gf=$gf;
         $!m=$m;
         $!get .= new(:top-window($!top-window));
@@ -76,17 +76,17 @@ class GtkKeyEvent {
             # TODO Alt-Enter crée un frère après
             # TODO M-S-Enter crée un fils avec TODO
             # TODO Home suivi de Alt-Enter crée un frère avant
-            if $event-key.state == 8 { # alt push # TODO write with "given" :refactoring:
-                $gf.move-up-down-button-click(:inc(-1)) 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff52; # Alt-Up
-                $gf.move-up-down-button-click(:inc( 1)) 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff54; # Alt-Down
+            if $event-key.state == 8 { # alt push 
+                given $event-key.keyval.fmt('0x%08x') {
+                    when 0xff52 {$gf.move-up-down-button-click(:inc(-1))} # Alt-Up
+                    when 0xff54 {$gf.move-up-down-button-click(:inc( 1))} # Alt-Down
+                }
             }
             if $event-key.state == 9 { # alt shift push
-                $gf.move-left-button-click() 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff51; # Alt-Shift-left
-                $gf.move-right-button-click() 
-                    if $event-key.keyval.fmt('0x%08x') == 0xff53; # Alt-Shift-right
+                given $event-key.keyval.fmt('0x%08x') {
+                    when 0xff51 {$gf.move-left-button-click } # Alt-Shift-left
+                    when 0xff53 {$gf.move-right-button-click} # Alt-Shift-Right
+                }
             }
         }
         1

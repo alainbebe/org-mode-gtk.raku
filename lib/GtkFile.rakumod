@@ -29,7 +29,7 @@ use NativeCall;
 
 use Data::Dump;
 
-my $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:
+my $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:0.x:
 
 class GtkFile {
     has GtkTask                     $.om              is rw;
