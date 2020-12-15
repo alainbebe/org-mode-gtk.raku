@@ -208,12 +208,8 @@ class GtkMenuBar {
         $menu.gtk-menu-shell-append($menu-item);
         $menu-item.register-signal( $.gf, 'move-left-button-click', 'activate');
 
-        $menu-item .= new(:label('Move Subtree ...'));
-        $menu-item.set-use-underline(1);
-        $menu.gtk-menu-shell-append($menu-item);
-        my GtkMoveTask $mt .= new(:top-window($!top-window));
-        $menu-item.register-signal( $mt, 'move-task', 'activate',:gf($.gf));
-    #    .create-sub-menu($menu,"Move Subtree ...",$mt,'move-task');
+        my GtkMoveTask $mt .= new(:gf($.gf));
+        $.create-sub-menu($menu,"Move Subtree ...",$mt,'move-task');
 
         $menu
     }

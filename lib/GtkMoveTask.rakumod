@@ -7,26 +7,24 @@ use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Button;
 
 class GtkMoveTask {
-    has Gnome::Gtk3::Window $!top-window;
     has Gnome::Gtk3::Dialog $dialog;
-    has GtkFile $gf1;
+    has GtkFile $!gf;
 
-    submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }
+    submethod BUILD ( GtkFile:D :$!gf!) { }
 
     multi method create-button($label,$method,$iter?,$inc?) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));
-        $b.register-signal($gf1, $method, 'clicked',:iter($iter),:inc($inc));
+        $b.register-signal($!gf, $method, 'clicked',:iter($iter),:inc($inc));
         return $b;
     }
 
-    method move-task (:$gf) {
-        $gf1=$gf;                                                           # TODO :refactoring:0.1:
-        my Gnome::Gtk3::TreeIter $iter = $gf.highlighted-task.iter;
+    method move-task {
+        my Gnome::Gtk3::TreeIter $iter = $!gf.highlighted-task.iter;
 
         # Dialog to manage task
         my Gnome::Gtk3::Dialog $dialog .= new(
             :title("Manage task"),
-            :parent($!top-window),
+            :parent($!gf.get-top-window),
             :flags(GTK_DIALOG_DESTROY_WITH_PARENT),
             :button-spec( "Ok", GTK_RESPONSE_NONE)
         );

@@ -788,6 +788,9 @@ class GtkFile {
     method inspect {
         $.om.inspect;
     }
+    method get-top-window {
+        $!top-window;
+    }
 }
 
 
