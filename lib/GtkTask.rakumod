@@ -10,13 +10,5 @@ class GtkTask is Task {
         say $prefix,"iter        ",$.iter;
         say $prefix,"-----";
     }
-    method delete-iter() {
-        $.iter .=new; # TODO =Nil ? :refactoring:0.1:
-        if $.tasks {
-            for $.tasks.Array {
-                $_.delete-iter();
-            }
-        }
-    }
 }
 

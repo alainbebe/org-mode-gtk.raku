@@ -552,7 +552,6 @@ class GtkFile {
     method reconstruct-tree { # not good practice, not abuse 
         $.count-row=0;
         $.ts.clear;
-        $!om.delete-iter;
         $.create-task($!om);
         $!om.iter=Nil; # TODO Why it's necessary. Analyze and fix :refactoring:
         $.highlighted("0");

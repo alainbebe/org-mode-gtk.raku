@@ -13,7 +13,7 @@ class Main {
     my Gnome::Gtk3::Main $m;
 
     method main {
-        $m .= new;
+        $m .= new; # TODO create Build :refactoring:
 
         $top-window .= new;
         $top-window.set-title('Org-Mode with GTK and raku');
