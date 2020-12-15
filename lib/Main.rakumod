@@ -35,7 +35,7 @@ class Main {
 
         $gf.tv.register-signal( $gf, 'tv-button-click', 'row-activated');
         $top-window.register-signal( $gke, 'exit-gui', 'destroy', :gf($gf), :m($m));
-        $top-window.register-signal( $gke, 'handle-keypress', 'key-press-event', :gf($gf), :l-info($l-info));
+        $top-window.register-signal( $gke, 'handle-keypress', 'key-press-event', :l-info($l-info));
         
         $m;
     }
