@@ -15,7 +15,7 @@ class GtkKeyEvent {
     has @ctrl-keys;
     has $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 
-    submethod BUILD ( :$!gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) {  # TODO improve :refactoring:0.1:
+    submethod BUILD ( :$!gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) {  # TODO improve :refactoring:0.2:
         $!gedt .= new(:top-window($!top-window));
     }
 
@@ -66,7 +66,7 @@ class GtkKeyEvent {
                         default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
                     }
                 }
-                when 5 { # Ctrl Shift push  # TODO french keyboard :0.1:
+                when 5 { # Ctrl Shift push  # TODO french keyboard :0.2:
     #                note "Key ",Buf.new($event-key.keyval).decode;
                     @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                     given join('',@ctrl-keys) {

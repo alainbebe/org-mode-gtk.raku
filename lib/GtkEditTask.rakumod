@@ -303,7 +303,7 @@ class GtkEditTask {
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
                 $gf.change=1;
                 my $tags=$e-edit-tags.get-text;
-                $tags ~~ s:g/":"/ /;
+                $tags ~~ s:g/":"/ /; # TODO for tag, accept only : letters, numbers, ‘_’, and ‘@’. (rule of org mode)
                 $tags ~~ s:g/" "+/ /;
                 $tags = $tags.trim;
                 if $tags {
@@ -344,9 +344,12 @@ class GtkEditTask {
             my Gnome::Gtk3::TreeIter $iter = $properties.get-iter-first;
             my $valid=$iter.is-valid;
             while ($valid) {
-                if $properties.get-value( $iter, 0)[0].get-string.trim.chars>0 {
-                    @properties.push(($properties.get-value( $iter, 0)[0].get-string.trim,
-                                            $properties.get-value( $iter, 1)[0].get-string.trim)); # TODO bug if value is nil :0.1:
+                if $properties.get-value( $iter, 0)[0].get-string 
+                    && $properties.get-value( $iter, 0)[0].get-string.trim.chars>0 {
+                        @properties.push(($properties.get-value( $iter, 0)[0].get-string.trim,
+                                            $properties.get-value( $iter, 1)[0].get-string 
+                                                ?? $properties.get-value( $iter, 1)[0].get-string.trim
+                                                !! ""));
                 }
                 $valid=$properties.iter-next($iter);
             }

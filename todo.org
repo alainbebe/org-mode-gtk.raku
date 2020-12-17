@@ -90,7 +90,8 @@ remove final char, see UTF8
 Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
-** TODO [#B] Possibility to do all action with menu                    :0.1:
+** DONE [#B] Possibility to do all action with menu                    :0.1:
+   CLOSED: [2020-12-17 jeu 12:57]
 *** TODO Find Iter of select row, to use with menu
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]
