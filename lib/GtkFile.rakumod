@@ -662,8 +662,27 @@ class GtkFile {
         self.create-task(self.om);
         $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
     }
+    method file-exist($filename) {
+        if $filename.IO.f {
+            1;
+        } else {
+            my Gnome::Gtk3::MessageDialog $md .=new(
+                                :message("The file $filename doesn't exists !"),
+                                :buttons(GTK_BUTTONS_NONE)
+            );
+            $md.add-button("Create a new file", 1); # TODO use add_buttons.
+            $md.add-button("Exit", 2);
+            my $button=$md.run;
+            if $button==1 {
+                $md.destroy;
+                return 0;
+            } else {
+                exit;
+            }
+        }
+    }
     method file-read($filename) {
-        if $filename {
+        if $filename && $.file-exist($filename) {
             $.file-read-with-name($filename);
         } else {
             $.default;
