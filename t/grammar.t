@@ -110,7 +110,7 @@ $file =
 "* header
 :PROPERTIES:
 :just_key:
-:END:t";
+:END:";
 ok OrgMode.parse($file), 'parses';
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][0] eq "just_key"          , "just_key";
 ok OrgMode.parse($file,:actions(OM-actions)).made.tasks[0].properties[0][1] eq ""                  , "no value";

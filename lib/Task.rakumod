@@ -124,7 +124,7 @@ class Task {
                         if $.tags; 
             $orgmode~="\n";
         }
-        $orgmode~="CLOSED: ["~$.closed.str~"]" if $.closed;
+        $orgmode~="CLOSED: ["~$.closed.str~"]" if $.closed; # 2 space before for Emacs, no space for Orgzly
         $orgmode~=" " if $.deadline && $.closed;
         $orgmode~="DEADLINE: <"~$.deadline.str~">" if $.deadline; # DEADLINE preceed SCHEDULED. rule of Orgzly. todo : To verifie
         $orgmode~=" " if ($.deadline || $.closed) && $.scheduled;

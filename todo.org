@@ -46,7 +46,8 @@ s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
 ** Enter on task, open EditTask and close imediatly                    :0.1:
-** String parse by markup is bad saving
+** DONE String parse by markup is bad saving
+CLOSED: [2020-12-20 Son 10:10]
 Special char si saved also
 * GTK improve
 ** DONE Rewrite the refresh tree after edit "text"
@@ -75,15 +76,16 @@ Improve this swap if task is hide
 @org[$line,$line2] = @org[$line2,$line];
 ** TODO Sort Priorities
 ** DONE Create a different display for README style or TODO style
-** TODO Use GdkEventKey for keyboard
+** DONE Use GdkEventKey for keyboard
+CLOSED: [2020-12-20 Son 10:10]
 *** DONE Short-Cut  "Ctrl-s" forsave
 CLOSED: [2020-10-05 Mon 07:13]
 *** DONE link F11 to maximize the window
 CLOSED: [2020-11-06 Fri 07:57]
 Me or Gnome::Gtk3
-*** TODO Shift-left unfold only current selection, not child
+** TODO Shift-left unfold only current selection, not child
 or capture keyboard and redifine de Shift-right
-*** TODO Create one (or 2) bar menu                                    :0.2:
+** TODO Create one (or 2) bar menu                                     :0.2:
 ** DONE Accent é create problem in edit "text"
 CLOSED: [2020-04-19 dim  11:00]
 remove final char, see UTF8
@@ -91,7 +93,7 @@ Solution : $text.encode('UTF-8').bytes
 ** DONE create 2 Class, one pure Task, and one GtkTask hertiable with "iter"
 CLOSED: [2020-05-02 sam  11:06]
 ** DONE [#B] Possibility to do all action with menu                    :0.1:
-   CLOSED: [2020-12-17 jeu 12:57]
+CLOSED: [2020-12-17 Thu 12:57]
 *** TODO Find Iter of select row, to use with menu
 ** DONE Use PROPERTIES to choice presentation mode
 CLOSED: [2020-04-25 sam  12:33]

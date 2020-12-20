@@ -37,6 +37,10 @@ DEADLINE: <2019-11-01 Fri>
 :Size:     Big
 :END:
 My text
+** One property without value
+:PROPERTIES:
+:Only_key: 
+:END:
 * TODO Todo
 DONE is hide by default.
 Use Option/Show All  to display DONE tasks.
