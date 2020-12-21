@@ -82,6 +82,7 @@ class GtkFile {
         $tvc.pack-end( $crt2, 1);
         $tvc.add-attribute( $crt2, 'markup', 2);
         $!tv.append-column($tvc);
+        $!tv.register-signal( self, 'tv-button-click', 'row-activated');
     }
 
     # When click on a tag, accept immediatly the choice 

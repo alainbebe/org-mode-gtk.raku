@@ -9,22 +9,18 @@ use Gnome::Gdk3::Keysyms;
 
 class GtkKeyEvent {
     has Gnome::Gtk3::Window $!top-window; 
-    has Gnome::Gtk3::Main $!m ;
-    has GtkFile $!gf;
-    has GtkEditTask $.gedt;
+    has Gnome::Gtk3::Main $.m ;
     has @ctrl-keys;
     has $is-maximized=False; # TODO use gtk-window.is_maximized in Window.pm6 (uncomment =head2 [[gtk_] window_] is_maximized) :0.x:
 
-    submethod BUILD ( :$!gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) {  # TODO improve :refactoring:0.2:
-        $!gedt .= new(:top-window($!top-window));
+    submethod BUILD ( :$!m ) { 
     }
 
-    method exit-gui ( --> Int ) {
-        my $button=$!gf.try-save;
-        $!m.gtk-main-quit if $button != GTK_RESPONSE_CANCEL;
-        1
+    method message($message) {
+        $!m.l-info.set-label($message);
+        @ctrl-keys=''; 
     }
-    method handle-keypress ( N-GdkEventKey $event-key, :$widget , :$l-info) {
+    method handle-keypress ( N-GdkEventKey $event-key, :$widget ) {
 #        note 'event: ', GdkEventType($event-key.type), ', ', $event-key.keyval.fmt('0x%08x');
         if $event-key.type ~~ GDK_KEY_PRESS {
 #            note "State : ", $event-key.state;
@@ -32,15 +28,15 @@ class GtkKeyEvent {
                 when 0 { # No Ctrl, Alt, Shift.
                     given $event-key.keyval.fmt('0x%08x') {
                         when GDK_KEY_F11 {
-                            $is-maximized ?? $!top-window.unmaximize !! $!top-window.maximize;
+                            $is-maximized ?? $.m.top-window.unmaximize !! $.m.top-window.maximize;
                             $is-maximized=!$is-maximized; 
                         }
                     }
                 }
                 when 1 { # Shift push
                     given $event-key.keyval.fmt('0x%08x') {
-                        when GDK_KEY_Up   {$!gf.priority-up}
-                        when GDK_KEY_Down {$!gf.priority-down}
+                        when GDK_KEY_Up   {$!m.gf.priority-up}
+                        when GDK_KEY_Down {$!m.gf.priority-down}
                     }
                 }
                 when 4 { # Ctrl push
@@ -50,20 +46,20 @@ class GtkKeyEvent {
                     @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                     given join('',@ctrl-keys) {
                         when  ""  {}
-                        when  "c"  {$l-info.set-label("C-c")}
-                        when  "x"  {$l-info.set-label("C-x")}
-                        when  "cx" {$l-info.set-label("C-c C-x")}
-                        when "-"   {@ctrl-keys=''; $l-info.set-label('Zoom -');             $!gf.zoom(:choice(-1))} 
+                        when  "c"  {$!m.l-info.set-label("C-c")}
+                        when  "x"  {$!m.l-info.set-label("C-x")}
+                        when  "cx" {$!m.l-info.set-label("C-c C-x")}
+                        when "-"   { $.message('Zoom -');             $!m.gf.zoom(:choice(-1))} 
     #                    when "cc" {@ctrl-keys=''; say "cc"}
     #                    when "cq" {@ctrl-keys=''; say "edit tag"}
-    #                    when "k"  {@ctrl-keys=''; $l-info.set-label('Delete branch');      $!gf.delete-branch($clicked-task.iter); }
-                        when "cs"  {@ctrl-keys=''; $l-info.set-label('Schedule');           $.gedt.scheduled(:gf($!gf))} 
-                        when "cd"  {@ctrl-keys=''; $l-info.set-label('Deadline');           $.gedt.deadline(:gf($!gf))}
-                        when "ct"  {@ctrl-keys=''; $l-info.set-label('Change TODO/DONE/-'); $!gf.edit-todo-done;}
-                        when "cxv" {@ctrl-keys=''; $l-info.set-label('View/Hide Image');    $!gf.m-view-hide-image;}
-                        when "xs"  {@ctrl-keys=''; $l-info.set-label('Save');               $!gf.file-save}
-                        when "xc"  {@ctrl-keys=''; $l-info.set-label('Exit');               self.exit-gui}
-                        default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
+    #                    when "k"  { $.message('Delete branch');      $!m.gf.delete-branch($clicked-task.iter); }
+                        when "cs"  { $.message('Schedule');           $.m.gedt.scheduled(:gf($!m.gf))} 
+                        when "cd"  { $.message('Deadline');           $.m.gedt.deadline(:gf($!m.gf))}
+                        when "ct"  { $.message('Change TODO/DONE/-'); $!m.gf.edit-todo-done;}
+                        when "cxv" { $.message('View/Hide Image');    $!m.gf.m-view-hide-image;}
+                        when "xs"  { $.message('Save');               $!m.gf.file-save }
+                        when "xc"  { $.message('Exit');               $!m.exit-gui }
+                        default    { $.message(join(' Ctrl-',@ctrl-keys) ~ " is undefined") }
                     }
                 }
                 when 5 { # Ctrl Shift push  # TODO french keyboard :0.2:
@@ -71,21 +67,21 @@ class GtkKeyEvent {
                     @ctrl-keys.push(Buf.new($event-key.keyval).decode);
                     given join('',@ctrl-keys) {
                         when  ""   {}
-                        when "+"   {@ctrl-keys=''; $l-info.set-label('Zoom +');             $!gf.zoom(:choice(1))} 
-                        when "0"   {@ctrl-keys=''; $l-info.set-label('Normal Size');        $!gf.zoom(:choice(0))} 
-                        default    {$l-info.set-label(join(' Ctrl-',@ctrl-keys) ~ " is undefined");@ctrl-keys='';}
+                        when "+"   { $.message('Zoom +');             $!m.gf.zoom(:choice(1))} 
+                        when "0"   { $.message('Normal Size');        $!m.gf.zoom(:choice(0))} 
+                        default    { $.message(join(' Ctrl-',@ctrl-keys) ~ " is undefined") }
                     }
                 }
                 when 8 { # Alt push 
                     given $event-key.keyval.fmt('0x%08x') {
-                        when GDK_KEY_Up   {$!gf.move-up-down-button-click(:inc(-1))} # Alt-Up
-                        when GDK_KEY_Down {$!gf.move-up-down-button-click(:inc( 1))} # Alt-Down
+                        when GDK_KEY_Up   {$!m.gf.move-up-down-button-click(:inc(-1))} # Alt-Up
+                        when GDK_KEY_Down {$!m.gf.move-up-down-button-click(:inc( 1))} # Alt-Down
                     }
                 }
                 when 9 { # Alt Shift push
                     given $event-key.keyval.fmt('0x%08x') {
-                        when GDK_KEY_Left  {$!gf.move-left-button-click } # Alt-Shift-left
-                        when GDK_KEY_Right {$!gf.move-right-button-click} # Alt-Shift-Right
+                        when GDK_KEY_Left  {$!m.gf.move-left-button-click } # Alt-Shift-left
+                        when GDK_KEY_Right {$!m.gf.move-right-button-click} # Alt-Shift-Right
                     }
                 }
             # TODO Alt-Enter crée un frère après

@@ -18,7 +18,7 @@ class GtkMenuBar {
     has GtkFile $.gf;
     has Gnome::Gtk3::Main $.m ;
 
-    submethod BUILD ( :$gf, :$m, Gnome::Gtk3::Window:D :$!top-window!) { # TODO :refactoring:
+    submethod BUILD ( :$gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) { # TODO :refactoring:
         $!gf=$gf;
     }
 
@@ -56,8 +56,7 @@ class GtkMenuBar {
         my Gnome::Gtk3::MenuItem $menu-item .= new(:label("_Quit         C-x C-c"));
         $menu-item.set-use-underline(1);
         $menu.gtk-menu-shell-append($menu-item);
-        my GtkKeyEvent $gke .= new(:gf($.gf), :m($.m), :top-window($!top-window)); # TODO bad implementation :refactoring:
-        $menu-item.register-signal( $gke, 'exit-gui', 'activate', :gf($.gf), :m($.m));
+        $menu-item.register-signal( $.m, 'exit-gui', 'activate');
 
         $menu
     }
