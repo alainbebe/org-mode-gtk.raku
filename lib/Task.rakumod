@@ -1,5 +1,7 @@
 use DateOrg;
-use Gnome::Gdk3::Pixbuf;
+
+# No Gnome module here
+# TODO Move presentation in GtkTask :0.x:refactoring:
 
 my $normal-size=14000; # original size of text
 my $size=$normal-size; # current size of text, change with "zoom"
@@ -94,12 +96,6 @@ class Task {
             }
         }
         return $display;
-    }
-    method get-image {
-        my Gnome::Gdk3::Pixbuf $pb;
-        $.text ~~ / "[[" ("./img/" .+ ) "]]" /;
-        $pb .= new(:file($0.Str));
-        return $pb;
     }
     method level-move($change) {
         $.level+=$change;
