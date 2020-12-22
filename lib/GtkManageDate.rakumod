@@ -1,4 +1,4 @@
-use DateOrg;
+use OrgMode::DateOrg;
 
 use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::Box;

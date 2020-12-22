@@ -1,4 +1,4 @@
-use DateOrg;
+use OrgMode::DateOrg;
 use GtkManageDate;
 
 use Gnome::N::N-GObject;

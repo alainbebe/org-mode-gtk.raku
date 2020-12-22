@@ -1,4 +1,4 @@
-use DateOrg;
+use OrgMode::DateOrg;
 
 # No Gnome module here
 # TODO Move presentation in GtkTask :0.x:refactoring:

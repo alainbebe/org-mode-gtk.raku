@@ -1,5 +1,5 @@
-use DateOrg;
-use Task;
+use OrgMode::DateOrg;
+use OrgMode::Task;
 use GtkTask;
 use OrgMode::Grammar;
 use GtkEditTask;

@@ -1,4 +1,4 @@
-use Task;
+use OrgMode::Task;
 use Gnome::Gtk3::TreeIter;
 use Gnome::Gdk3::Pixbuf;
 

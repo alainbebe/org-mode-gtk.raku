@@ -1,6 +1,6 @@
 #use Grammar::Tracer;
 #use Data::Dump;
-use DateOrg;
+use OrgMode::DateOrg;
 use GtkTask;
 
 grammar Content {
