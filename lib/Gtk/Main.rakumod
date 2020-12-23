@@ -1,7 +1,7 @@
-use GtkFile;
-use GtkKeyEvent;
-use GtkMenuBar;
-use GtkEditTask;
+use Gtk::File;
+use Gtk::KeyEvent;
+use Gtk::MenuBar;
+use Gtk::EditTask;
 
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
@@ -9,13 +9,13 @@ use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Label;
 use Gnome::Gtk3::Dialog;
 
-class Main is Gnome::Gtk3::Main {
+class Gtk::Main is Gnome::Gtk3::Main {
     has Gnome::Gtk3::Window $.top-window;
-    has GtkFile $.gf;
+    has Gtk::File $.gf;
     has Gnome::Gtk3::Label $.l-info;
-    has GtkMenuBar $.gmb;
-    has GtkKeyEvent $.gke;
-    has GtkEditTask $.gedt;
+    has Gtk::MenuBar $.gmb;
+    has Gtk::KeyEvent $.gke;
+    has Gtk::EditTask $.gedt;
 
     submethod BUILD {
         # create top window

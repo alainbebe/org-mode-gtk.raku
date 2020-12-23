@@ -2,9 +2,9 @@
 
 use v6;
 use lib "lib";
-use Main;
+use Gtk::Main;
 
-my Main $m .= new;
+my Gtk::Main $m .= new;
 
 sub MAIN ($arg = '') {
     $m.show($arg);

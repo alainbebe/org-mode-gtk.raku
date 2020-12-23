@@ -76,7 +76,7 @@ my token dateorg is export { <year>"-"<month>"-"<day>
                 (" "<delay>)?
 } 
 
-class DateOrg {
+class OrgMode::Date {
     has DateTime $.begin    is rw;
     has DateTime $.end      is rw;
     has Str      $.repeater is rw;
@@ -110,9 +110,9 @@ class DateOrg {
 }
 
 sub date-from-dateorg($do) is export {
-    my DateOrg $dateorg;
+    my OrgMode::Date $dateorg;
     if $do[1]{'time'}{'hour'} {
-        $dateorg=DateOrg.new(
+        $dateorg=OrgMode::Date.new(
              begin => DateTime.new(
                 year   => $do{'year'},
                 month  => $do{'month'},
@@ -123,7 +123,7 @@ sub date-from-dateorg($do) is export {
             )            
         );
     } else {
-        $dateorg=DateOrg.new(
+        $dateorg=OrgMode::Date.new(
              begin => DateTime.new(
                 year   => $do{'year'},
                 month  => $do{'month'},

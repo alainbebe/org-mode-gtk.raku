@@ -1,4 +1,4 @@
-use GtkFile;
+use Gtk::File;
 
 use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Dialog;
@@ -6,11 +6,11 @@ use Gnome::Gtk3::Box;
 use Gnome::Gtk3::Grid;
 use Gnome::Gtk3::Button;
 
-class GtkMoveTask {
+class Gtk::MoveTask {
     has Gnome::Gtk3::Dialog $dialog;
-    has GtkFile $!gf;
+    has Gtk::File $!gf;
 
-    submethod BUILD ( GtkFile:D :$!gf!) { }
+    submethod BUILD ( Gtk::File:D :$!gf!) { }
 
     multi method create-button($label,$method,$iter?,$inc?) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));

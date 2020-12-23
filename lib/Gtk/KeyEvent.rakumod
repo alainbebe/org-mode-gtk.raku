@@ -1,13 +1,10 @@
-use GtkFile;
-use GtkEditTask;
-
 use Gnome::Gtk3::Window;
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Dialog;
 use Gnome::Gdk3::Events;
 use Gnome::Gdk3::Keysyms;
 
-class GtkKeyEvent {
+class Gtk::KeyEvent {
     has Gnome::Gtk3::Window $!top-window; 
     has Gnome::Gtk3::Main $.m ;
     has @ctrl-keys;

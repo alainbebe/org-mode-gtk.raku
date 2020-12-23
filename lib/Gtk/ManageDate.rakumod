@@ -1,4 +1,4 @@
-use OrgMode::DateOrg;
+use OrgMode::Date;
 
 use Gnome::Gtk3::Dialog;
 use Gnome::Gtk3::Box;
@@ -8,12 +8,12 @@ use Gnome::Gtk3::ComboBoxText;
 use Gnome::Gtk3::Button;
 use Gnome::Gtk3::CheckButton;
 
-class GtkManageDate {
+class Gtk::ManageDate {
     has Gnome::Gtk3::Window $!top-window;
 
     submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }
 
-    multi method create-button($label,$method,Gnome::Gtk3::Label $l-result,DateOrg $d,DateTime $next-date,
+    multi method create-button($label,$method,Gnome::Gtk3::Label $l-result,OrgMode::Date $d,DateTime $next-date,
             Gnome::Gtk3::ComboBoxText $year, Gnome::Gtk3::ComboBoxText $month, Gnome::Gtk3::ComboBoxText $day) {
         my Gnome::Gtk3::Button $b  .= new(:label($label));
         $b.register-signal(self, $method, 'clicked',:l-result($l-result),:date($d),:next-date($next-date),
@@ -72,7 +72,7 @@ class GtkManageDate {
         $date.end=$date.end.clone(minute => $widget.get-active-text);
         $label.set-text($date.str);
     }
-my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :refactoring:
+my $format-org-time = sub (DateTime $self) { # TODO improve and put in OrgMode::Date :refactoring:
     if ($self.hour==0 && $self.minute==0) {
         sprintf ''; 
     } else {
@@ -152,7 +152,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :
         }
         $label.set-text($date.str);
     }
-    method manage-date (DateOrg $date is rw) {
+    method manage-date (OrgMode::Date $date is rw) {
         my Gnome::Gtk3::Dialog $dialog2 .= new(
             :title("Manage Date"), 
             :parent($!top-window),
@@ -166,7 +166,7 @@ my $format-org-time = sub (DateTime $self) { # TODO improve and put in DateOrg :
         my Gnome::Gtk3::Box $content-area .= new(:native-object($dialog2.get-content-area));
         my $cur=$date ?? $date.str !! &dd-now();
         $cur ~~ /<dateorg>/;
-        my DateOrg $d=date-from-dateorg($/{'dateorg'});
+        my OrgMode::Date $d=date-from-dateorg($/{'dateorg'});
         
         my Gnome::Gtk3::Grid $gd .= new;
         $content-area.gtk_container_add($gd);

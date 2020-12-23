@@ -1,5 +1,5 @@
-use OrgMode::DateOrg;
-use GtkManageDate;
+use OrgMode::Date;
+use Gtk::ManageDate;
 
 use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
@@ -27,7 +27,7 @@ use Gnome::Gtk3::Button;
 use Gnome::Gdk3::Events;
 use Gnome::Gdk3::Keysyms;
 
-class GtkEditTask {
+class Gtk::EditTask {
     has Gnome::Gtk3::Window $!top-window;
     has Gnome::Gtk3::Dialog $dialog;
     has Gnome::Gtk3::Entry $e-edit-tags;
@@ -77,7 +77,7 @@ class GtkEditTask {
     method scheduled ( :$widget, :$task , :$gf) {
         $gf.change=1;
         my $t = $task ?? $task !! $gf.highlighted-task;
-        my GtkManageDate $md .=new(:top-window($!top-window));
+        my Gtk::ManageDate $md .=new(:top-window($!top-window));
         $t.scheduled=$md.manage-date($t.scheduled);
         $widget.set-label($t.scheduled ?? $t.scheduled.str !! "-") if $widget;
         1
@@ -91,7 +91,7 @@ class GtkEditTask {
     method deadline ( :$widget, :$task , :$gf) {
         $gf.change=1;
         my $t=$task ?? $task !! $gf.highlighted-task;
-        my GtkManageDate $md .=new(:top-window($!top-window));
+        my Gtk::ManageDate $md .=new(:top-window($!top-window));
         $t.deadline=$md.manage-date($t.deadline);
         $widget.set-label($t.deadline ?? $t.deadline.str !! "-") if $widget;
         1
@@ -104,7 +104,7 @@ class GtkEditTask {
     }
     method closed ( :$widget, :$task , :$gf) {
         $gf.change=1;
-        my GtkManageDate $md .=new(:top-window($!top-window));
+        my Gtk::ManageDate $md .=new(:top-window($!top-window));
         $task.closed=$md.manage-date($task.closed);
         $widget.set-label($task.closed.str);
         1
@@ -327,7 +327,7 @@ class GtkEditTask {
                         $task.closed=date-from-dateorg($/{'dateorg'});
                     }
                 } else {
-                    $task.closed=DateOrg;
+                    $task.closed=OrgMode::Date;
                 }
             }
 

@@ -1,8 +1,7 @@
-use GtkEditPreface;
-use GtkKeyEvent;
-use GtkFile;
-use GtkMoveTask;
-use AboutDialog;
+use Gtk::EditPreface;
+use Gtk::File;
+use Gtk::MoveTask;
+use Gtk::AboutDialog;
 
 use Gnome::Gtk3::Main;
 use Gnome::Gtk3::Window;
@@ -13,9 +12,9 @@ use Gnome::Gtk3::MenuItem;
 # global variable : to remove ?
 my $debug=1;            # to debug =1
 
-class GtkMenuBar {
+class Gtk::MenuBar {
     has Gnome::Gtk3::Window $!top-window;
-    has GtkFile $.gf;
+    has Gtk::File $.gf;
     has Gnome::Gtk3::Main $.m ;
 
     submethod BUILD ( :$gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) { # TODO :refactoring:
@@ -68,7 +67,7 @@ class GtkMenuBar {
     method make-menubar-list-divers {
         my Gnome::Gtk3::Menu $menu .= new;
 
-        my GtkEditPreface $ep .=new(:top-window($!top-window));
+        my Gtk::EditPreface $ep .=new(:top-window($!top-window));
         my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Edit P_reface'));
         $menu-item.set-use-underline(1);
         $menu.gtk-menu-shell-append($menu-item);
@@ -207,7 +206,7 @@ class GtkMenuBar {
         $menu.gtk-menu-shell-append($menu-item);
         $menu-item.register-signal( $.gf, 'move-left-button-click', 'activate');
 
-        my GtkMoveTask $mt .= new(:gf($.gf));
+        my Gtk::MoveTask $mt .= new(:gf($.gf));
         $.create-sub-menu($menu,"Move Subtree ...",$mt,'move-task');
 
         $menu
@@ -262,7 +261,7 @@ class GtkMenuBar {
         $menu
     }
     method help-about {
-        AboutDialog.new.run;
+        Gtk::AboutDialog.new.run;
     }
 }
 

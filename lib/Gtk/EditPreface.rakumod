@@ -6,7 +6,7 @@ use Gnome::Gtk3::TextBuffer;
 use Gnome::Gtk3::ScrolledWindow;
 use Gnome::Gtk3::TextIter;
 
-class GtkEditPreface {
+class Gtk::EditPreface {
     has Gnome::Gtk3::Window $!top-window;
 
     submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) { }

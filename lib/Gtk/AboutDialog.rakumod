@@ -1,10 +1,10 @@
 use Gnome::Gtk3::AboutDialog;
 use NativeCall;
 
-class AboutDialog is Gnome::Gtk3::AboutDialog {
+class Gtk::AboutDialog is Gnome::Gtk3::AboutDialog {
 
     submethod new ( |c ) {
-        self.bless( :GtkAboutDialog, |c);
+        self.bless( :GtkAboutDialog, |c); # TODO why it's run ? normaly :AboutDialog :0.1:MM:
     }
 
     submethod BUILD ( ) {

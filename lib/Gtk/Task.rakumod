@@ -2,7 +2,7 @@ use OrgMode::Task;
 use Gnome::Gtk3::TreeIter;
 use Gnome::Gdk3::Pixbuf;
 
-class GtkTask is Task {
+class Gtk::Task is OrgMode::Task {
     has Gnome::Gtk3::TreeIter $.iter is rw;
 
     method inspect {

@@ -1,8 +1,7 @@
-use OrgMode::DateOrg;
-use OrgMode::Task;
-use GtkTask;
+use OrgMode::Date;
+use Gtk::Task;
 use OrgMode::Grammar;
-use GtkEditTask;
+use Gtk::EditTask;
 
 use Gnome::N::N-GObject;
 use Gnome::GObject::Type;
@@ -31,8 +30,8 @@ use Data::Dump;
 
 my $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:0.x:
 
-class GtkFile {
-    has GtkTask                     $.om              is rw;
+class Gtk::File {
+    has Gtk::Task                     $.om              is rw;
     has Gnome::Gtk3::TreeStore      $.ts              ; #.= new(:field-types(G_TYPE_STRING));
     has Gnome::Gtk3::TreeView       $.tv              ; #.= new(:model($!ts));
     has Gnome::Gtk3::ScrolledWindow $.sw              ; #.= new;
@@ -215,8 +214,8 @@ class GtkFile {
 
         # to edit task
         if $.search-task-from($.om,$iter) {      # if not, it's a text not (now) editable 
-            my GtkTask $task=$.search-task-from($.om,$iter);
-            my GtkEditTask $et .=new(:top-window($!top-window));
+            my Gtk::Task $task=$.search-task-from($.om,$iter);
+            my Gtk::EditTask $et .=new(:top-window($!top-window));
             $et.edit-task($task,self);
         } else {  # text
             # manage via dialog task
@@ -257,8 +256,8 @@ class GtkFile {
     }
     method add-brother-down {
         my $task=$.highlighted-task;
-        my GtkTask $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
-        my GtkEditTask $et .=new(:top-window($!top-window));
+        my Gtk::Task $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
+        my Gtk::EditTask $et .=new(:top-window($!top-window));
         if $et.edit-task($brother,self) == GTK_RESPONSE_OK {
             $.change=1;
             $.highlighted($brother);
@@ -266,8 +265,8 @@ class GtkFile {
     }
     method add-child {
         my $task=$.highlighted-task;
-        my GtkTask $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
-        my GtkEditTask $et .=new(:top-window($!top-window));
+        my Gtk::Task $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
+        my Gtk::EditTask $et .=new(:top-window($!top-window));
         if $et.edit-task($child,self) == GTK_RESPONSE_OK {
             $.change=1;
 #            $.unfold-branch; # TODO unfold de good branch :0.2:
@@ -367,7 +366,7 @@ class GtkFile {
     }
     method todo-shortcut ( :$iter,:$todo --> Int ) {
         $.change=1;
-        my GtkTask $task=$.search-task-from($.om,$iter);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
         $task.todo=$todo;
         $.ts.set_value( $iter, 0,$task.display-header($.presentation));
         if $todo eq 'DONE' {
@@ -376,7 +375,7 @@ class GtkFile {
                 $task.closed=date-from-dateorg($/{'dateorg'});
             }
         } else {
-            $task.closed=DateOrg;
+            $task.closed=OrgMode::Date;
         }
         1
     }
@@ -392,7 +391,7 @@ class GtkFile {
         }
     }
     method highlighted-task {
-        my Task $task;
+        my Gtk::Task $task;
 #        note 'edit gs: ', $.tv.gtk_tree_view_get_selection.perl;
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
 #        note 'edit sr: ', $tselect.get-selected-rows(N-GObject);
@@ -471,7 +470,7 @@ class GtkFile {
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
-    method create-task(GtkTask $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool :$cond = True) {
+    method create-task(Gtk::Task $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool :$cond = True) {
         if  !$cond || # if conditionnal, possibility to filter, else create all sub task
             $task.level==0 || (                                 # display always the base level
                 !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
@@ -534,7 +533,7 @@ class GtkFile {
         return -1;
     }
     method default {
-        my GtkTask $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1),:darth-vader($!om));
+        my Gtk::Task $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1),:darth-vader($!om));
         $.create-task($task,:cond(False));
         $!om.tasks.push($task);
     }
@@ -542,7 +541,7 @@ class GtkFile {
         my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
         $tselect.select-path($tp);
     }
-    multi method highlighted(Task $child) {
+    multi method highlighted(Gtk::Task $child) {
         my Gnome::Gtk3::TreePath $tp = $.ts.get-path($child.iter);
         $.highlighted($tp);
     }
@@ -643,7 +642,7 @@ class GtkFile {
 #            my $file=$proc.out.slurp(:close);
             my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante 
                                     # fait foirer la grammaire (content ne match pas) . Bizarre.
-            self.om=OrgMode.parse($file,:actions(OM-actions)).made;
+            self.om=OrgMode.parse($file,:actions(OrgMode::Actions)).made;
             if !self.om {
                 my Gnome::Gtk3::MessageDialog $md .=new(
                                     :message('This file is not recognized as a org file by org-mode-gtk.raku'),

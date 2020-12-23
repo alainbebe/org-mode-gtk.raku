@@ -1,7 +1,7 @@
 #use Grammar::Tracer;
 #use Data::Dump;
-use OrgMode::DateOrg;
-use GtkTask;
+use OrgMode::Date;
+use Gtk::Task; # TODO no gtk here :refactoring:0.1:
 
 grammar Content {
     token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n?   # first line of a task
@@ -26,7 +26,7 @@ grammar Content {
 
 class Content-actions {
     method TOP($/) {
-        my GtkTask $task.=new( 
+        my Gtk::Task $task.=new( 
             :header($<header>.made), 
             :level($<level>.made) 
         );
@@ -103,9 +103,9 @@ sub analyse-content($content) {
         my $task=Content.parse($content,:actions(Content-actions)).made;
         return $task;
 }
-class OM-actions {
+class OrgMode::Actions {
     method TOP($/) {
-        my GtkTask $task.=new(:level(0));                    # un fichier est vu comme une tâche de niveau 0
+        my Gtk::Task $task.=new(:level(0));                    # un fichier est vu comme une tâche de niveau 0
         $task.text = $<preface>.made       if $<preface> && $<preface>.made.chars > 0;
         $task.tasks=$<tasks>.made          if $<tasks>;
         $_.darth-vader=$task               for $task.tasks;  # pour faciliter les déplacements, on intègre le parent iau tache enfant
