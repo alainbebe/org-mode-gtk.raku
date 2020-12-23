@@ -1,6 +1,6 @@
 prove6
-sed -i 's/debug=1/debug=0/' lib/GtkMenuBar.rakumod
+sed -i 's/debug=1/debug=0/' lib/Gtk/MenuBar.rakumod
 git push origin master
-sed -i 's/debug=0/debug=1/' lib/GtkMenuBar.rakumod
+sed -i 's/debug=0/debug=1/' lib/Gtk/MenuBar.rakumod
 rm -f *.bak
 rm -f test.org

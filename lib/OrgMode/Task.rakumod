@@ -14,16 +14,16 @@ sub to-markup ($text-ori) {    # TODO create a class inheriting of string ?
     return $text;
 }
 class OrgMode::Task {
-    has Int       $.level       is rw;
-    has Str       $.todo        is rw ="";
-    has Str       $.priority    is rw ="";
-    has Str       $.header      is rw; #  is required
-    has OrgMode::Date   $.closed      is rw;
-    has OrgMode::Date   $.deadline    is rw;
-    has OrgMode::Date   $.scheduled   is rw;
-    has Str       @.tags        is rw;
-    has Str       @.text        is rw;
-    has           @.properties  is rw; # array, not hash to keep order 
+    has Int           $.level       is rw;
+    has Str           $.todo        is rw ="";
+    has Str           $.priority    is rw ="";
+    has Str           $.header      is rw; #  is required
+    has OrgMode::Date $.closed      is rw;
+    has OrgMode::Date $.deadline    is rw;
+    has OrgMode::Date $.scheduled   is rw;
+    has Str           @.tags        is rw;
+    has Str           @.text        is rw;
+    has               @.properties  is rw; # array, not hash to keep order 
     has OrgMode::Task @.tasks       is rw;
     has OrgMode::Task $.darth-vader is rw; # Task, I am your father
 
