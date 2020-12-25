@@ -4,7 +4,6 @@ use Gtk::MoveTask;
 use Gtk::AboutDialog;
 
 use Gnome::Gtk3::Main;
-use Gnome::Gtk3::Window;
 use Gnome::Gtk3::MenuBar;
 use Gnome::Gtk3::Menu; 
 use Gnome::Gtk3::MenuItem;
@@ -13,12 +12,11 @@ use Gnome::Gtk3::MenuItem;
 my $debug=1;            # to debug =1
 
 class Gtk::MenuBar {
-    has Gnome::Gtk3::Window $!top-window;
     has Gtk::File $.gf;
     has Gnome::Gtk3::Main $.m ;
 
-    submethod BUILD ( :$gf, :$!m, Gnome::Gtk3::Window:D :$!top-window!) { # TODO :refactoring:
-        $!gf=$gf;
+    submethod BUILD ( :$!m ) { # TODO :refactoring:
+        $!gf=$!m.gf;
     }
 
     method create-menu {
@@ -37,11 +35,11 @@ class Gtk::MenuBar {
         $but-file-menu.set-submenu($sub-menu);
         return $but-file-menu;
     }
-    method create-sub-menu($menu,$name,$ash,$method) {
+    method create-sub-menu($menu,$name,$ash,$method,:$choice) {
         my Gnome::Gtk3::MenuItem $menu-item .= new(:label($name));
         $menu-item.set-use-underline(1);
         $menu.gtk-menu-shell-append($menu-item);
-        $menu-item.register-signal( $ash, $method, 'activate');
+        $menu-item.register-signal( $ash, $method, 'activate',:choice($choice));
     } 
     method make-menubar-list-file {
         my Gnome::Gtk3::Menu $menu .= new;
@@ -67,7 +65,7 @@ class Gtk::MenuBar {
     method make-menubar-list-divers {
         my Gnome::Gtk3::Menu $menu .= new;
 
-        my Gtk::EditPreface $ep .=new(:top-window($!top-window));
+        my Gtk::EditPreface $ep .=new(:top-window($!m.top-window));
         my Gnome::Gtk3::MenuItem $menu-item .= new(:label('Edit P_reface'));
         $menu-item.set-use-underline(1);
         $menu.gtk-menu-shell-append($menu-item);

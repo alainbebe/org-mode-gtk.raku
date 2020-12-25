@@ -45,8 +45,8 @@ CLOSED: [2020-05-12 mar  07:42]
 s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
-** DONE Enter on task, open EditTask and close imediatly                    :0.1:
-   CLOSED: [2020-12-25 ven 10:12]
+** DONE Enter on task, open EditTask and close imediatly               :0.1:
+CLOSED: [2020-12-25 Fri 10:12]
 ** DONE String parse by markup is bad saving
 CLOSED: [2020-12-20 Son 10:10]
 Special char si saved also
@@ -171,7 +171,7 @@ CLOSED: [2020-10-10 Sat 13:53]
 ** TODO Indentation des tag
 *** DONE to display (add column to tree ?)
 CLOSED: [2020-11-08 Son 16:56]
-*** TODO When save. Parameter as Orgzly or Emacs
+*** TODO When save. Parameter as Orgzly or Emacs                       :orgzly:emacs:
 ** DONE Move "Add sub-task" to menu "Edit"                             :0.1:
 CLOSED: [2020-10-23 Fri 07:45]
 créer une tache sans iter et la faire manager par method tv
@@ -261,6 +261,10 @@ better is
  * DONE
 No switch 1 et 3, but insert 3 before 1
 ** TODO Export in html (and others)
+*** With Emacs
+save sparsetree in tmp.org
+emacs --daemon
+emacsclient -e "(progn (find-file \"todo.org\") (org-html-export-to-html) (kill-buffer))"
 ** DONE Create cut/paste
 CLOSED: [2020-11-08 Son 09:55]
 ** TODO Create Copy and multi-Paste
@@ -275,7 +279,7 @@ CLOSED: [2020-05-18 Mon 07:20]
 ** DONE Properties are not ordonned, read and write differt but it's the same. Alert is not utile
 CLOSED: [2020-05-23 Sat 09:10]
 Use Array, not Hash
-** TODO Add white line as Orgzly
+** TODO Add white line as Orgzly                                       :orgzly:
 ** DONE Create a GtkFile.pm
 CLOSED: [2020-10-08 Thu 08:06]
 ** DONE rewriting inspect (2 files)                                    :0.1:
@@ -293,7 +297,8 @@ French : sam 7 nov
 with regex, case insensitive
 ** DONE in edit tag, remove (or forbidden) ":"                         :0.1:
 CLOSED: [2020-12-06 Son 13:14]
-** TODO Move DateOrg to OrgMode/DAteOrg
+** DONE Move DateOrg to OrgMode/DAteOrg
+CLOSED: [2020-12-25 Fri 12:35]
 ===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/./org-mode-gtk.raku
 ===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Main.rakumod (Main)
 ===SORRY!=== Error while compiling /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/GtkFile.rakumod (GtkFile)

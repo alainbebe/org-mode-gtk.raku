@@ -1,7 +1,7 @@
-- Identity: Gnome::Gtk3:ver<0.34.1>
+- Identity: Gnome::Gtk3:ver<0.34.3>
 - Identity: Gnome::Cairo:ver<0.2.0>
-- Identity: Gnome::N:ver<0.17.13>
-- Identity: Gnome::Glib:ver<0.17.2>
-- Identity: Gnome::Gio:ver<0.5.1.1>
-- Identity: Gnome::Gdk3:ver<0.17.1>
-- Identity: Gnome::GObject:ver<0.16.14>
+- Identity: Gnome::N:ver<0.18.5>
+- Identity: Gnome::Glib:ver<0.17.3.3>
+- Identity: Gnome::Gio:ver<0.5.2>
+- Identity: Gnome::Gdk3:ver<0.17.2>
+- Identity: Gnome::GObject:ver<0.16.16.2>

@@ -36,7 +36,7 @@ class Gtk::Main is Gnome::Gtk3::Main {
         $g.gtk-grid-attach($!l-info, 0, 2, 1, 1);
 
         # A menu bar
-        $!gmb .= new(:gf($!gf), :m(self),:top-window($!top-window));
+        $!gmb .= new( :m(self) );
         $g.gtk_grid_attach( $!gmb.create-menu, 0, 0, 1, 1);
 
         # Dialog box to edit task
