@@ -45,7 +45,8 @@ CLOSED: [2020-05-12 mar  07:42]
 s/</&lt;/
 ** DONE Bug if Add a Task when we have a sparse tree                   :0.1:
 CLOSED: [2020-11-06 Fri 09:58]
-** Enter on task, open EditTask and close imediatly                    :0.1:
+** DONE Enter on task, open EditTask and close imediatly                    :0.1:
+   CLOSED: [2020-12-25 ven 10:12]
 ** DONE String parse by markup is bad saving
 CLOSED: [2020-12-20 Son 10:10]
 Special char si saved also

@@ -56,6 +56,9 @@ class Gtk::EditTask {
     }
     method header-event-after ( N-GdkEventKey $event-key, :$widget ) {
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
+        1
+    }
+    method ok-press ( N-GdkEventKey $event-key, :$widget ) {
         $dialog.response(GTK_RESPONSE_OK)
             if $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return 
                 && $widget.get-text.trim.chars>0;
@@ -154,6 +157,7 @@ class Gtk::EditTask {
         $e-edit.set-text($task.header);
         $g.gtk-grid-attach($e-edit,                                                       0, 0, 4, 1);
         $e-edit.register-signal( self, 'header-event-after', 'event-after');
+        $e-edit.register-signal( self, 'ok-press', 'key-press-event');
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,0) if $e-edit.get-text.chars==0;
 
         # To edit tags
