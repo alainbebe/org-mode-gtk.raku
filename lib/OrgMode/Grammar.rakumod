@@ -1,7 +1,7 @@
 #use Grammar::Tracer;
 #use Data::Dump;
 use OrgMode::Date;
-use Gtk::Task; # TODO no gtk here :refactoring:0.1:
+use Gtk::Task; # TODO no Gtk here :refactoring:0.1:
 
 grammar Content {
     token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n?   # first line of a task
@@ -65,19 +65,15 @@ class Content-actions {
         make date-from-dateorg($/{'dateorg'});
     }
     method key($/) {
-#        note "k ", $/.Str;
         make $/.Str;
     }
     method value($/) {
-#        note "v ", $/.Str;
         make $/.Str;
     }
     method property($/) {
-#        note "py ", ($<key>.made,$<value>.made);
         make ($<key>.made,$<value>.made);
     }
     method properties($/) {
-#        note "ppy2 ", $<property>».made;
         make $<property>».made;
     }
     method text($/) {
@@ -108,7 +104,7 @@ class OrgMode::Actions {
         my Gtk::Task $task.=new(:level(0));                    # un fichier est vu comme une tâche de niveau 0
         $task.text = $<preface>.made       if $<preface> && $<preface>.made.chars > 0;
         $task.tasks=$<tasks>.made          if $<tasks>;
-        $_.darth-vader=$task               for $task.tasks;  # pour faciliter les déplacements, on intègre le parent iau tache enfant
+        $_.darth-vader=$task               for $task.tasks;  # pour faciliter les déplacements, on intègre le parent aux taches enfants
         make $task;
     }
     method preface($/) {

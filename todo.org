@@ -314,6 +314,8 @@ at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Ta
 Lors d’une sauvegarde faire un git avec message par defaut
 ** TODO Git message
 Rajouter un menu de sauvegarde avec message pour le Git
+** TODO read defintion emacs and refactoring name of variable :refactoring:
+https://orgmode.org/worg/dev/org-syntax.html
 * git
 ** DONE diff ne pas afficher les blancs
 CLOSED: [2020-04-10 Fri 12:19]
