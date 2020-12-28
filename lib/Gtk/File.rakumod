@@ -28,7 +28,7 @@ use NativeCall;
 
 use Data::Dump;
 
-my $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:0.x:
+my Gtk::Task $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:0.x:
 
 class Gtk::File {
     has Gtk::Task                     $.om              is rw;
@@ -43,7 +43,7 @@ class Gtk::File {
     has                             $.prior-B         is rw =False;   # display #B          
     has                             $.prior-C         is rw =False;   # display #C          
     has                             $.today-past      is rw =False;   # display only task in past and not Done          
-    has                             $.presentation    is rw ="TODO";  # Change presentation for display header          
+    has                             $.presentation    is rw ="TODO";  # Change presentation for display title          
     has                             $.view-hide-image is rw =0;
     has                             $.g-tag           is rw;          # Memorize tag to find, nil is no find
     has                             $.g-find          is rw ='';      # Memorize string to find, nil is no find
@@ -54,7 +54,7 @@ class Gtk::File {
     #note "Pixbuf type: $pb-type";
 
     submethod BUILD ( Gnome::Gtk3::Window:D :$!top-window! ) {
-        $!om                  .= new(:level(0)) ; 
+        $!om                  .= new(:stars(0)) ; 
         $!ts                  .= new(:field-types(G_TYPE_STRING, $pb-type, G_TYPE_STRING));
         $!tv                  .= new(:model($!ts));
         $!tv.set-hexpand(1);
@@ -101,7 +101,7 @@ class Gtk::File {
             $.om.tasks=[]; 
             $.om.text=[]; 
             $.om.properties=(); # TODO use undefined ?
-            $.om.header = "";
+            $.om.title = "";
             $!top-window.set-title('Org-Mode with GTK and raku');
             $.default;
         }
@@ -125,8 +125,8 @@ class Gtk::File {
                     $.om.tasks=[]; 
                     $.om.text=[]; 
                     $.om.properties=(); # TODO use undefined ?
-                    $.om.header = $filename;
-                    $.file-read($.om.header) if $.om.header;
+                    $.om.title = $filename;
+                    $.file-read($.om.title) if $.om.title;
                 } else {
                     my Gnome::Gtk3::MessageDialog $md .=new(
                                         :message("File doesn't exist !"),
@@ -141,7 +141,7 @@ class Gtk::File {
         1
     }
     method file-save {
-        $.om.header ?? $.save !! $.file-save-as;
+        $.om.title ?? $.save !! $.file-save-as;
     }
     method file-save-test {
         $.save("test.org");
@@ -152,13 +152,13 @@ class Gtk::File {
         my $iter=$.highlighted-task.iter;
         my @path= $.ts.get-path($iter).get-indices.Array;
         return if @path[*-1] eq "0"; # first task doesn't go to left
-        my $task=$.search-task-from($.om,$iter);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
         my @path-parent=@path; # it's not the parent (darth-vader) but the futur parent
         @path-parent[*-1]--;
         my $iter-parent=$.get-iter-from-path(@path-parent);
-        my $task-parent=$.search-task-from($.om,$iter-parent);
+        my Gtk::Task $task-parent=$.search-task-from($.om,$iter-parent);
         $.delete-branch($iter); 
-        $task.level-move(1);
+        $task.stars-move(1);
         push($task-parent.tasks,$task); 
         $.create-task($task,$iter-parent,:cond(False));
         $task.darth-vader=$task-parent;
@@ -169,9 +169,9 @@ class Gtk::File {
     }
     method move-left-button-click {
         my $iter=$.highlighted-task.iter;
-        my $task=$.search-task-from($.om,$iter);
-        return if $task.level <= 1; # level 0 and 1 don't go to left
-        $task.level-move(-1);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
+        return if $task.stars <= 1; # stars 0 and 1 don't go to left
+        $task.stars-move(-1);
         $.delete-branch($iter); 
         my @tasks;
         for $task.darth-vader.darth-vader.tasks.Array {
@@ -198,8 +198,8 @@ class Gtk::File {
             my $iter2=$.brother($iter,$inc);
             if $iter2.is-valid {   # if not, it's the last child
                 $.change=1;
-                my $task=$.search-task-from($.om,$iter);
-                my $task2=$.search-task-from($.om,$iter2);
+                my Gtk::Task $task=$.search-task-from($.om,$iter);
+                my Gtk::Task $task2=$.search-task-from($.om,$iter2);
                 $.ts.swap($iter,$iter2);
                 $.swap($task,$task2);
                 my Gnome::Gtk3::TreeSelection $tselect .= new(:treeview($.tv));
@@ -230,7 +230,7 @@ class Gtk::File {
             when  "B"  {$.highlighted-task.priority="A"}
             when  "C"  {$.highlighted-task.priority="B"}
         }
-        $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($.presentation)); # TODO create $.ts-set-header($task)
+        $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-title($.presentation)); # TODO create $.ts-set-title($task)
     }
     method edit-cut (:$widget,:$widget-paste) {
         $.cut-branch($.highlighted-task.iter);
@@ -252,11 +252,11 @@ class Gtk::File {
             when  "B"  {$.highlighted-task.priority="C"}
             when  "C"  {$.highlighted-task.priority=""}
         }
-        $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-header($.presentation)); # TODO create $.ts-set-header($task)
+        $.ts.set_value( $.highlighted-task.iter, 0,$.highlighted-task.display-title($.presentation)); # TODO create $.ts-set-title($task)
     }
     method add-brother-down {
-        my $task=$.highlighted-task;
-        my Gtk::Task $brother.=new(:header(""),:level($task.level),:darth-vader($task.darth-vader));
+        my Gtk::Task $task=$.highlighted-task;
+        my Gtk::Task $brother.=new(:title(""),:stars($task.stars),:darth-vader($task.darth-vader));
         my Gtk::EditTask $et .=new(:top-window($!top-window));
         if $et.edit-task($brother,self) == GTK_RESPONSE_OK {
             $.change=1;
@@ -264,8 +264,8 @@ class Gtk::File {
         }
     }
     method add-child {
-        my $task=$.highlighted-task;
-        my Gtk::Task $child.=new(:header(""),:level($task.level+1),:darth-vader($task)); # TODO create a BUILD 
+        my Gtk::Task $task=$.highlighted-task;
+        my Gtk::Task $child.=new(:title(""),:stars($task.stars+1),:darth-vader($task)); # TODO create a BUILD
         my Gtk::EditTask $et .=new(:top-window($!top-window));
         if $et.edit-task($child,self) == GTK_RESPONSE_OK {
             $.change=1;
@@ -364,12 +364,12 @@ class Gtk::File {
         $.reconstruct-tree;
         1
     }
-    method todo-shortcut ( :$iter,:$todo --> Int ) {
+    method keyword-shortcut ( :$iter,:$keyword --> Int ) {
         $.change=1;
         my Gtk::Task $task=$.search-task-from($.om,$iter);
-        $task.todo=$todo;
-        $.ts.set_value( $iter, 0,$task.display-header($.presentation));
-        if $todo eq 'DONE' {
+        $task.keyword=$keyword;
+        $.ts.set_value( $iter, 0,$task.display-title($.presentation));
+        if $keyword eq 'DONE' {
             my $ds=&d-now();
             if $ds ~~ /<dateorg>/ {
                 $task.closed=date-from-dateorg($/{'dateorg'});
@@ -379,14 +379,14 @@ class Gtk::File {
         }
         1
     }
-    method edit-todo-done {
+    method edit-keyword {
         if $.highlighted-task {
-            if $.highlighted-task.todo eq "TODO" {
-                self.todo-shortcut(:iter($.highlighted-task.iter),:todo("DONE"));
-            } elsif $.highlighted-task.todo eq "DONE" {
-                self.todo-shortcut(:iter($.highlighted-task.iter),:todo(""))}
+            if $.highlighted-task.keyword eq "TODO" {
+                self.keyword-shortcut(:iter($.highlighted-task.iter),:keyword("DONE"));
+            } elsif $.highlighted-task.keyword eq "DONE" {
+                self.keyword-shortcut(:iter($.highlighted-task.iter),:keyword(""))}
             else                                {
-                self.todo-shortcut(:iter($.highlighted-task.iter),:todo("TODO"));
+                self.keyword-shortcut(:iter($.highlighted-task.iter),:keyword("TODO"));
             }
         }
     }
@@ -412,7 +412,7 @@ class Gtk::File {
                 $iter = $.ts.get-iter-from-string($tp.to-string);
     #            note "it ",$iter;
                 $task=$.search-task-from($.om,$iter);
-    #            note "ta ",$task.header;
+    #            note "ta ",$task.title;
                 $selected-rows .= next;
             }
             $copy.clear-object;
@@ -448,7 +448,7 @@ class Gtk::File {
     }
     method delete-branch($iter) {
         $.change=1;
-        my $task=$.search-task-from($.om,$iter);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
         $task.darth-vader.tasks = grep { !$.is-my-iter($_,$iter) }, $task.darth-vader.tasks;
         $.ts.gtk-tree-store-remove($iter);
     }
@@ -460,20 +460,20 @@ class Gtk::File {
     }
     method paste-branch($iter) {
         $.change=1;
-        my $task=$.search-task-from($.om,$iter);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
         $task-cut.darth-vader=$task;
-        $task-cut.change-level($task.level+1);
+        $task-cut.change-stars($task.stars+1);
         push($task.tasks,$task-cut);
         self.reconstruct-tree;
-        #$.unfold-branch; # TODO work for level 1, not sub-level. To correct when don't use "reconstruct-tree'
+        #$.unfold-branch; # TODO work for stars 1, not sub-stars. To correct when don't use "reconstruct-tree'
     }
     method expand-row($task,$child) {
         $.tv.expand-row($.ts.get-path($task.iter),$child);
     }
     method create-task(Gtk::Task $task, Gnome::Gtk3::TreeIter $iter?, Int $pos = -1, Bool :$cond = True) {
         if  !$cond || # if conditionnal, possibility to filter, else create all sub task
-            $task.level==0 || (                                 # display always the base level
-                !($task.todo && $task.todo eq 'DONE' && $.no-done)       # by default, don't display DONE
+            $task.stars==0 || (                                 # display always the base stars
+                !($task.keyword && $task.keyword eq 'DONE' && $.no-done)       # by default, don't display DONE
                 && (!$.prior-A    || $task.is-child-prior("A"))
                 && (!$.prior-B    || $task.is-child-prior("B") || $task.is-child-prior("A"))
                 && (!$.prior-C    || $task.is-child-prior("C") || $task.is-child-prior("B") || $task.is-child-prior("A"))
@@ -483,15 +483,15 @@ class Gtk::File {
                 ) { 
             my Gnome::Gtk3::TreeIter $iter-task;
             my Gnome::Gtk3::TreeIter $parent-iter;
-            if ($task.level>0) {
-                if ($task.level==1) { 
+            if ($task.stars>0) {
+                if ($task.stars==1) {
                     my Gnome::Gtk3::TreePath $tp .= new(:string($.count-row++.Str));
                     $parent-iter = $.ts.get-iter($tp);
                 } else {
                     $parent-iter = $iter;
                 }
                 $iter-task = $.ts.insert-with-values($parent-iter, $pos, 
-                                        0, $task.display-header($.presentation),
+                                        0, $task.display-title($.presentation),
                                         2, $task.display-tags($.presentation),
                                         );
                 if $task.text {
@@ -533,7 +533,7 @@ class Gtk::File {
         return -1;
     }
     method default {
-        my Gtk::Task $task.=new(:header("In the beginning was the Task"),:todo('TODO'),:level(1),:darth-vader($!om));
+        my Gtk::Task $task.=new(:title("In the beginning was the Task"),:keyword('TODO'),:stars(1),:darth-vader($!om));
         $.create-task($task,:cond(False));
         $!om.tasks.push($task);
     }
@@ -652,7 +652,7 @@ class Gtk::File {
                 exit;
             }
 #        } while self.om;
-        self.om.header=$name;   # TODO to refactor
+        self.om.title=$name;   # TODO to refactor
 #        say self.om;
 #        say Dump(self.om , :max-recursion(2));
 #        say Dump self.om; # doesn't work, probably because recursivity with darth-vader
@@ -660,7 +660,7 @@ class Gtk::File {
 #        self.om.inspect;
 #        self.verifiy-read($name) if $debug; # TODO to reactivate :0.x:
         self.create-task(self.om);
-        $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
+        $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.title).Array.pop) if $.om.title;
     }
     method file-exist($filename) {
         if $filename.IO.f {
@@ -713,17 +713,17 @@ class Gtk::File {
                 $md.add-button("_No", GTK_RESPONSE_NO);
                 my $button=$md.run;
                 if $button==GTK_RESPONSE_YES {
-                    $!om.header = $filename;
+                    $!om.title = $filename;
                     $.save;
-                    $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header;
+                    $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.title).Array.pop) if $.om.title;
                 } else {
                     $response=GTK_RESPONSE_CANCEL; # TODO if no, no close dialog file-save-as
                 }
                 $md.destroy;
             } else {
-                $!om.header = $filename;
+                $!om.title = $filename;
                 $.save;
-                $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.header).Array.pop) if $.om.header; # TODO rewrite with module File::Utils
+                $!top-window.set-title('Org-Mode with GTK and raku : ' ~ split(/\//,$.om.title).Array.pop) if $.om.title; # TODO rewrite with module File::Utils
             }
         }
         $dialog.gtk-widget-hide; # TODO destroy ?
@@ -731,10 +731,10 @@ class Gtk::File {
     }
     method save ($name?) {
         $.change=0 if !$name;
-        spurt $name ?? $name !! $!om.header, $!om.to-text;
+        spurt $name ?? $name !! $!om.title, $!om.to-text;
     }
     method try-save {
-        if $.change && (!$!om.header || $!om.header ne "demo.org") {
+        if $.change && (!$!om.title || $!om.title ne "demo.org") {
             my Gnome::Gtk3::MessageDialog $md .=new(
                                 :message('Do you like save your file ?'),
                                 :buttons(GTK_BUTTONS_NONE)
@@ -744,7 +744,7 @@ class Gtk::File {
             $md.add-button("_Cancel", GTK_RESPONSE_CANCEL);
             my $button=$md.run;
             if $button==GTK_RESPONSE_YES {
-                if $!om.header { 
+                if $!om.title {
                     $.save 
                 } else {
                     $button = $.file-save-as;
@@ -755,7 +755,7 @@ class Gtk::File {
         }
     }
     method update-text($iter,$new-text) {
-        my $task=$.search-task-from($.om,$iter);
+        my Gtk::Task $task=$.search-task-from($.om,$iter);
         $task.text=$new-text; #.split(/\n/); # TODO old version use one row for one line, to reactivate :0.x:
         my $iter_child=$.ts.iter-children($iter);
         # remove all lines "text"

@@ -52,7 +52,7 @@ class Gtk::KeyEvent {
     #                    when "k"  { $.message('Delete branch');      $!m.gf.delete-branch($clicked-task.iter); }
                         when "cs"  { $.message('Schedule');           $.m.gedt.scheduled(:gf($!m.gf))} 
                         when "cd"  { $.message('Deadline');           $.m.gedt.deadline(:gf($!m.gf))}
-                        when "ct"  { $.message('Change TODO/DONE/-'); $!m.gf.edit-todo-done;}
+                        when "ct"  { $.message('Change TODO/DONE/-'); $!m.gf.edit-keyword;}
                         when "cxv" { $.message('View/Hide Image');    $!m.gf.m-view-hide-image;}
                         when "xs"  { $.message('Save');               $!m.gf.file-save }
                         when "xc"  { $.message('Exit');               $!m.exit-gui }

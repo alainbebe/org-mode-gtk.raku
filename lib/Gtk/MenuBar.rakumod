@@ -101,9 +101,9 @@ class Gtk::MenuBar {
         $es-root-menu.set-submenu($sm-es);
         $menu.gtk-menu-shell-append($es-root-menu);
 
-        my Gnome::Gtk3::Menu $sm-todo = $.make-menubar-todo($.gf);
+        my Gnome::Gtk3::Menu $sm-keyword = $.make-menubar-keyword($.gf);
         my Gnome::Gtk3::MenuItem $sm-root-menu .= new(:label('TODO Lists'));
-        $sm-root-menu.set-submenu($sm-todo);
+        $sm-root-menu.set-submenu($sm-keyword);
         $menu.gtk-menu-shell-append($sm-root-menu);
 
     #    my Gnome::Gtk3::Menu $sm-tp = $.make-menubar-tp($.gf);
@@ -209,10 +209,10 @@ class Gtk::MenuBar {
 
         $menu
     }
-    method make-menubar-todo ( $ash ) {
+    method make-menubar-keyword ( $ash ) {
         my Gnome::Gtk3::Menu $menu .= new;
 
-        $.create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$.gf,'edit-todo-done');
+        $.create-sub-menu($menu,"TODO/DONE/-    C-c C-t",$.gf,'edit-keyword');
 
         # TODO add a menu separator
 

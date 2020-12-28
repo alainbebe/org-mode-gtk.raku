@@ -16,18 +16,18 @@ sub to-markup ($text-ori) {    # TODO create a class inheriting of string ?
 class Gtk::Task is OrgMode::Task {
     has Gnome::Gtk3::TreeIter $.iter is rw;
 
-    method display-header ($presentation) { # TODO to put in Gtk::Task
+    method display-title ($presentation) { # TODO to put in Gtk::Task
         my $display;
-        my $header=to-markup($.header);
+        my $title=to-markup($.title);
         if $presentation eq 'TEXT' {
-            if    ($.level==1) {$display~='<span foreground="blue" size="'~round($size*8/6)~'"       >'~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span foreground="deepskyblue" size="'~round($size*7/6)~'">'~$header~'</span>'}
-            else               {$display~='<span foreground="black" size="'~round($size)~'"          >'~$header~'</span>'}
+            if    ($.stars==1) {$display~='<span foreground="blue" size="'~round($size*8/6)~'"       >'~$title~'</span>'}
+            elsif ($.stars==2) {$display~='<span foreground="deepskyblue" size="'~round($size*7/6)~'">'~$title~'</span>'}
+            else               {$display~='<span foreground="black" size="'~round($size)~'"          >'~$title~'</span>'}
         } else { # DEFAULT TODO
             my $zoom= ' size="'~round($size)~'" ';          
-            if (!$.todo)             {$display~=' '}
-            elsif ($.todo eq "TODO") {$display~='<span foreground="red"  '~$zoom~'> TODO</span>'}
-            elsif ($.todo eq "DONE") {$display~='<span foreground="green"'~$zoom~'> DONE</span>'}
+            if (!$.keyword)             {$display~=' '}
+            elsif ($.keyword eq "TODO") {$display~='<span foreground="red"  '~$zoom~'> TODO</span>'}
+            elsif ($.keyword eq "DONE") {$display~='<span foreground="green"'~$zoom~'> DONE</span>'}
 
             if $.priority {
                 if    $.priority ~~ /A/ {$display~=' <span foreground="fuchsia"'~$zoom~'>'~$.priority~'</span>'}
@@ -35,10 +35,10 @@ class Gtk::Task is OrgMode::Task {
                 elsif $.priority ~~ /C/ {$display~=' <span foreground="lime"'~$zoom~'>'~$.priority~'</span>'}
             }
 
-            if    ($.level==1) {$display~='<span weight="bold" foreground="blue" '~$zoom~'> '~$header~'</span>'}
-            elsif ($.level==2) {$display~='<span weight="bold" foreground="brown"'~$zoom~'> '~$header~'</span>'}
-            elsif ($.level==3) {$display~='<span weight="bold" foreground="green"'~$zoom~'> '~$header~'</span>'}
-            else               {$display~='<span weight="bold" foreground="black"'~$zoom~'> '~$header~'</span>'}
+            if    ($.stars==1) {$display~='<span weight="bold" foreground="blue" '~$zoom~'> '~$title~'</span>'}
+            elsif ($.stars==2) {$display~='<span weight="bold" foreground="brown"'~$zoom~'> '~$title~'</span>'}
+            elsif ($.stars==3) {$display~='<span weight="bold" foreground="green"'~$zoom~'> '~$title~'</span>'}
+            else               {$display~='<span weight="bold" foreground="black"'~$zoom~'> '~$title~'</span>'}
         }
         return $display;
     }
@@ -79,7 +79,7 @@ class Gtk::Task is OrgMode::Task {
     }
     method inspect {
         callsame;
-        my $prefix=" " x $.level*2;
+        my $prefix=" " x $.stars*2;
         say $prefix,"iter        ",$.iter;
         say $prefix,"-----";
     }
@@ -90,7 +90,7 @@ class Gtk::Task is OrgMode::Task {
         return $pb;
     }
     method refresh ($gf) {
-        $gf.ts.set-value( $.iter, 0, $.display-header($gf.presentation)) if $.iter;
+        $gf.ts.set-value( $.iter, 0, $.display-title($gf.presentation)) if $.iter;
         $gf.ts.set-value( $.iter, 2, $.display-tags($gf.presentation)) if $.tags;
         $gf.ts.set-value( $gf.ts.iter-children($.iter), 0, $.display-text($gf.presentation)) if $.iter && $.text.trim.chars>0;
         if $.tasks {

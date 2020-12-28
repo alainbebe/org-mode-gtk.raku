@@ -26,6 +26,8 @@ aligné sur Orgzly, en anglais
 CLOSED: [2020-12-12 Sat 08:02]
 To display C-c C-x C-v
 [[./img/test.png]] 
+** Have a title different of the filename
+in preface, put : #+TITLE: {display name}
 * Bug
 ** DONE [#A] Save File ne fonctionne plus
 CLOSED: [2020-08-02 Son 11:20]
@@ -314,7 +316,7 @@ at /home/alain/Documents/Realisation/raku/org-mode-gtk.raku/lib/Task.rakumod (Ta
 Lors d’une sauvegarde faire un git avec message par defaut
 ** TODO Git message
 Rajouter un menu de sauvegarde avec message pour le Git
-** TODO read defintion emacs and refactoring name of variable :refactoring:
+** TODO read defintion emacs and refactoring name of variable          :refactoring:
 https://orgmode.org/worg/dev/org-syntax.html
 * git
 ** DONE diff ne pas afficher les blancs

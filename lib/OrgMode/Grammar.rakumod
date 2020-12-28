@@ -4,15 +4,15 @@ use OrgMode::Date;
 use Gtk::Task; # TODO no Gtk here :refactoring:0.1:
 
 grammar Content {
-    token TOP        { ^ <level> <todo>? <priority>? <header> <tags>? \n?   # first line of a task
-                            <closed>? <deadline>? <scheduled>?              # second optionnal line with time
-                            <properties>?                                   # optional lines for properties
-                            <text>? $                                       # optional lines for text
+    token TOP        { ^ <stars> <keyword>? <priority>? <title> <tags>? \n? # first line of a task
+                            <closed>? <deadline>? <scheduled>?               # second optionnal line with time
+                            <properties>?                                    # optional lines for properties
+                            <text>? $                                        # optional lines for text
                      }
-    token level      { "*"+ )> " "};
-    token todo       { ["TODO"|"DONE"] )> " " }                             # TODO add NEXT for compatibility with :Orgzly:
+    token stars      { "*"+ )> " "};
+    token keyword       { ["TODO"|"DONE"] )> " " }                           # TODO add NEXT for compatibility with :Orgzly:
     token priority   { "[#" <( [A|B|C] )> "] " }
-    token header     { .*? <?before " :"\S || $$ > };                       # TODO fail if "* blabla :e ",  
+    token title     { .*? <?before " :"\S || $$ > };                        # TODO fail if "* blabla :e ",
     token tags       {  " :"(\S+?":")+ }
     token closed     { " "* "CLOSED: [" <dateorg> "]"\n? }                  
     token deadline   { " "* "DEADLINE: <" <dateorg> ">"\n? }                
@@ -27,10 +27,10 @@ grammar Content {
 class Content-actions {
     method TOP($/) {
         my Gtk::Task $task.=new( 
-            :header($<header>.made), 
-            :level($<level>.made) 
+            :title($<title>.made), 
+            :stars($<stars>.made)
         );
-        $task.todo       =$<todo>.made        if $<todo>;
+        $task.keyword    =$<keyword>.made     if $<keyword>;
         $task.priority   =$<priority>.made    if $<priority>;
         $task.tags       =$<tags>.made        if $<tags>;
         $task.closed     =$<closed>.made      if $<closed>;
@@ -40,13 +40,13 @@ class Content-actions {
         $task.text       =$<text>.made        if $<text> && $<text>.made.chars>0;
         make $task;
     }
-    method header($/) {
+    method title($/) {
         make $/.Str.trim-trailing;
     }
-    method level($/) {
+    method stars($/) {
         make $/.Str.chars;
     }
-    method todo($/) {
+    method keyword($/) {
         make $/.Str;
     }
     method priority($/) {
@@ -64,7 +64,7 @@ class Content-actions {
     method scheduled($/) {
         make date-from-dateorg($/{'dateorg'});
     }
-    method key($/) {
+    method key($/) { # TODO rename "name" as emacs :0.1:
         make $/.Str;
     }
     method value($/) {
@@ -82,26 +82,26 @@ class Content-actions {
     }
 }
 
-my $level="";
+my $stars="";
 grammar OrgMode {                                                       # TODO to :translate:
     rule  TOP       { ^ <preface>? <tasks> $ }                          # un fichier org est une preface suivi de taches
     rule  preface   {  .*? <?before ^^"*"> }                            # la préface précède la première tache (commençant par "*")
     rule  tasks     {  <task>+ }                                        # des tâches est un liste de tâche
-    token task      { <content> <tasks>? {$level=$level.substr(0,*-1)}} # une tache est la tâche elle-meme avec une liste de sous-tache
+    token task      { <content> <tasks>? {$stars=$stars.substr(0,*-1)}} # une tache est la tâche elle-meme avec une liste de sous-tache
     rule  content   { ^^                                                
-                        ($level "*"+)" " {$level=$0}                    # la tache en elle même commence par une ou plusieurs "*" 
+                        ($stars "*"+)" " {$stars=$0}                    # la tache en elle même commence par une ou plusieurs "*"
                         .*?                                             # et tout 
                         <?before ^^"*" || $ >                           # ce qui précède la tache suivante ou la fin du fichier
                     }   
     # TODO on devrait pouvoir intégrer "Grammar Content" ici, mais commment ?, et est-ce nécessaire ?
 }
 sub analyse-content($content) {
-        my $task=Content.parse($content,:actions(Content-actions)).made;
+        my Gtk::Task $task=Content.parse($content,:actions(Content-actions)).made;
         return $task;
 }
 class OrgMode::Actions {
     method TOP($/) {
-        my Gtk::Task $task.=new(:level(0));                    # un fichier est vu comme une tâche de niveau 0
+        my Gtk::Task $task.=new(:stars(0));                    # un fichier est vu comme une tâche de niveau 0
         $task.text = $<preface>.made       if $<preface> && $<preface>.made.chars > 0;
         $task.tasks=$<tasks>.made          if $<tasks>;
         $_.darth-vader=$task               for $task.tasks;  # pour faciliter les déplacements, on intègre le parent aux taches enfants
@@ -114,15 +114,15 @@ class OrgMode::Actions {
         make $<task>».made ;
     }
     method task($/) {
-        my $task;
+        my Gtk::Task $task;
         $task=$<content>.made;
         $task.tasks=$<tasks>.made           if $<tasks>.made;
         $_.darth-vader=$task                for $task.tasks;
         make $task;
     }
     method content($/) {
-        my $task = analyse-content($/.Str);                             # Works :-)
-#       my $task=Content.parse($/.Str,:actions(Content-actions)).made;  # TODO Doesn't work. Why ?
+        my Gtk::Task $task = analyse-content($/.Str);                             # Works :-)
+#       my Gtk::Task $task=Content.parse($/.Str,:actions(Content-actions)).made;  # TODO Doesn't work. Why ?
                                                                         # Error : Cannot assign to a readonly variable or a value
         make $task;
     }

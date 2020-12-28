@@ -1,4 +1,5 @@
 use OrgMode::Date;
+use Gtk::Task;
 use Gtk::ManageDate;
 
 use Gnome::N::N-GObject;
@@ -54,7 +55,7 @@ class Gtk::EditTask {
         $e-edit-tags.set-text("");
         1
     }
-    method header-event-after ( N-GdkEventKey $event-key, :$widget ) {
+    method title-event-after ( N-GdkEventKey $event-key, :$widget ) {
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,$widget.get-text.trim.chars>0);
         1
     }
@@ -64,17 +65,17 @@ class Gtk::EditTask {
                 && $widget.get-text.trim.chars>0;
         1
     }
-    method tag-event-after ( N-GdkEventKey $event-key, :$widget-header ) {
+    method tag-event-after ( N-GdkEventKey $event-key, :$widget-title ) {
         $dialog.response(GTK_RESPONSE_OK)
             if $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return
-                && $widget-header.get-text.trim.chars>0;
+                && $widget-title.get-text.trim.chars>0;
         1
     }
-    method text-event-after ( N-GdkEventKey $event-key, :$widget-header ) {
+    method text-event-after ( N-GdkEventKey $event-key, :$widget-title ) {
         $dialog.response(GTK_RESPONSE_OK)
             if $event-key.state == 4 # ctrl push
                 && $event-key.keyval.fmt('0x%08x')==GDK_KEY_Return
-                    && $widget-header.get-text.trim.chars>0;
+                    && $widget-title.get-text.trim.chars>0;
         1
     }
     method scheduled ( :$widget, :$task , :$gf) {
@@ -136,7 +137,7 @@ class Gtk::EditTask {
         $ls.set-value( $iter, 2, 'X');
         1
     }
-    method edit-task($task,$gf) {
+    method edit-task(Gtk::Task $task,$gf) {
         # Dialog to edit task
         $dialog .= new(
             :title("Edit task"),          # TODO doesn't work if multi-tab. Very strange. Fix in :0.x:
@@ -152,11 +153,11 @@ class Gtk::EditTask {
         my Gnome::Gtk3::Grid $g .= new;
         $content-area.gtk_container_add($g);
 
-        # To edit header
+        # To edit title
         my Gnome::Gtk3::Entry $e-edit .= new;
-        $e-edit.set-text($task.header);
+        $e-edit.set-text($task.title);
         $g.gtk-grid-attach($e-edit,                                                       0, 0, 4, 1);
-        $e-edit.register-signal( self, 'header-event-after', 'event-after');
+        $e-edit.register-signal( self, 'title-event-after', 'event-after');
         $e-edit.register-signal( self, 'ok-press', 'key-press-event');
         $dialog.set-response-sensitive(GTK_RESPONSE_OK,0) if $e-edit.get-text.chars==0;
 
@@ -165,16 +166,16 @@ class Gtk::EditTask {
         $e-edit-tags.set-text(join(" ",$task.tags));
         $g.gtk-grid-attach(Gnome::Gtk3::Label.new(:text('Tag')),                          0, 1, 1, 1);
         $g.gtk-grid-attach($e-edit-tags,                                                  1, 1, 2, 1);
-        $e-edit-tags.register-signal( self, 'tag-event-after', 'event-after',:widget-header($e-edit));
+        $e-edit-tags.register-signal( self, 'tag-event-after', 'event-after',:widget-title($e-edit));
         $g.gtk-grid-attach($.create-button('X','clear-tags-button-click',$task.iter),     3, 1, 1, 1);
         
         # To manage TODO/DONE
         my Gnome::Gtk3::RadioButton $rb-td1 .= new(:label('-'));
         my Gnome::Gtk3::RadioButton $rb-td2 .= new( :group-from($rb-td1), :label('TODO'));
         my Gnome::Gtk3::RadioButton $rb-td3 .= new( :group-from($rb-td1), :label('DONE'));
-        if    !$task.todo          { $rb-td1.set-active(1);}
-        elsif $task.todo eq 'TODO' { $rb-td2.set-active(1);}
-        elsif $task.todo eq 'DONE' { $rb-td3.set-active(1);} 
+        if    !$task.keyword          { $rb-td1.set-active(1);}
+        elsif $task.keyword eq 'TODO' { $rb-td2.set-active(1);}
+        elsif $task.keyword eq 'DONE' { $rb-td3.set-active(1);} 
         $g.gtk-grid-attach( $rb-td2,                                                        0, 2, 1, 1);
         $g.gtk-grid-attach( $rb-td3,                                                        1, 2, 1, 1);
         $g.gtk-grid-attach( $rb-td1,                                                        3, 2, 1, 1);
@@ -279,7 +280,7 @@ class Gtk::EditTask {
             my $text=$task.text.join("\n");
             $text-buffer2.set-text($text);
         }
-#        $tev-edit-text.register-signal( self, 'text-event-after', 'event-after',:widget-header($e-edit)); # TODO create a new line before send signal, to refactoring :0.2:
+#        $tev-edit-text.register-signal( self, 'text-event-after', 'event-after',:widget-title($e-edit)); # TODO create a new line before send signal, to refactoring :0.2:
         my Gnome::Gtk3::ScrolledWindow $swt .= new;
         $swt.gtk-container-add($tev-edit-text);
         $content-area.gtk_container_add($swt);
@@ -298,10 +299,10 @@ class Gtk::EditTask {
                 push($task.darth-vader.tasks,$task);
             }
 
-            if $task.header ne $e-edit.get-text {
+            if $task.title ne $e-edit.get-text {
                 $gf.change=1;
-                $task.header=$e-edit.get-text.trim;
-                $gf.ts.set-value( $task.iter, 0, $task.display-header($gf.presentation));
+                $task.title=$e-edit.get-text.trim;
+                $gf.ts.set-value( $task.iter, 0, $task.display-title($gf.presentation));
             }
 
             if $e-edit-tags.get-text ne join(" ",$task.tags) {
@@ -318,14 +319,14 @@ class Gtk::EditTask {
                 $gf.ts.set-value( $task.iter, 2, $task.display-tags($gf.presentation));
             }
 
-            my $todo="";
-            $todo="TODO" if $rb-td2.get-active();
-            $todo="DONE" if $rb-td3.get-active();
-            if $task.todo ne $todo {
+            my $keyword="";
+            $keyword="TODO" if $rb-td2.get-active();
+            $keyword="DONE" if $rb-td3.get-active();
+            if $task.keyword ne $keyword {
                 $gf.change=1;
-                $task.todo=$todo;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header($gf.presentation));
-                if $todo eq 'DONE' {
+                $task.keyword=$keyword;
+                $gf.ts.set_value( $task.iter, 0,$task.display-title($gf.presentation));
+                if $keyword eq 'DONE' {
                     my $ds=&d-now();
                     if $ds ~~ /<dateorg>/ {
                         $task.closed=date-from-dateorg($/{'dateorg'});
@@ -341,7 +342,7 @@ class Gtk::EditTask {
             $prior="C" if $rb-pr4.get-active();
             if $task.priority ne $prior {
                 $task.priority=$prior;
-                $gf.ts.set_value( $task.iter, 0,$task.display-header($gf.presentation)); # TODO create $gf.ts-set-header($task)
+                $gf.ts.set_value( $task.iter, 0,$task.display-title($gf.presentation)); # TODO create $gf.ts-set-title($task)
             }
 
             my @properties;

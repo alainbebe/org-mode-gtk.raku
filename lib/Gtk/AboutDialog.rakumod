@@ -4,7 +4,7 @@ use NativeCall;
 class Gtk::AboutDialog is Gnome::Gtk3::AboutDialog {
 
     submethod new ( |c ) {
-        self.bless( :GtkAboutDialog, |c); # TODO why it's run ? normaly :AboutDialog :0.1:MM:
+        self.bless( :GtkAboutDialog, |c);
     }
 
     submethod BUILD ( ) {
@@ -13,7 +13,7 @@ class Gtk::AboutDialog is Gnome::Gtk3::AboutDialog {
         self.set-license-type(GTK_LICENSE_GPL_3_0);
         self.set-website("http://www.barbason.be");
         self.set-website-label("http://www.barbason.be");
-        self.set-authors(CArray[Str].new('Alain BarBason'));
+        self.set-authors("Alain BarBason");
     }
 
     method run {
