@@ -1,7 +1,7 @@
 #use Grammar::Tracer;
 #use Data::Dump;
 use OrgMode::Date;
-use Gtk::Task; # TODO no Gtk here :refactoring:0.1:
+use OrgMode::Task;
 
 grammar Content {
     token TOP        { ^ <stars> <keyword>? <priority>? <title> <tags>? \n?  # first line of a task
@@ -26,7 +26,7 @@ grammar Content {
 
 class Content-actions {
     method TOP($/) {
-        my Gtk::Task $task.=new( 
+        my OrgMode::Task $task.=new( 
             :title($<title>.made), 
             :stars($<stars>.made)
         );
@@ -96,12 +96,12 @@ grammar OrgMode {                                                       # TODO t
     # TODO on devrait pouvoir intégrer "Grammar Content" ici, mais commment ?, et est-ce nécessaire ?
 }
 sub analyse-content($content) {
-        my Gtk::Task $task=Content.parse($content,:actions(Content-actions)).made;
+        my OrgMode::Task $task=Content.parse($content,:actions(Content-actions)).made;
         return $task;
 }
 class OrgMode::Actions {
     method TOP($/) {
-        my Gtk::Task $task.=new(:stars(0));                    # un fichier est vu comme une tâche de niveau 0
+        my OrgMode::Task $task.=new(:stars(0));                    # un fichier est vu comme une tâche de niveau 0
         $task.text = $<preface>.made       if $<preface> && $<preface>.made.chars > 0;
         $task.tasks=$<tasks>.made          if $<tasks>;
         $_.darth-vader=$task               for $task.tasks;  # pour faciliter les déplacements, on intègre le parent aux taches enfants
@@ -114,15 +114,15 @@ class OrgMode::Actions {
         make $<task>».made ;
     }
     method task($/) {
-        my Gtk::Task $task;
+        my OrgMode::Task $task;
         $task=$<content>.made;
         $task.tasks=$<tasks>.made           if $<tasks>.made;
         $_.darth-vader=$task                for $task.tasks;
         make $task;
     }
     method content($/) {
-        my Gtk::Task $task = analyse-content($/.Str);                             # Works :-)
-#       my Gtk::Task $task=Content.parse($/.Str,:actions(Content-actions)).made;  # TODO Doesn't work. Why ?
+        my OrgMode::Task $task = analyse-content($/.Str);                             # Works :-)
+#       my OrgMode::Task $task=Content.parse($/.Str,:actions(Content-actions)).made;  # TODO Doesn't work. Why ?
                                                                         # Error : Cannot assign to a readonly variable or a value
         make $task;
     }

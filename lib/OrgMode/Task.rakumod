@@ -2,7 +2,7 @@ use OrgMode::Date;
 
 # No Gnome module here
 
-# The name of attributes comes from https://orgmode.org/worg/dev/org-syntax.html (to finalize) :refactoring:
+# The name of attributes comes from https://orgmode.org/worg/dev/org-syntax.html
 # STARS KEYWORD PRIORITY TITLE TAGS
 class OrgMode::Task {
     has Int           $.stars       is rw; # required >0 (or =0 for "document", father of primary title

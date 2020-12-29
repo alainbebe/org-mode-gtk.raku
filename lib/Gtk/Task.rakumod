@@ -99,6 +99,27 @@ class Gtk::Task is OrgMode::Task {
             }
         }
     }
+    method from-orgmode (OrgMode::Task $om-task) { # TODO to :refactoring:
+        my Gtk::Task $gtk-task .= new();
+        $gtk-task.stars      =$om-task.stars;
+        $gtk-task.keyword    =$om-task.keyword;
+        $gtk-task.priority   =$om-task.priority;
+        $gtk-task.title      =$om-task.title;
+        $gtk-task.tags       =$om-task.tags;
+        $gtk-task.closed     =$om-task.closed;
+        $gtk-task.deadline   =$om-task.deadline;
+        $gtk-task.scheduled  =$om-task.scheduled;
+        $gtk-task.text       =$om-task.text;
+        $gtk-task.properties =$om-task.properties;
+        if $om-task.tasks {
+            for $om-task.tasks.Array {
+                my Gtk::Task $gtk-child = $.from-orgmode($_);
+                $gtk-child.darth-vader = $gtk-task;
+                $gtk-task.tasks.push($gtk-child);
+            }
+        }
+        return $gtk-task;
+    }
     method zoom($choice) { # TODO to put in Gtk::File :refactoring:
         given $choice {
             when -1 {$size*=0.9}

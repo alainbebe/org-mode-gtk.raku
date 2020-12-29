@@ -26,7 +26,7 @@ use Gnome::Gtk3::TreeSelection;
 use Gnome::Gdk3::Events;
 use NativeCall;
 
-use Data::Dump;
+#use Data::Dump;
 
 my Gtk::Task $task-cut; # to save a branch cut, to past after # TODO remove global value, in fact, task-cut is global var for program, not GtkFile (to analyse when notebook) :refactoring:0.x:
 
@@ -533,7 +533,11 @@ class Gtk::File {
         return -1;
     }
     method default {
-        my Gtk::Task $task.=new(:title("In the beginning was the Task"),:keyword('TODO'),:stars(1),:darth-vader($!om));
+        my Gtk::Task $task.=new(
+            :title("In the beginning was the Task"),
+            :keyword('TODO'),
+            :stars(1),
+            :darth-vader($!om));
         $.create-task($task,:cond(False));
         $!om.tasks.push($task);
     }
@@ -642,7 +646,8 @@ class Gtk::File {
 #            my $file=$proc.out.slurp(:close);
             my $file=slurp $name; # Warning mettre "slurp $name" directement dans la ligne suivante 
                                     # fait foirer la grammaire (content ne match pas) . Bizarre.
-            self.om=OrgMode.parse($file,:actions(OrgMode::Actions)).made;
+            my OrgMode::Task $document = OrgMode.parse( $file, :actions(OrgMode::Actions) ).made;
+            self.om=Gtk::Task.from-orgmode($document);
             if !self.om {
                 my Gnome::Gtk3::MessageDialog $md .=new(
                                     :message('This file is not recognized as a org file by org-mode-gtk.raku'),

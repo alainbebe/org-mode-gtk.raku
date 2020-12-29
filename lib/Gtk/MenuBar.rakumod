@@ -9,7 +9,7 @@ use Gnome::Gtk3::Menu;
 use Gnome::Gtk3::MenuItem;
 
 # global variable : to remove ?
-my $debug=1;            # to debug =1
+my $debug=0;            # to debug =1
 
 class Gtk::MenuBar {
     has Gtk::File $.gf;
