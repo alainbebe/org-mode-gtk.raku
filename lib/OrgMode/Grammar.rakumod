@@ -4,22 +4,22 @@ use OrgMode::Date;
 use Gtk::Task; # TODO no Gtk here :refactoring:0.1:
 
 grammar Content {
-    token TOP        { ^ <stars> <keyword>? <priority>? <title> <tags>? \n? # first line of a task
-                            <closed>? <deadline>? <scheduled>?               # second optionnal line with time
+    token TOP        { ^ <stars> <keyword>? <priority>? <title> <tags>? \n?  # first line of a task
+                            <closed>? <deadline>? <scheduled>?               # second optional line with time
                             <properties>?                                    # optional lines for properties
                             <text>? $                                        # optional lines for text
                      }
     token stars      { "*"+ )> " "};
-    token keyword       { ["TODO"|"DONE"] )> " " }                           # TODO add NEXT for compatibility with :Orgzly:
+    token keyword    { ["TODO"|"DONE"] )> " " }                              # TODO add NEXT for compatibility with :Orgzly:
     token priority   { "[#" <( [A|B|C] )> "] " }
-    token title     { .*? <?before " :"\S || $$ > };                        # TODO fail if "* blabla :e ",
+    token title      { .*? <?before " :"\S || $$ > };                        # TODO fail if "* blabla :e ",
     token tags       {  " :"(\S+?":")+ }
     token closed     { " "* "CLOSED: [" <dateorg> "]"\n? }                  
     token deadline   { " "* "DEADLINE: <" <dateorg> ">"\n? }                
     token scheduled  { " "* "SCHEDULED: <" <dateorg> ">\n" }
     token properties { ^^ ":PROPERTIES:" \n  <property>+ %% \n ":END:" \n? }
-    token property   { ^^ <!before ":END:" $$> ":" <key> ":" \s* <value>?  } # ":key: value" ":key:" (value missing) 
-    token key        {\w+}
+    token property   { ^^ <!before ":END:" $$> ":" <name> ":" \s* <value>?  } # ":name: value" ":name:" (value missing)
+    token name       {\w+}
     token value      {<!before ":END:" $$> \N+}
     token text       { .+ };
 }
@@ -64,14 +64,14 @@ class Content-actions {
     method scheduled($/) {
         make date-from-dateorg($/{'dateorg'});
     }
-    method key($/) { # TODO rename "name" as emacs :0.1:
+    method name($/) {
         make $/.Str;
     }
     method value($/) {
         make $/.Str;
     }
     method property($/) {
-        make ($<key>.made,$<value>.made);
+        make ($<name>.made,$<value>.made);
     }
     method properties($/) {
         make $<property>».made;

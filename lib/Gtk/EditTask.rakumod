@@ -241,7 +241,7 @@ class Gtk::EditTask {
         $crt1.set-property( 'editable', $v);
         $crt1.register-signal(self, 'property-edited', 'edited', :ls($properties), :col(0));
         my Gnome::Gtk3::TreeViewColumn $tvc .= new;
-        $tvc.set-title('Key');
+        $tvc.set-title('Name');
         $tvc.pack-end( $crt1, 1);
         $tvc.add-attribute( $crt1, 'text', 0);
         $tv.append-column($tvc);

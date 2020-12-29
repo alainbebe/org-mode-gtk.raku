@@ -18,13 +18,13 @@ class OrgMode::Task {
     has OrgMode::Task @.tasks       is rw;
     has OrgMode::Task $.darth-vader is rw; # Task, I am your father
 
-    method herite-properties($key) {
+    method herite-properties($name) {
         if (@.properties) {
             my %properties; 
             %properties=$_ for @.properties; 
-            return %properties{$key} if %properties{$key};
+            return %properties{$name} if %properties{$name};
         } 
-        return $.darth-vader.herite-properties($key) if $.darth-vader;
+        return $.darth-vader.herite-properties($name) if $.darth-vader;
         return "DEFAULT";
     }
     method stars-move($change) {
