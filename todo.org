@@ -60,7 +60,7 @@ soit celle dont $iter n'est pas une task dans @org
 Rajouter les nouvelles 
 (soit l'une après l'autre si facile)
 soit en premier en commençant à l'envers
-** TODO make a User Manuel                                             :0.1:
+** TODO make a User Manuel                                             :0.x:
 ** DONE Add new file menu
 CLOSED: [2020-05-05 mar  07:24]
 ** DONE Append ScrolBar for long Todo

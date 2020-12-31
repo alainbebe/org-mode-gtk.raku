@@ -486,7 +486,7 @@ class Gtk::File {
             if ($task.stars>0) {
                 if ($task.stars==1) {
                     my Gnome::Gtk3::TreePath $tp .= new(:string($.count-row++.Str));
-                    $parent-iter = $.ts.get-iter($tp);
+                    $parent-iter = $.ts.get-iter($tp); # TODO use "append" :refactoring:
                 } else {
                     $parent-iter = $iter;
                 }
